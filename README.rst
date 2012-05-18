@@ -29,15 +29,18 @@ Orosz, J. A., & Hauschildt, P. H. 2000, A&A, 364, 265
 Hendry, P. D., & Mochnacki, S. W. 1992, ApJ, 388, 603
 
 
-IF YOU USE IT:
+If you use it
+=======
 If you intend to use the code, please cite the paper in which it was first introduced: R. P. Breton, S. A. Rappaport, M. H. van Kerkwijk, J. A. Carter. "KOI 1224, a Fourth Bloated Hot White Dwarf Companion Found With Kepler". ApJL, ???:??? April 2012.
 Also, please provide a link to the Icarus webpage <https://github.com/bretonr/Icarus>.
 The author (<superluminique + at + gmail.com>) would be happy to receive feedback, constructive comments, bug fixes, etc., from people using Icarus. Unfortunately, only very limited support can be provided due to the author's busy research schedule.
 
 
-ACKNOWLEDGEMENTS:
+Acknowledgements
+=======
 Note that the author would like to acknowledge the immense help of Marten van Kerkwijk, who contributed via frequent discussions and who also provided a Fortran program to synthesize photometric light curves of irradiated binaries, which Icarus initially aimed to reproduce.
 
 
-LICENSE:
+License
+=======
 Please note that this project is protected against a 3-clause BSD license. Please see the content of the folder "licenses" for more information.
