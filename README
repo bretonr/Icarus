@@ -34,5 +34,10 @@ If you intend to use the code, please cite the paper in which it was first intro
 Also, please provide a link to the Icarus webpage <https://github.com/bretonr/Icarus>.
 The author (<superluminique + at + gmail.com>) would be happy to receive feedback, constructive comments, bug fixes, etc., from people using Icarus. Unfortunately, only very limited support can be provided due to the author's busy research schedule.
 
+
 ACKNOWLEDGEMENTS:
 Note that the author would like to acknowledge the immense help of Marten van Kerkwijk, who contributed via frequent discussions and who also provided a Fortran program to synthesize photometric light curves of irradiated binaries, which Icarus initially aimed to reproduce.
+
+
+LICENSE:
+Please note that this project is protected against a 3-clause BSD license. Please see the content of the folder "licenses" for more information.
