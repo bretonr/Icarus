@@ -1,13 +1,15 @@
-===========================
+=========
 Example 1
-===========================
+=========
 
 This is a very simple example of how to use Icarus with photometric light curve.
 
 
 Description of files
 ===========================
-+ atmo_models.txt: The file providing the atmosphere model files descriptors. Each line corresponds to one band. (See Photometry class docstring for more info)
+atmo_models.txt:
+    The file providing the atmosphere model files descriptors. Each line corresponds to one band. (See Photometry class docstring for more info)
+    
     - Column0 = band name
     - Column 1 = central wavelength in microns
     - Column 2 = bandpass in microns
@@ -15,7 +17,9 @@ Description of files
     - Column 4 = A_band/A_J
     - Column 5 = band data filename
 
-+ data.txt: Each line corresponds to one band. (See Photometry class docstring for more info)
+data.txt:
+    Each line corresponds to one band. (See Photometry class docstring for more info)
+    
     - Column 0 = band name
     - Column 1 = orbital phase column number
     - Column 2 = flux/mag column number
@@ -24,31 +28,41 @@ Description of files
     - Column 5 = Uncertainty on the band calibration
     - Column 6 = data filename
 
-+ example1.py: The example script itself.
+example1.py:
+    The example script itself.
 
-+ generate_data_example1.py: A script to generate mock data used by the example. In real life, one would replace mock_g.txt and mock_i.txt by real data files.
+generate_data_example1.py:
+    A script to generate mock data used by the example. In real life, one would replace mock_g.txt and mock_i.txt by real data files.
 
-+ mock_g.txt: File containing the g-band data. Should be at least three columns.
+mock_g.txt:
+    File containing the g-band data. Should be at least three columns.
+    
     - Column 0 = orbital phase
     - Column 1 = flux/mag
     - Column 2 = flux/mag uncertainties
 
-+ mock_i.txt: File containing the i-band data. Should be at least three columns.
+mock_i.txt:
+    File containing the i-band data. Should be at least three columns.
+    
     - Column 0 = orbital phase
     - Column 1 = flux/mag
     - Column 2 = flux/mag uncertainties
 
-+ photometric_bands: Directory containing atmosphere data files like the ones available from http://phoenix.ens-lyon.fr/simulator.
+photometric_bands:
+    Directory containing atmosphere data files like the ones available from http://phoenix.ens-lyon.fr/simulator.
 
 
+How to
 ===========================
 1. You should generate mock data using:
-ipython generate_data_example1.py
+
+>>> ipython generate_data_example1.py
 
 This will update the mock_g.txt and mock_i.txt files.
 
 2. Run the example script:
-ipython --pylab example1.py
+
+>>> ipython --pylab example1.py
 
 This should run some basic data fitting and generate a plot.
 
