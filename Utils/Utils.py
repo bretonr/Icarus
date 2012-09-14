@@ -121,9 +121,9 @@ def Extinction(w, Rv=3.1, cardelli=False):
         return ext[0]
     return ext
 
-def fit_linear(y, x=None, err=1.0, m=None, b=None, output=None, inline=False):
+def Fit_linear(y, x=None, err=1.0, m=None, b=None, output=None, inline=False):
     """
-    fit_linear(y, x=None, err=1.0, m=None, b=None, output=None, inline=False):
+    Fit_linear(y, x=None, err=1.0, m=None, b=None, output=None, inline=False):
     return (sol, res, rank, s)
     Uses the scipy.linalg.lstsq function to solve the equation y = mx + b
     sol -> [b, m]

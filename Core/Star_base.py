@@ -160,6 +160,14 @@ class Star_base(object):
         inds = self.coschi > 0.0
         if inds.any() and self.tirr != 0.:
             teff[inds] = (teff[inds]**4+self.coschi[inds]*self.tirr**4/self.rx[inds]**2)**0.25
+        if (teff <= 0).any():
+            print( self.temp.min() )
+            print( self.temp.max() )
+            print( self.tirr )
+            print( teff.min() )
+            print( teff.max() )
+            print( (teff <= 0).sum() )
+            print( teff[teff <=0 ] )
         self.logteff = numpy.log(teff)
         return
 
@@ -279,6 +287,20 @@ class Star_base(object):
         Vx = self.k1/cts.c * ( self.omega*self.rc*(1+self.q)/self.q * (-numpy.cos(phi)*self.cosy + numpy.sin(phi)*self.cosx) - numpy.sin(phi) )
         return Vx
 
+    def Filling(self):
+        """Filling()
+        Returns the volume-averaged filling factor of the star
+        in units Roche lobe radius.
+        
+        >>> self.Filling()
+        """
+        filling = self.filling
+        self.Make_surface(filling=1.)
+        radius_RL = self.Radius()
+        self.Make_surface(filling=filling)
+        radius = self.Radius()
+        return radius/radius_RL
+
     def Flux(self, phase, gravscale=None, atmo_grid=None, nosum=False, details=False, mu=None, inds=None, doppler=0.):
         """Flux(phase, gravscale=None, atmo_grid=None, nosum=False, details=False, mu=None, inds=None, doppler=0.)
         Return the flux interpolated from the atmosphere grid.
@@ -351,20 +373,6 @@ class Star_base(object):
             return fsum
         
         return fsum
-
-    def Filling(self):
-        """Filling()
-        Returns the volume-averaged filling factor of the star
-        in units Roche lobe radius.
-        
-        >>> self.Filling()
-        """
-        filling = self.filling
-        self.Make_surface(filling=1.)
-        radius_RL = self.Radius()
-        self.Make_surface(filling=filling)
-        radius = self.Radius()
-        return radius/radius_RL
 
     def Flux_doppler(self, phase, gravscale=None, atmo_grid=None, velocity=0.):
         """Flux_doppler(phase, gravscale=None, atmo_grid=None, velocity=0.)

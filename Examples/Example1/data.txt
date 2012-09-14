@@ -1,0 +1,2 @@
+i 0 1 2 0.00 0.03 mock_i.txt
+g 0 1 2 0.00 0.03 mock_g.txt

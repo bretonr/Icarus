@@ -1,0 +1,2 @@
+i 0.7461e-4 0.1535e-4 3.630e-20 2.315 photometric_bands/BT-Settl.7.AB.i
+g 0.4653e-4 0.1379e-4 3.630e-20 4.207 photometric_bands/BT-Settl.7.AB.g

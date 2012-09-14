@@ -154,9 +154,9 @@ class Photometry_disk:
             # Calculate the theoretical flux
             pred_flux = self.Get_flux(par, flat=False, verbose=verbose)
             # Calculate the residuals between observed and theoretical flux
-            res1 = numpy.array([ Utils.fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in numpy.arange(self.ndataset) ])
+            res1 = numpy.array([ Utils.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in numpy.arange(self.ndataset) ])
             # Fit for the best offset between the observed and theoretical flux given the DM and A_J
-            res2 = Utils.fit_linear(res1[:,0], self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
+            res2 = Utils.Fit_linear(res1[:,0], self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
             par[7], par[8] = res2[0], res2[1]
             chi2 = res1[:,2].sum() + res2[2]
             if verbose:
@@ -169,7 +169,7 @@ class Photometry_disk:
                 return chi2
         else:
             pred_flux = self.Get_flux(par, flat=True)
-            ((par[7],par[8]), chi2, rank, s) = Utils.fit_linear(self.mag-pred_flux, x=self.ext, err=self.err, b=par[7], m=par[8])
+            ((par[7],par[8]), chi2, rank, s) = Utils.Fit_linear(self.mag-pred_flux, x=self.ext, err=self.err, b=par[7], m=par[8])
             chi2DM = ((self.DM-par[7])*self.DMerr)**2
             chi2AJ = ((self.AJ-par[8])*self.AJerr)**2
             return chi2 + chi2DM + chi2AJ
@@ -279,7 +279,7 @@ class Photometry_disk:
                 disk_str += str(d) + ", "
             disk_str = disk_str[:-2]
             for i in xrange(self.ndataset):
-                print( "chi2 (%i): %f,   d.o.f.: %i,   avg. companion flux: %.4e,   comp. flux/tot. flux: %.4f, avg. error: %.4f" %(i,chi2[i],self.data['mag'][i].size, pred_flux[i].mean(), pred_flux[i].mean()/(pred_flux[i].mean()+disk[i]), self.data['err'][i].mean()) )
+                print( "chi2 (%i): %f,   d.o.f.: %i,   avg. companion flux: %.4e,   comp. flux/tot. flux: %.4f,   max. companion flux: %.4e,   max. comp. flux/tot. flux: %.4f,   avg. error: %.4f" %(i, chi2[i], self.data['mag'][i].size, pred_flux[i].mean(), pred_flux[i].mean()/(pred_flux[i].mean()+disk[i]), pred_flux[i].max(), pred_flux[i].max()/(pred_flux[i].max()+disk[i]), self.data['err'][i].mean()) )
             print( "chi2: " + str(chi2.sum()) + ", chi2DM: " + str(chi2DM) + ", chi2AJ: " + str(chi2AJ) + ", chi2Keff: " + str(chi2Keff) + "\n    Keff: " + str(pred_Keff) + ", disk: " + disk_str )
         
         if return_residuals:
@@ -451,7 +451,7 @@ class Photometry_disk:
         # Get the Keffs and fluxes
         phases = numpy.arange(nphases)/float(nphases)
         Keffs = numpy.array( [self.lightcurve.Flux_disk_Keff(phase, atmo_grid=atmo_grid, disk=0.) for phase in phases] )[:,1]
-        tmp = Utils.fit_linear(-Keffs, numpy.sin(TWOPI*(phases)), inline=True)
+        tmp = Utils.Fit_linear(-Keffs, numpy.sin(TWOPI*(phases)), inline=True)
         if verbose:
             plotxy(-tmp[1]*numpy.sin(numpy.linspace(0.,1.)*TWOPI)+tmp[0], numpy.linspace(0.,1.))
             plotxy(Keffs, phases, line=None, symbol=2)
@@ -578,6 +578,7 @@ class Photometry_disk:
         # below we transform sigma from W m^-2 K^-4 to erg s^-1 cm^-2 K^-4
         # below we transform the separation from m to cm
         Lirr = tirr**4 * (cts.sigma*1e3) * (separation*100)**2 * 4*PI
+        Lirr_comp = Lirr * self.lightcurve.Radius()**2
         eff = Lirr/self.edot
         # we convert Lirr in Lsun units
         Lirr /= 3.839e33
@@ -593,7 +594,8 @@ class Photometry_disk:
             print( "Roche lobe size: %6.4f (orb. sep.)" %roche )
             print( "" )
             print( "Irradiation efficiency: %6.4f" %eff )
-            print( "Irradiation luminosity: %5.4e Lsun" %Lirr )
+            print( "Irradiation luminosity (at the pulsar): %5.4e Lsun" %Lirr )
+            print( "Irradiation luminosity (at the companion's surface): %5.4e erg/s" %Lirr_comp )
             print( "Backside temperature: %7.2f K" %temp_back )
             print( "Frontside temperature: %7.2f (tabul.), %7.2f (approx.) K" %(numpy.exp(self.lightcurve.logteff.max()),temp_front) )
             print( "" )

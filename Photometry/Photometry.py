@@ -21,8 +21,8 @@ class Photometry:
     calculate the predicted flux of the model at every data point (i.e.
     for a given orbital phase).
     """
-    def __init__(self, atmo_fln, data_fln, nalf, porb, x2sini, edot=1.):
-        """__init__(atmo_fln, data_fln, nalf, porb, x2sini, edot=1.)
+    def __init__(self, atmo_fln, data_fln, nalf, porb, x2sini, edot=1., read=True):
+        """__init__(atmo_fln, data_fln, nalf, porb, x2sini, edot=1., read=True)
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
         (which in most cases will be a pulsar).
@@ -32,28 +32,31 @@ class Photometry:
         calculate the predicted flux of the model at every data point (i.e.
         for a given orbital phase).
         
-        atmo_fln: A file containing the grid model information for each
+        atmo_fln (str): A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
                 band_name, center_wavelength, delta_wavelength, flux0,
                     extinction, grid_file
-        data_fln: A file containing the information for each data set.
+        data_fln (str): A file containing the information for each data set.
             The format of the file is as follows:
                 band_name, column_phase, column_flux, column_error_flux,
                     shift_to_phase_zero, calibration_error, softening_asinh,
                     data_file
             Here, the first column has index 0.
             Here, orbital phase 0. is the superior conjunction of the pulsar.
-        nalf: The number of surface slice. Defines how coarse/fine the
+        nalf (int): The number of surface slice. Defines how coarse/fine the
             surface grid is.
-        porb: Orbital period of the system in seconds.
-        x2sini: Projected semi-major axis of the secondary (pulsar)
+        porb (float): Orbital period of the system in seconds.
+        x2sini (float): Projected semi-major axis of the secondary (pulsar)
             in light-second.
-        edot (1.): Irradiated energy from the secondary, aka pulsar (i.e.
+        edot (float): Irradiated energy from the secondary, aka pulsar (i.e.
             spin-down luminosity) in erg/s. This is only used for the
             calculation of the irradiation efficiency so it does not
             enter in the modeling itself.
+        read (bool): If True, Icarus will use the pre-calculated geodesic
+            primitives. This is the recommended option, unless you have the
+            pygts package installed to calculate it on the spot.
         
-        >>> fit = Photometry(atmo_fln, data_fln, nalf, porb, x2sini, edot)
+        >>> fit = Photometry(atmo_fln, data_fln, nalf, porb, x2sini)
         """
         # We define some class attributes.
         self.porb = porb
@@ -71,14 +74,14 @@ class Photometry:
             # We keep in mind the number of datasets
             self.ndataset = len(self.atmo_grid)
         # We initialize some important class attributes.
-        self._Init_lightcurve(nalf)
+        self._Init_lightcurve(nalf, read=read)
         self._Setup()
 
-    def Calc_chi2(self, par, offset_free=1, func_par=None, nsamples=None, influx=False, verbose=False):
-        """Calc_chi2(par, offset_free=1, func_par=None, nsamples=None, influx=False, verbose=False)
+    def Calc_chi2(self, par, offset_free=1, func_par=None, nsamples=None, influx=False, full_output=False, verbose=False):
+        """Calc_chi2(par, offset_free=1, func_par=None, nsamples=None, influx=False, full_output=False, verbose=False)
         Returns the chi-square of the fit of the data to the model.
         
-        par: Parameter list.
+        par (list/array): Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
             [2]: Roche-lobe filling.
@@ -94,31 +97,25 @@ class Photometry:
             offset_free = 1, these parameters will be fit for.
             Note: Can also be a dictionary:
                 par.keys() = ['aj','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
-        offset_free (1):
+        offset_free (int):
+            1) offset_free = 0:
+                If the offset is not free and the DM and A_J are specified, the chi2
+                is calculated directly without allowing an offset between the data and
+                the bands.
+                The full chi2 should be:
+                    chi2 = sum[ w_i*(off_i-dm-aj*C_i)**2]
+                        + w_dm*(dm-dm_obs)**2 
+                        + w_aj*(aj-aj_obs)**2,     with w = 1/sigma**2
+                The extra terms (i.e. dm-dm_obs and aj-aj_obs) should be included
+                as priors.
             1) offset_free = 1:
-            A "post" fit is performed in order to adjust the offsets of the
-            curves accounting for the fact that the absolute calibration of
-            the photometry may vary.
-            Note:
-            The errors should be err**2 = calib_err**2 + 1/sum(flux_err)**2
-            but we neglect the second term because it is negligeable.
-            2) offset_free = 0:
-            If the offset is not free and the DM and A_J are known up to some
-            uncertainty, the calculation below is not complete. Refer to
-            fitcurve.for for more information. Should be:
-                chi2 = sum[ w_i*(off_i-dm-aj*C_i)**2]
-                    + w_dm*(dm-dm_obs)**2 
-                    + w_aj*(aj-aj_obs)**2,     with w = 1/sigma**2
-            The extra terms (i.e. dm-dm_obs and aj-aj_obs) should be included
-            as priors.
-            3) offset_free = 2:
-            Like for offset_free = 1, but the offset for each photometric
-            band is also returned as well as the full parameter vector (after
-            applying the corrections and the linear fit for DM and A_J. This
-            is used, for instance, by self.Plot(par).
-            4) offset_free = 3:
-            Like for offset_free = 1, but the residuals are returned.
-            (chi2 = sum(residuals**2))
+                The model light curves are fitted to the data with an arbitrary offset
+                for each band. After, a post-fit is performed in order to adjust the offsets
+                of the curves accounting for the fact that the absolute calibration of the
+                photometry may vary.
+                Note:
+                The errors should be err**2 = calib_err**2 + 1/sum(flux_err)**2
+                but we neglect the second term because it is negligeable.
         func_par (None): Function that takes the parameter vector and
             returns the parameter vector. This allow for possible constraints
             on the parameters. The vector returned by func_par must have a length
@@ -128,9 +125,14 @@ class Photometry:
             points.
         influx (False): If true, will calculate the fit between the data and the
             model in the flux domain.
-        verbose (False): If true will display the list of parameters.
+        full_output (bool): If true, will output a dictionnary of additional parameters.
+            'offset' (array): the calculated offset for each band.
+            'par' (array): the input parameters (useful if one wants to get the optimized
+                values of DM and AJ.
+            'res' (array): the fit residuals.
+        verbose (bool): If true will display the list of parameters and fit information.
         
-        >>> self.Calc_chi2([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
+        >>> chi2 = self.Calc_chi2([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
         # We can provide a function that massages the input parameters and returns them.
         # This function can, for example, handle fixed parameters or boundary limits.
@@ -141,35 +143,45 @@ class Photometry:
             par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['aj']]
         
         if offset_free == 0:
-            pred_flux = self.Get_flux(par, flat=True, nsamples=nsamples)
-            ((par[7],par[8]), chi2, rank, s) = bretonr_utils.fit_linear(self.mag-pred_flux, x=self.ext, err=self.err, b=par[7], m=par[8])
-            # should add the chi2 from A_J and DM theoretical vs. observed
-            return chi2
+            pred_flux = self.Get_flux(par, flat=True, nsamples=nsamples, verbose=verbose)
+            ((par[7],par[8]), chi2_data, rank, s) = Utils.Fit_linear(self.mag-pred_flux, x=self.ext, err=self.err, b=par[7], m=par[8])
+            if full_output:
+                residuals = ( (self.mag-pred_flux) - (self.ext*par[8] + par[7]) ) / self.err
+                offset = numpy.zeros(self.ndataset)
+            chi2_band = 0.
+            chi2 = chi2_data + chi2_band
         else:
             # Calculate the theoretical flux
             pred_flux = self.Get_flux(par, flat=False, nsamples=nsamples, verbose=verbose)
             # Calculate the residuals between observed and theoretical flux
             if influx: # Calculate the residuals in the flux domain
-                res1 = numpy.array([ bretonr_utils.fit_linear(self.data['flux'][i], x=Astro.Mag_to_flux(pred_flux[i], flux0=self.atmo_grid[i].flux0), err=self.data['flux_err'][i], b=0., inline=True) for i in numpy.arange(self.ndataset) ])
+                res1 = numpy.array([ Utils.Fit_linear(self.data['flux'][i], x=Astro.Mag_to_flux(pred_flux[i], flux0=self.atmo_grid[i].flux0), err=self.data['flux_err'][i], b=0., inline=True) for i in numpy.arange(self.ndataset) ])
                 offset = -2.5*numpy.log10(res1[:,1])
+                if full_output:
+                    print( "Impossible to return proper residuals" )
+                    residuals = None
             else: # Calculate the residuals in the magnitude domain
-                res1 = numpy.array([ bretonr_utils.fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in numpy.arange(self.ndataset) ])                    
+                res1 = numpy.array([ Utils.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in numpy.arange(self.ndataset) ])
                 offset = res1[:,0]
-            chi2data = res1[:,2].sum()
+                if full_output:
+                    residuals = numpy.r_[ [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in numpy.arange(self.ndataset) ] ]
+            chi2_data = res1[:,2].sum()
             # Fit for the best offset between the observed and theoretical flux given the DM and A_J
-            res2 = bretonr_utils.fit_linear(offset, x=self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
+            res2 = Utils.Fit_linear(offset, x=self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
             par[7], par[8] = res2[0], res2[1]
-            chi2offset = res2[2]
-            # Here we add the chi2 of the data from that of the offsets.
-            chi2 = chi2data + chi2offset
-            if verbose:
-                print( 'chi2(data): '+str(chi2data)+', chi2(offset): '+str(chi2offset)+', chi2: '+str(chi2)+', D.M. : '+str(par[7])+', Aj: '+str(par[8]) )
-            if offset_free == 2:
-                return chi2, offset-(self.data['ext']*par[8] + par[7]), par
-            elif offset_free == 3:
-                return numpy.sqrt(numpy.r_[res1[:,2], res2[2]])
-            else:
-                return chi2
+            chi2_band = res2[2]
+            # Here we add the chi2 of the data from that of the offsets for the bands.
+            chi2 = chi2_data + chi2_band
+            # Update the offset to be the actual offset between the data and the band (i.e. minus the DM and AJ contribution)
+            offset -= self.data['ext']*par[8] + par[7]
+
+        # Output results
+        if verbose:
+            print('chi2: {:.3f}, chi2 (data): {:.3f}, chi2 (band offset): {:.3f}, D.M.: {:.3f}, AJ: {:.3f}'.format(chi2, chi2_data, chi2_band, par[7], par[8]))
+        if full_output:
+            return chi2, {'offset':offset, 'par':par, 'res':residuals}
+        else:
+            return chi2
 
     def Get_flux(self, par, flat=False, func_par=None, DM_AJ=False, nsamples=None, verbose=False):
         """Get_flux(par, flat=False, func_par=None, DM_AJ=False, nsamples=None, verbose=False)
@@ -304,14 +316,14 @@ class Photometry:
                 flux.append( numpy.array([self.lightcurve.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AJ[i] )            
         return flux
 
-    def _Init_lightcurve(self, nalf):
+    def _Init_lightcurve(self, nalf, read=False):
         """_Init_lightcurve(nalf)
         Call the appropriate Lightcurve class and initialize
         the stellar array.
         
         >>> self._Init_lightcurve(nalf)
         """
-        self.lightcurve = Core.Star(nalf)
+        self.lightcurve = Core.Star(nalf, read=read)
         return
 
     def _Make_surface(self, par, func_par=None, verbose=False):
@@ -397,14 +409,16 @@ class Photometry:
         # Calculate the orbital phases at which the flux will be evaluated
         phases = numpy.resize(numpy.linspace(0.,1.,nphases), (self.ndataset, nphases))
         # Fit the data in order to get the offset
-        chi2, offsets, par = self.Calc_chi2(par, offset_free=2, verbose=verbose, func_par=func_par, nsamples=nsamples)
+        chi2, extras = self.Calc_chi2(par, offset_free=1, verbose=verbose, func_par=func_par, nsamples=nsamples, full_output=True)
+        offset = extras['offset']
+        par = extras['par']
         # Calculate the theoretical flux at the orbital phases.
         pred_flux = self.Get_flux_theoretical(par, phases)
         # Loop over the data set and plot the flux, theoretical flux and offset theoretical flux
         for i in numpy.arange(self.ndataset):
             plotxy(self.data['mag'][i], self.data['phase'][i], erry=self.data['err'][i], line=None, symbol=1, color=1+i, rangey=[self.mag.max()+0.5,self.mag.min()-0.5], rangex=[0.,1.], device=device)
             plotxy(pred_flux[i], phases[i], color=1+i, line=2)
-            plotxy(pred_flux[i]+offsets[i], phases[i], color=1+i)
+            plotxy(pred_flux[i]+offset[i], phases[i], color=1+i)
         plotxy([0],[0], color=1)
         y0 = (self.mag.max()+self.mag.min())/2
         dy = (self.mag.max()-self.mag.min())/25
@@ -427,7 +441,7 @@ class Photometry:
         ppgplot.pgtext(0.4, y0+11*dy, 'Chi2: %7.2f, d.o.f.: %i'%(chi2,self.mag.size-len(par)))
         ppgplot.pgsch(1.0) # Restore the font size
         if output:
-            return pred_flux, offsets
+            return pred_flux, offset
         return
 
     def Plot_theoretical(self, par, nphases=31, verbose=False, device='/XWIN', func_par=None, output=False):

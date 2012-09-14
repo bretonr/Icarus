@@ -241,8 +241,8 @@ class StarBinary:
         
         return fsum1+fsum2#, fsum1, fsum2
 
-    def Flux_eclipse_shapely(self, phase, atmo_grid=None, ntheta=100, doppler1=0., doppler2=0., nosum=False, quick=True):
-        """Flux_eclipse_shapely(phase, atmo_grid=None, ntheta=100, doppler1=0., doppler2=0., nosum=False, quick=True)
+    def Flux_eclipse_shapely(self, phase, atmo_grid=None, ntheta=100, doppler1=0., doppler2=0., nosum=False, invert=True):
+        """Flux_eclipse_shapely(phase, atmo_grid=None, ntheta=100, doppler1=0., doppler2=0., nosum=False, invert=True)
         Return the flux interpolated from the atmosphere grid.
         
         Uses the outline of the eclipsing star in order to speed up computation.
@@ -259,8 +259,8 @@ class StarBinary:
             self.secondary.Doppler_boosting().
         nosum (False): if true, will no sum across the surface
             and returns (fsum1, fsum2).
-        quick (True): If true, will not use the full high resolution computation
-            but only the normalization factor.
+        invert (True): If true, will use the high resolution computation
+            for the out-of-eclipse and the low resolution for the eclipse.
         
         >>> self.Flux_eclipse(phase)
         flux
@@ -281,7 +281,8 @@ class StarBinary:
             fsum1 = 0.
             #print( "    full phase: {}".format(phase) )
         elif type1.find("partial") != -1:
-            if type1 == "partial" or quick:
+            if type1 == "partial" or invert:
+                #print( "partial1" )
                 radii = self.secondary.Outline(ntheta)
                 vertices = self.primary.vertices.T * self.primary.r_vertices
                 mu = self.primary._Mu(phase)
@@ -295,6 +296,7 @@ class StarBinary:
                 fsum1 = fsum1.sum() * self.normalize1
                 #print( "    partial phase: {}".format(phase) )
             else:
+                #print( "partial_hd1" )
                 radii = self.secondary.Outline(ntheta)
                 vertices = self.primary_hd.vertices.T * self.primary_hd.r_vertices
                 mu = self.primary_hd._Mu(phase)
@@ -308,14 +310,20 @@ class StarBinary:
                 fsum1 = fsum1.sum() * self.normalize1
                 #print( "    partial HD phase: {}".format(phase) )
         else:
-            fsum1 = self.primary.Flux(phase, atmo_grid=atmo_grid, nosum=False, doppler=doppler1) * self.normalize1
+            if self.primary_hd is None or not invert:
+                #print( "out1" )
+                fsum1 = self.primary.Flux(phase, atmo_grid=atmo_grid, nosum=False, doppler=doppler1) * self.normalize1
+            else:
+                #print( "out hd1" )
+                fsum1 = self.primary_hd.Flux(phase, atmo_grid=atmo_grid, nosum=False, doppler=doppler1) #* self.normalize1 ## not needed here
             #print( "    regular phase: {}".format(phase) )
         
         if type2 == "full":
             fsum2 = 0.
             #print( "    full phase: {}".format(phase) )
         elif type2.find("partial") != -1:
-            if type2 == "partial" or quick:
+            if type2 == "partial" or invert:
+                #print( "partial2" )
                 radii = self.primary.Outline(ntheta)
                 vertices = self.secondary.vertices.T * self.secondary.r_vertices
                 mu = self.secondary._Mu((phase+0.5)%1)
@@ -329,6 +337,7 @@ class StarBinary:
                 fsum2 = fsum2.sum() * self.normalize2
                 #print( "    partial phase: {}".format(phase) )
             else:
+                #print( "partial_hd2" )
                 radii = self.primary.Outline(ntheta)
                 vertices = self.secondary_hd.vertices.T * self.secondary_hd.r_vertices
                 mu = self.secondary_hd._Mu((phase+0.5)%1)
@@ -342,7 +351,12 @@ class StarBinary:
                 fsum2 = fsum2.sum() * self.normalize2
                 #print( "    partial HD phase: {}".format(phase) )
         else:
-            fsum2 = self.secondary.Flux((phase+0.5)%1, atmo_grid=atmo_grid, nosum=False, doppler=doppler2) * self.normalize2
+            if self.secondary_hd is None or not invert:
+                #print( "out2" )
+                fsum2 = self.secondary.Flux((phase+0.5)%1, atmo_grid=atmo_grid, nosum=False, doppler=doppler2) * self.normalize2
+            else:
+                #print( "out hd2" )
+                fsum2 = self.secondary_hd.Flux((phase+0.5)%1, atmo_grid=atmo_grid, nosum=False, doppler=doppler2) #* self.normalize2 ## not needed here
             #print( "    regular phase: {}".format(phase) )
         
         #t2 = time.time()
