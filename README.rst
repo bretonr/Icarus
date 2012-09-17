@@ -58,7 +58,9 @@ Installation
 
 3. Install the required packages (see Requirements section below).
 
-4. Do some cool light curves!
+4. Make sure to add the path to Icarus in your PYTHONPATH shell environment variable. If you use bash, you should add a line like that to your .bashrc file: export PYTHONPATH=$PYTHONPATH:/home/breton/local/python/Icarus. Here I have been assuming that you installed Icarus in /home/breton/local/python/Icarus. With that you should be able to load the Icarus module from anywhere. Make sure you test it: start a python prompt from your home directory and type "import Icarus". If the package does not load, you have made a mistake somewhere.
+
+5. Do some cool light curves!
 
 
 Requirements
