@@ -41,6 +41,44 @@ Here are a short, non-exhaustive list of publications related to the binary ligh
     Hendry, P. D., & Mochnacki, S. W. 1992, ApJ, 388, 603
 
 
+Installation
+=============
+1. Download the Icarus package from the github repository (https://github.com/bretonr/Icarus).
+    1.1. You may download the package as a zip/tarball file.
+    
+    1.2. Or you can clone the repository using git (preferred option) which will allow you to stay in sync with the latest package version. To do so, go to the disk location where you want to install the package and type:
+    
+    >>> git clone git://github.com/bretonr/Icarus.git
+    
+    To update it from the latest github version afterwards, you can type:
+    
+    >>> git pull
+
+2. Get yourself some atmosphere models or write your own atmosphere backend (e.g., to generate a blackbody function). I cannot be of much help here unfortunately. I might try to write a basic blackbody backend eventually but I do not have time for now.
+
+3. Install the required packages (see Requirements section below).
+
+4. Do some cool light curves!
+
+
+Requirements
+=============
+I usually keep my packages up-to-date using Macport (on Mac) and Synoptic (on Debian). Versions are provided for indicative purposes.
+
+1. Python (http://www.python.org/; version >2.6, ideally 2.7).
+
+2. Scipy (http://scipy.org/).
+
+3. Numpy (http://numpy.scipy.org/).
+
+
+Optional
+=============
+1. Matplotlib (http://matplotlib.org/; version >1.1.0).
+
+2. PyGTS to generate surface geodesic primitives instead of reading the pre-generated one (http://pygts.sourceforge.net/). Also useful for calculating occulations and transits in eclipsing binaries.
+
+
 If you use it
 =============
 If you intend to use the code, please cite the paper in which it was first introduced: R. P. Breton, S. A. Rappaport, M. H. van Kerkwijk, J. A. Carter, "KOI 1224, a Fourth Bloated Hot White Dwarf Companion Found With Kepler", 2012, ApJL, 748, 115.
