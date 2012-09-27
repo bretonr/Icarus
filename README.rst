@@ -65,7 +65,7 @@ Installation
 
 Requirements
 =============
-I usually keep my packages up-to-date using Macport (on Mac) and Synoptic (on Debian). Versions are provided for indicative purposes.
+I usually keep my packages up-to-date using Macport (on Mac) and Synoptic (on Ubuntu). Versions are provided for indicative purposes.
 
 1. Python (http://www.python.org/; version >2.6, ideally 2.7).
 

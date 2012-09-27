@@ -95,84 +95,111 @@ class Photometry_disk:
         # We initialize some important class attributes.
         self.lightcurve = Core.Star_disk(nalf, read=read)
         self.__Setup()
-
-    def Calc_chi2(self, par, func_par=None, offset_free=1, verbose=False):
-        """Calc_chi2(par, func_par=None, offset_free=1, verbose=False)
+    def Calc_chi2(self, par, offset_free=1, func_par=None, nsamples=None, influx=False, full_output=False, verbose=False):
+        """Calc_chi2(par, offset_free=1, func_par=None, nsamples=None, influx=False, full_output=False, verbose=False)
         Returns the chi-square of the fit of the data to the model.
         
-        par: Parameter list.
+        par (list/array): Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
             [2]: Roche-lobe filling.
             [3]: Companion temperature.
             [4]: Gravity darkening coefficient.
             [5]: K (projected velocity semi-amplitude) in m/s.
-            [6]: Front side temperature.
+            [6]: Front side temperature or irradiation temperature.
+                The irradiation temperature is in the case of the
+                photometry_modeling_temperature class.
             [7]: Distance modulus (can be None).
             [8]: Absorption A_J (can be None).
-            [9-?]: Disk flux.
-            Note: If there extra parameters after [9], they are assumed to
-            be the individual disk fluxes of each data set.
             Note: DM and A_J can be set to None. In which case, if
             offset_free = 1, these parameters will be fit for.
+            Note: Can also be a dictionary:
+                par.keys() = ['aj','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
+        offset_free (int):
+            1) offset_free = 0:
+                If the offset is not free and the DM and A_J are specified, the chi2
+                is calculated directly without allowing an offset between the data and
+                the bands.
+                The full chi2 should be:
+                    chi2 = sum[ w_i*(off_i-dm-aj*C_i)**2]
+                        + w_dm*(dm-dm_obs)**2 
+                        + w_aj*(aj-aj_obs)**2,     with w = 1/sigma**2
+                The extra terms (i.e. dm-dm_obs and aj-aj_obs) should be included
+                as priors.
+            1) offset_free = 1:
+                The model light curves are fitted to the data with an arbitrary offset
+                for each band. After, a post-fit is performed in order to adjust the offsets
+                of the curves accounting for the fact that the absolute calibration of the
+                photometry may vary.
+                Note:
+                The errors should be err**2 = calib_err**2 + 1/sum(flux_err)**2
+                but we neglect the second term because it is negligeable.
         func_par (None): Function that takes the parameter vector and
             returns the parameter vector. This allow for possible constraints
             on the parameters. The vector returned by func_par must have a length
             equal to the number of expected parameters.
-        offset_free (1):
-            1) offset_free = 1:
-            A "post" fit is performed in order to adjust the offsets of the
-            curves accounting for the fact that the absolute calibration of
-            the photometry may vary.
-            Note:
-            The errors should be err**2 = calib_err**2 + 1/sum(flux_err)**2
-            but we neglect the second term because it is negligeable.
-            2) offset_free = 0:
-            If the offset is not free and the DM and A_J are known up to some
-            uncertainty, the calculation below is as following. Refer to
-            fitcurve.for for more information. Should be:
-                chi2 = sum[ w_i*(off_i-dm-aj*C_i)**2]
-                    + w_dm*(dm-dm_obs)**2 
-                    + w_aj*(aj-aj_obs)**2,     with w = 1/sigma**2
-            3) offset_free = 2:
-            Like for offset_free = 1, but the offset for each photometric
-            band is also returned as well as the full parameter vector (after
-            applying the corrections and the linear fit for DM and A_J. This
-            is used, for instance, by self.Plot(par).
-            4) offset_free = 3:
-            Like for offset_free = 1, but the residuals are returned.
-            (chi2 = sum(residuals**2))
-        verbose (False): If true will display the list of parameters.
+        nsamples (None): Number of points for the lightcurve sampling.
+            If None, the lightcurve will be sampled at the observed data
+            points.
+        influx (False): If true, will calculate the fit between the data and the
+            model in the flux domain.
+        full_output (bool): If true, will output a dictionnary of additional parameters.
+            'offset' (array): the calculated offset for each band.
+            'par' (array): the input parameters (useful if one wants to get the optimized
+                values of DM and AJ.
+            'res' (array): the fit residuals.
+        verbose (bool): If true will display the list of parameters and fit information.
         
-        >>> self.Calc_chi2([PIBYTWO,1.,0.9,4000.,0.08,1.4,0.07,10.,0.])
+        >>> chi2 = self.Calc_chi2([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
         # We can provide a function that massages the input parameters and returns them.
         # This function can, for example, handle fixed parameters or boundary limits.
         if func_par is not None:
             par = func_par(par)
-        if offset_free:
-            # Calculate the theoretical flux
-            pred_flux = self.Get_flux(par, flat=False, verbose=verbose)
-            # Calculate the residuals between observed and theoretical flux
-            res1 = numpy.array([ Utils.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in numpy.arange(self.ndataset) ])
-            # Fit for the best offset between the observed and theoretical flux given the DM and A_J
-            res2 = Utils.Fit_linear(res1[:,0], self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
-            par[7], par[8] = res2[0], res2[1]
-            chi2 = res1[:,2].sum() + res2[2]
-            if verbose:
-                print( 'chi2(1): '+str(res1[:,2].sum())+', chi2(2): '+str(res2[2])+', chi2: '+str(chi2)+', D.M. : '+str(par[7])+', Aj: '+str(par[8]) )
-            if offset_free == 2:
-                return chi2, res1[:,0]-(self.data['ext']*par[8] + par[7]), par
-            elif offset_free == 3:
-                return numpy.sqrt(numpy.r_[res1[:,2], res2[2]])
-            else:
-                return chi2
+        # check if we are dealing with a dictionary
+        if isinstance(par, dict):
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['aj']]
+        
+        if offset_free == 0:
+            pred_flux = self.Get_flux(par, flat=True, nsamples=nsamples, verbose=verbose)
+            ((par[7],par[8]), chi2_data, rank, s) = Utils.Fit_linear(self.mag-pred_flux, x=self.ext, err=self.err, b=par[7], m=par[8])
+            if full_output:
+                residuals = ( (self.mag-pred_flux) - (self.ext*par[8] + par[7]) ) / self.err
+                offset = numpy.zeros(self.ndataset)
+            chi2_band = 0.
+            chi2 = chi2_data + chi2_band
         else:
-            pred_flux = self.Get_flux(par, flat=True)
-            ((par[7],par[8]), chi2, rank, s) = Utils.Fit_linear(self.mag-pred_flux, x=self.ext, err=self.err, b=par[7], m=par[8])
-            chi2DM = ((self.DM-par[7])*self.DMerr)**2
-            chi2AJ = ((self.AJ-par[8])*self.AJerr)**2
-            return chi2 + chi2DM + chi2AJ
+            # Calculate the theoretical flux
+            pred_flux = self.Get_flux(par, flat=False, nsamples=nsamples, verbose=verbose)
+            # Calculate the residuals between observed and theoretical flux
+            if influx: # Calculate the residuals in the flux domain
+                res1 = numpy.array([ Utils.Fit_linear(self.data['flux'][i], x=Utils.Mag_to_flux(pred_flux[i], flux0=self.atmo_grid[i].flux0), err=self.data['flux_err'][i], b=0., inline=True) for i in numpy.arange(self.ndataset) ])
+                offset = -2.5*numpy.log10(res1[:,1])
+                if full_output:
+                    print( "Impossible to return proper residuals" )
+                    residuals = None
+            else: # Calculate the residuals in the magnitude domain
+                res1 = numpy.array([ Utils.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in numpy.arange(self.ndataset) ])
+                offset = res1[:,0]
+                if full_output:
+                    residuals = numpy.r_[ [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in numpy.arange(self.ndataset) ] ]
+            chi2_data = res1[:,2].sum()
+            # Fit for the best offset between the observed and theoretical flux given the DM and A_J
+            res2 = Utils.Fit_linear(offset, x=self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
+            par[7], par[8] = res2[0], res2[1]
+            chi2_band = res2[2]
+            # Here we add the chi2 of the data from that of the offsets for the bands.
+            chi2 = chi2_data + chi2_band
+            # Update the offset to be the actual offset between the data and the band (i.e. minus the DM and AJ contribution)
+            offset -= self.data['ext']*par[8] + par[7]
+
+        # Output results
+        if verbose:
+            print('chi2: {:.3f}, chi2 (data): {:.3f}, chi2 (band offset): {:.3f}, D.M.: {:.3f}, AJ: {:.3f}'.format(chi2, chi2_data, chi2_band, par[7], par[8]))
+        if full_output:
+            return chi2, {'offset':offset, 'par':par, 'res':residuals}
+        else:
+            return chi2
 
     def Calc_chi2_disk(self, par, func_par=None, offset_free=1, doKeff=False, return_residuals=False, return_disk=False, verbose=False):
         """Calc_chi2_disk(par, func_par=None, offset_free=1, doKeff=False, return_residuals=False, return_disk=False, verbose=False)

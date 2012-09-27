@@ -6,7 +6,6 @@ from ..Utils.import_modules import *
 from .. import Utils
 from .. import Core
 from .. import Atmosphere
-import Astro
 
 
 ######################## class Photometry ########################
@@ -155,7 +154,7 @@ class Photometry:
             pred_flux = self.Get_flux(par, flat=False, nsamples=nsamples, verbose=verbose)
             # Calculate the residuals between observed and theoretical flux
             if influx: # Calculate the residuals in the flux domain
-                res1 = numpy.array([ Utils.Fit_linear(self.data['flux'][i], x=Astro.Mag_to_flux(pred_flux[i], flux0=self.atmo_grid[i].flux0), err=self.data['flux_err'][i], b=0., inline=True) for i in numpy.arange(self.ndataset) ])
+                res1 = numpy.array([ Utils.Fit_linear(self.data['flux'][i], x=Utils.Mag_to_flux(pred_flux[i], flux0=self.atmo_grid[i].flux0), err=self.data['flux_err'][i], b=0., inline=True) for i in numpy.arange(self.ndataset) ])
                 offset = -2.5*numpy.log10(res1[:,1])
                 if full_output:
                     print( "Impossible to return proper residuals" )
@@ -656,9 +655,9 @@ class Photometry:
             ext.extend(self.data['phase'][i]*0.+self.atmo_grid[i].ext)
             self.data['ext'].append(self.atmo_grid[i].ext)
             if self.data['softening'][i] == 0:
-                flux,flux_err = Astro.Mag_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].flux0)
+                flux,flux_err = Utils.Mag_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].flux0)
             else:
-                flux,flux_err = Astro.Asinh_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].flux0, softening=self.data['softening'][i])
+                flux,flux_err = Utils.Asinh_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].flux0, softening=self.data['softening'][i])
             self.data['flux'].append( flux )
             self.data['flux_err'].append( flux_err )
             for j in numpy.arange(i+1):

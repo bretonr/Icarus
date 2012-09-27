@@ -3,6 +3,39 @@
 from .import_modules import *
 
 
+def Asinh_to_flux(mag, mag_err=None, zeropoint=0., flux0=1., softening=1.):
+    """ Asinh_to_flux(mag, mag_err=None, zeropoint=0., flux0=1., softening=1.)
+    Converts the asinh magnitude to flux and its error, if provided.
+    If the softening parameter is not provided, the value will be
+    assumed to be 1., which might be far off.
+    
+    See Lupton, Gunn and Szalay 1999 (1999AJ....118.1406L).
+    
+    mag: magnitude
+    mag_err (None): magnitude error
+    zeropoint (0.): zero-point value, in magnitude
+    flux0 (1.): zero-point value, in flux
+    softening (1.): softening parameter. If nothing is provided, it will
+        be assumed to be 1. Careful as it might be far off.
+    
+    Either zeropoint or flux0 can be provided. By default, the values have no
+    effect. Make sure that both are not provided otherwise they might conflict.
+    
+    >>> flux,flux_err = Asinh_to_flux(10., 0.1, 0.)
+    >>> flux = Asinh_to_flux(10., softening=1)
+    """
+    # Defining the Pogson's constant
+    pogson = 2.5*numpy.log10(numpy.e)
+    # Calculate the fluxes
+    zeropoint = zeropoint + 2.5*numpy.log10(flux0)
+    flux = 2*softening * numpy.sinh( ((zeropoint - 2.5*numpy.log10(softening)) - mag)/pogson )
+    if mag_err is None:
+        return flux
+    else:
+        # Calculate the flux errors
+        flux_err = mag_err * 2*softening/pogson * numpy.sqrt( 1 + (flux/(2*softening))**2 )
+        return flux, flux_err
+
 def Err_velocity(chi2, vels, dof, clip=None, normalize=False, redchi2_unity=False, verbose=False):
     """Err_velocity(chi2, vels, dof, clip=None, normalize=False, redchi2_unity=False, verbose=False)
     Given a vector of chi2 values and associated velocity shifts,
@@ -174,6 +207,69 @@ def Fit_linear(y, x=None, err=1.0, m=None, b=None, output=None, inline=False):
     else:
         return (sol, res, rank, s)
 
+def Flux_to_asinh(flux, flux_err=None, zeropoint=0., flux0=1., softening=None):
+    """ Flux_to_asinh(flux, flux_err=None, zeropoint=0., flux0=1., softening=None)
+    Converts the flux to asinh magnitude and its error, if provided.
+    If the softening parameter is not provided, the value will be
+    determined from the flux_err, hence if none is present the function
+    will crash.
+    
+    See Lupton, Gunn and Szalay 1999 (1999AJ....118.1406L).
+    
+    flux: flux
+    flux_err (None): flux error
+    zeropoint (0.): zero-point value, in magnitude
+    flux0 (1.): zero-point value, in flux
+    softening (None): softening parameter. If none is provided, it will
+        be calculated as: softening = flux_err * sqrt(2.5*log10(e))
+    
+    Either zeropoint or flux0 can be provided. By default, the values have no
+    effect. Make sure that both are not provided otherwise they might conflict.
+    
+    >>> mag,mag_err = Flux_to_asinh(10., 1., 0.)
+    >>> mag = Flux_to_asinh(10., softening=1)
+    """
+    # Defining the Pogson's constant
+    pogson = 2.5*numpy.log10(numpy.e)
+    # Making sure that we can define the softening parameter
+    if flux_err is None and softening is None:
+        raise RuntimeError("Either flux_err or softening must be provided!")
+    # Automatically infer the softening parameter if needed
+    if softening is None:
+        softening = flux_err * numpy.sqrt(pogson)
+    # Calculate the magnitudes
+    zeropoint = zeropoint + 2.5*numpy.log10(flux0)
+    mag = (zeropoint - 2.5*numpy.log10(softening)) - pogson * numpy.arcsinh(flux/(2*softening))
+    if flux_err is None:
+        return mag
+    else:
+        # Calculate the magnitude errors
+        mag_err = pogson / (2 * softening) * flux_err / numpy.sqrt( 1 + (flux/(2*softening))**2 )
+        return mag, mag_err
+
+def Flux_to_mag(flux, flux_err=None, zeropoint=0., flux0=1.):
+    """ Flux_to_mag(flux, flux_err=None, zeropoint=0., flux0=1.)
+    Converts the flux to magnitude and its error, if provided.
+    
+    flux: flux in erg/s/cm^2/Hz (note 1 Jy = 1e-23 erg/s/cm^2/Hz)
+    flux_err (None): flux error
+    zeropoint (0.): zero-point value, in magnitude
+    flux0 (1.): zero-point value, in flux
+        in erg/s/cm^2/Hz
+    
+    Either zeropoint or flux0 can be provided. By default, the values have no
+    effect. Make sure that both are not provided otherwise they might conflict.
+    
+    >>> mag,mag_err = Flux_to_mag(10., 1., 0.)
+    >>> mag = Flux_to_mag(10.)
+    """
+    mag = -2.5 * numpy.log10(flux/flux0) + zeropoint
+    if flux_err is not None:
+        mag_err = 2.5 * numpy.log10(numpy.e) * flux_err / flux
+        return mag, mag_err
+    else:
+        return mag
+
 def Get_potential(x, y, z, q, omega=1.):
     qp1by2om2 = (q+1.)/2.*omega**2
     rc2 = x**2+y**2+z**2
@@ -306,6 +402,30 @@ def Limb_darkening(lam, mu):
     if inds.any():
         limb[:,inds] = L_422_1100(lam[inds],mu)
     return limb
+
+def Mag_to_flux(mag, mag_err=None, zeropoint=0., flux0=1.):
+    """ Mag_to_flux(mag, mag_err=None, zeropoint=0., flux0=1.)
+    Converts the flux to magnitude and its error, if provided.
+    Fluxes are in erg/s/cm^2/Hz (note 1 Jy = 1e-23 erg/s/cm^2/Hz)
+    
+    mag: magnitude
+    mag_err (None): magnitude error
+    zeropoint (0.): zero-point value, in magnitude
+    flux0 (1.): zero-point value, in flux
+        in erg/s/cm^2/Hz
+
+    Either zeropoint or flux0 can be provided. By default, the values have no
+    effect. Make sure that both are not provided otherwise they might conflict.
+    
+    >>> flux,flux_err = Mag_to_flux(10., 1., 0.)
+    >>> flux = Mag_to_flux(10.)
+    """
+    flux = 10**(-(mag-zeropoint)/2.5) * flux0
+    if mag_err is not None:
+        flux_err = mag_err*flux/(2.5*numpy.log10(numpy.e))
+        return flux, flux_err
+    else:
+        return flux
 
 def Mass_companion(mass_function, q, incl):
     """
