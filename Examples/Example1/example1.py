@@ -56,20 +56,23 @@ def FoM (p):
 par_guess = [70*cts.degree, 0.95, 2000., 5500., 10.3, 0.01]
 
 ## Running the fit
-print( "Performing a crude fit using the scipy.optimize.fmin function.\n" )
+print( "Performing a crude fit using the scipy.optimize.leastsq function.\n" )
+print( "Beware that the fitting may not converge to the best-fit solution due to local minima. One should try to fit the data using diferent guess parameters or, even better, a more robust fitting algorithm.\n" )
+print( "Also, do not expect the best-fit parameter to converge at the actual solution. The reason being that noise is added to the theoretical data when generating the mock data. Hence it might be that by sheer luck the mock data mimic a slightly different set of parameters. If one was to regenerate the mock data several times and rerun the fit, it would on average converge at the actual solution.\n" )
 sol = scipy.optimize.leastsq(FoM, par_guess, full_output=True)
 par = sol[0]
+err = numpy.sqrt( sol[1].diagonal() )
 
 
 ##### Printing the results
 print( "Results from the fitting:" )
 print( "{:<28} {:>15}  {:>15}".format("Parameter", "Actual solution", "Fitted Solution") )
-print( "{:<28} {:>15.3f}   {:>15.3f}".format("inclination", incl/cts.degree, par[0]/cts.degree) )
-print( "{:<28} {:>15.3f}   {:>15.3f}".format("filling factor", filling, par[1]) )
-print( "{:<28} {:>15.1f}   {:>15.3f}".format("Tnight", Tnight, par[2]) )
-print( "{:<28} {:>15.1f}   {:>15.3f}".format("Tday", Tday, par[3]) )
-print( "{:<28} {:>15.2f}   {:>15.3f}".format("DM", DM, par[4]) )
-print( "{:<28} {:>15.3f}   {:>15.3f}".format("AJ", AJ, par[5]) )
+print( "{:<28} {:>15.3f}   {:>15.3f} +/- {:.3f}".format("inclination", incl/cts.degree, par[0]/cts.degree, err[0]/cts.degree) )
+print( "{:<28} {:>15.3f}   {:>15.3f} +/- {:.3f}".format("filling factor", filling, par[1], err[1]) )
+print( "{:<28} {:>15.1f}   {:>15.3f} +/- {:.3f}".format("Tnight", Tnight, par[2], err[2]) )
+print( "{:<28} {:>15.1f}   {:>15.3f} +/- {:.3f}".format("Tday", Tday, par[3], err[3]) )
+print( "{:<28} {:>15.2f}   {:>15.3f} +/- {:.3f}".format("DM", DM, par[4], err[4]) )
+print( "{:<28} {:>15.3f}   {:>15.3f} +/- {:.3f}".format("AJ", AJ, par[5], err[5]) )
 print( "" )
 
 

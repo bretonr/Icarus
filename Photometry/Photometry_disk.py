@@ -95,6 +95,7 @@ class Photometry_disk:
         # We initialize some important class attributes.
         self.lightcurve = Core.Star_disk(nalf, read=read)
         self.__Setup()
+
     def Calc_chi2(self, par, offset_free=1, func_par=None, nsamples=None, influx=False, full_output=False, verbose=False):
         """Calc_chi2(par, offset_free=1, func_par=None, nsamples=None, influx=False, full_output=False, verbose=False)
         Returns the chi-square of the fit of the data to the model.
