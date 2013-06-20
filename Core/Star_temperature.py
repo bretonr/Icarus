@@ -3,7 +3,7 @@
 __all__ = ["Star_temperature"]
 
 from ..Utils.import_modules import *
-from .. import Utils
+from ..Utils import Spherical_harmonics
 from .Star import Star
 
 

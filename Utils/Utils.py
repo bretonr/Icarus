@@ -1668,3 +1668,100 @@ def Saddle(x, q, qp1by2om2):
     x = get_saddle
     return x
 
+def Shift_spectrum(fref, wobs, v, refstart, refstep):
+    """Shift_spectrum(fref, wobs0, v, refstart, refstep)
+    Takes a reference spectrum, Doppler shifts it, and calculate
+    the new spectral flux values at the provided observed wavelengths.
+    
+    fref: reference flux values
+    wobs: observed wavelengths
+    v: Doppler velocity shift (in m/s)
+    refstart: wavelength of the first reference spectrum data point
+    refstep: wavelength step size of the reference spectrum
+    
+    N.B. Assumes constant bin size for the reference spectrum.
+    N.B. Assumes that the observed spectrum bin size is larger than
+    the reference spectrum bin size. Otherwise, a simple interpolation
+    would be enough.
+    N.B. Could be optimized for the case of constant binning for the
+    observed spectrum.
+    """
+    nobs = int(wobs.size)
+    nref = int(fref.size)
+    fbin = numpy.zeros(nobs, dtype=float)
+    fref = numpy.asarray(fref, dtype=float)
+    wobs = numpy.asarray(wobs, dtype=float)
+    v = float(v)
+    refstart = float(refstart)
+    refstep = float(refstep)
+    code = """
+    #line 10
+    //double refstart; // start wavelength of the reference spectrum
+    //double refstep; // bin width of the reference spectrum
+    //int nobs; // length of observed spectrum
+    //int nref; // length of reference spectrum
+    //double fref; // flux of the reference spectrum
+    //double fbin; // integrated flux of the reference spectrum OUTPUT
+    //double wobs; // wavelength of the observed spectrum
+    double wl, wu; // lower/upper bin limit of the observed spectrum
+    double refposl; // index of the lower side of the observed spectrum in the reference spectrum
+    double refposu; // index of the upper side of the observed spectrum in the reference spectrum
+    int irefl; // rounded integer part of refposl
+    int irefu; // rounded integer part of refposu
+    double scale = sqrt( (1.+v/299792458.0)/(1.-v/299792458.0) ); // this is the Doppler scaling factor for the observed wavelength
+    #line 30
+    for (int n=0; n<nobs; ++n) {
+        //std::cout << "n: " << n << std::endl;
+        if (n == 0) { // special condition for the first data point
+            wl = wobs(n) - (wobs(n+1)-wobs(n))*0.5; // the observed bin's lower wavelength value
+            wu = (wobs(n)+wobs(n+1))*0.5; // the observed bin's upper wavelength value
+            wl *= scale;
+            wu *= scale;
+        } else if (n < nobs-1) {
+            wl = (wobs(n)+wobs(n-1))*0.5; // the observed bin's lower wavelength value
+            wu = (wobs(n)+wobs(n+1))*0.5; // the observed bin's upper wavelength value
+            wl *= scale;
+            wu *= scale;
+        } else {
+            wl = (wobs(n)+wobs(n-1))*0.5; // the observed bin's lower wavelength value
+            wu = wobs(n) + (wobs(n)-wobs(n-1))*0.5; // the observed bin's upper wavelength value
+            wl *= scale;
+            wu *= scale;
+        }
+        //std::cout << "wl, wu: " << wl << " " << wu << std::endl;
+        #line 50
+        refposl = (wl - refstart) / refstep;
+        refposu = (wu - refstart) / refstep;
+        irefl = (int) (refposl+0.5);
+        irefu = (int) (refposu+0.5);
+        //std::cout << "refposl, refposu, irefl, irefu: " << refposl << " " << refposu << " " << irefl << " " << irefu << " " << std::endl;
+        //std::cout << "fbin(n)1: " << fbin(n) << std::endl;
+        if (irefl < 0)
+            fbin(n) = fref(0); // assign first flux value if beyond lower reference spectrum limit
+        else if (irefu > nref-1)
+            fbin(n) = fref(nref-1); // assign last flux value if beyond upper reference spectrum limit
+        #line 70
+        else {
+            if (irefl == irefu) {
+                //std::cout << "irefl == irefu" << std::endl;
+                fbin(n) += (refposu-refposl) * fref(irefl); // we add fraction of the bin that covers the observed bin
+            } else {
+                //std::cout << "irefl != irefu" << std::endl;
+                fbin(n) += (0.5-(refposl-irefl)) * fref(irefl); // we add the fraction covered by the lower bin of the reference spectrum
+                fbin(n) += (0.5+(refposu-irefu)) * fref(irefu); // we add the fraction covered by the upper bin of the reference spectrum
+            }
+            //std::cout << "fbin(n)2: " << fbin(n) << std::endl;
+            for (int i=irefl+1; i<irefu; ++i) {
+                fbin(n) += fref(i); // we add the whole bins
+            }
+            //std::cout << "fbin(n)3: " << fbin(n) << std::endl;
+            //if (n == 200) printf( "v: %f, wu-wl: %f, norm: %f\\n", v, (wu-wl), refstep/(wu-wl) );
+            fbin(n) *= refstep/(wu-wl); // we normalize in order to get the average flux
+            //std::cout << "fbin(n)4: " << fbin(n) << std::endl;
+        }
+    }
+    """
+    rebin = scipy.weave.inline(code, ['refstart', 'refstep', 'nobs', 'nref', 'fref', 'fbin', 'wobs', 'v'], type_converters=scipy.weave.converters.blitz, compiler='gcc', libraries=['m'])
+    tmp = rebin
+    return fbin
+

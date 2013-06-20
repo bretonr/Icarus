@@ -1,7 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
 import Icarus
-from Icarus.import_modules import *
+from Icarus.Utils.import_modules import *
 
 
 

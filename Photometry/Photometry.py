@@ -163,7 +163,7 @@ class Photometry:
                 res1 = numpy.array([ Utils.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in numpy.arange(self.ndataset) ])
                 offset = res1[:,0]
                 if full_output:
-                    residuals = numpy.r_[ [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in numpy.arange(self.ndataset) ] ]
+                    residuals = [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in numpy.arange(self.ndataset) ]
             chi2_data = res1[:,2].sum()
             # Fit for the best offset between the observed and theoretical flux given the DM and A_J
             res2 = Utils.Fit_linear(offset, x=self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
@@ -315,8 +315,64 @@ class Photometry:
                 flux.append( numpy.array([self.lightcurve.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AJ[i] )            
         return flux
 
+    def Get_Keff(self, par, nphases=20, dataset=None, func_par=None, make_surface=False, verbose=False):
+        """Get_Keff(par, phases, dataset=None, func_par=None, make_surface=False, verbose=False)
+        Returns the effective projected velocity semi-amplitude of the star in m/s.
+        The luminosity-weighted average velocity of the star is returned for
+        nphases, for the specified dataset, and a sin wave is fitted to them.
+        
+        par: Parameter list.
+            [0]: Orbital inclination in radians.
+            [1]: Corotation factor.
+            [2]: Roche-lobe filling.
+            [3]: Companion temperature.
+            [4]: Gravity darkening coefficient.
+            [5]: K (projected velocity semi-amplitude) in m/s.
+            [6]: Front side temperature.
+            [7]: Distance modulus.
+            [8]: Absorption A_J.
+        nphases (int): Number of phases to evaluate the velocity at.
+        dataset (int): The dataset for which the velocity is evaluated
+            (i.e. the atmosphere grid to use).
+            This parameter must be set if not atmosphere grid was specified
+            for the Keff evaluation in the class initialization.
+        func_par (function): Function that takes the parameter vector and
+            returns the parameter vector. This allow for possible constraints
+            on the parameters. The vector returned by func_par must have a length
+            equal to the number of expected parameters.
+        make_surface (bool): Whether lightcurve.make_surface should be called
+            or not. If the flux has been evaluate before and the parameters have
+            not changed, False is fine.
+        verbose (bool): Verbosity. Will plot the velocities and the sin fit.
+        """
+        # Apply a function that can modify the value of parameters.
+        if func_par is not None:
+            par = func_par(par)
+        # If it is required to recalculate the stellar surface.
+        if make_surface:
+            q = par[5] * self.K_to_q
+            tirr = (par[6]**4 - par[3]**4)**0.25
+            self.lightcurve.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
+        # Deciding which atmosphere grid we use to evaluate Keff
+        if dataset is None:
+            try:
+                atmo_grid = self.keff_atmo_grid
+            except:
+                atmo_grid = self.atmo_grid[0]
+        else:
+            atmo_grid = self.atmo_grid[dataset]
+        # Get the Keffs and fluxes
+        phases = numpy.arange(nphases)/float(nphases)
+        Keffs = numpy.array( [self.lightcurve.Flux_disk_Keff(phase, atmo_grid=atmo_grid, disk=0.) for phase in phases] )[:,1]
+        tmp = Utils.Fit_linear(-Keffs, numpy.sin(TWOPI*(phases)), inline=True)
+        if verbose:
+            plotxy(-tmp[1]*numpy.sin(numpy.linspace(0.,1.)*TWOPI)+tmp[0], numpy.linspace(0.,1.))
+            plotxy(Keffs, phases, line=None, symbol=2)
+        Keff = tmp[1]
+        return Keff
+
     def _Init_lightcurve(self, nalf, read=False):
-        """_Init_lightcurve(nalf)
+        """_Init_lightcurve(nalf, read=False)
         Call the appropriate Lightcurve class and initialize
         the stellar array.
         
@@ -417,7 +473,8 @@ class Photometry:
         for i in numpy.arange(self.ndataset):
             plotxy(self.data['mag'][i], self.data['phase'][i], erry=self.data['err'][i], line=None, symbol=1, color=1+i, rangey=[self.mag.max()+0.5,self.mag.min()-0.5], rangex=[0.,1.], device=device)
             plotxy(pred_flux[i], phases[i], color=1+i, line=2)
-            plotxy(pred_flux[i]+offset[i], phases[i], color=1+i)
+            #plotxy(pred_flux[i]+offset[i], phases[i], color=1+i)
+            plotxy(pred_flux[i]+offset[i], phases[i], color=1)
         plotxy([0],[0], color=1)
         y0 = (self.mag.max()+self.mag.min())/2
         dy = (self.mag.max()-self.mag.min())/25
@@ -589,6 +646,13 @@ class Photometry:
                     self.atmo_grid.append(Atmosphere.Atmo_grid_BTSettl7(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4])))
                 else:
                     self.atmo_grid.append(Atmosphere.Atmo_grid(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4])))
+            elif (line[:2] == '#!'):
+                tmp = line.split()
+                tmp = tmp[1:]
+                if tmp[5].find('BT-Settl.7') != -1:
+                    self.keff_atmo_grid = Atmosphere.Atmo_grid_BTSettl7(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4]))
+                else:
+                    self.keff_atmo_grid = Atmosphere.Atmo_grid(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4]))
         return
 
     def _Read_data(self, data_fln):

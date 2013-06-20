@@ -19,8 +19,8 @@ class Photometry_temperature(Photometry):
     calculate the predicted flux of the model at every data point (i.e.
     for a given orbital phase).
     """
-    def __init__(self, atmo_fln, data_fln, nalf, porb, x2sini, edot=1.):
-        """__init__(atmo_fln, data_fln, nalf, porb, x2sini, edot=1.)
+    def __init__(self, atmo_fln, data_fln, nalf, porb, x2sini, edot=1., read=True):
+        """__init__(atmo_fln, data_fln, nalf, porb, x2sini, edot=1., read=True)
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
         (which in most cases will be a pulsar).
@@ -30,26 +30,28 @@ class Photometry_temperature(Photometry):
         calculate the predicted flux of the model at every data point (i.e.
         for a given orbital phase).
         
-        atmo_fln: A file containing the grid model information for each
+        atmo_fln (str): A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
                 band_name, center_wavelength, delta_wavelength, flux0,
                     extinction, grid_file
-        data_fln: A file containing the information for each data set.
+        data_fln (str): A file containing the information for each data set.
             The format of the file is as follows:
                 band_name, column_phase, column_flux, column_error_flux,
                     shift_to_phase_zero, calibration_error, data_file
             Here, the first column has index 0.
             Here, orbital phase 0. is the superior conjunction of the pulsar.
-        nalf: The number of surface slice. Defines how coarse/fine the
+        nalf (int): The number of surface slice. Defines how coarse/fine the
             surface grid is.
-        porb: Orbital period of the system in seconds.
-        x2sini: Projected semi-major axis of the secondary (pulsar)
+        porb (float): Orbital period of the system in seconds.
+        x2sini (float): Projected semi-major axis of the secondary (pulsar)
             in light-second.
-        edot (1.): Irradiated energy from the secondary, aka pulsar (i.e.
+        edot (float): Irradiated energy from the secondary, aka pulsar (i.e.
             spin-down luminosity) in erg/s. This is only used for the
             calculation of the irradiation efficiency so it does not
             enter in the modeling itself.
-        
+        read (bool): If True, Icarus will use the pre-calculated geodesic
+            primitives. This is the recommended option, unless you have the
+            pygts package installed to calculate it on the spot.
         
         Note: For an empirical approach, i.e. modelling the stellar
         temperature profile using spherical harmonics only, one can
@@ -59,11 +61,11 @@ class Photometry_temperature(Photometry):
         >>> fit = Photometry_temperature(atmo_fln, data_fln, nalf, porb, x2sini, edot)
         """
         # Calling the parent class
-        Photometry.__init__(self, atmo_fln, data_fln, nalf, porb, x2sini, edot=edot)
-        self._Init_lightcurve(nalf)
-
-    def _Init_lightcurve(self, nalf):
-        """_Init_lightcurve(nalf)
+        Photometry.__init__(self, atmo_fln, data_fln, nalf, porb, x2sini, edot=edot, read=read)
+        #self._Init_lightcurve(nalf)
+        
+    def _Init_lightcurve(self, nalf, read=True):
+        """_Init_lightcurve(nalf, read=True)
         Call the appropriate Lightcurve class and initialize
         the stellar array.
         

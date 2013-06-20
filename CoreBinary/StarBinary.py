@@ -173,7 +173,7 @@ class StarBinary:
         return fsum1+fsum2
 
     def Flux_eclipse_old(self, phase, atmo_grid=None, ntheta=100, doppler1=0., doppler2=0.):
-        """Flux_eclipse(phase, atmo_grid=None, ntheta=100)
+        """Flux_eclipse(phase, atmo_grid=None, ntheta=100, doppler1=0., doppler2=0.)
         Return the flux interpolated from the atmosphere grid.
         
         phase: orbital phase (in orbital fraction; 0: companion 

@@ -3,9 +3,9 @@
 __all__ = ["BTSettl9",
                 "Eclipse",
                 "Filter",
+                "Spherical_harmonics",
                 "Utils"]
 
 from . import BTSettl9
 from . import Eclipse
-from . import Filter
 from .Utils import *

@@ -365,6 +365,14 @@ class Star_base(object):
             return fsum
         
         else:
+            ##### temporary hack
+            if 0:
+                area = area*mu
+                mu = numpy.ones_like(mu)
+                mean_logg = logg.mean()
+                mean_logg = 4.0
+                logg = numpy.ones_like(logg) * mean_logg
+            ##### temporary hack
             fsum = atmo_grid.Get_flux(logteff, logg, mu, area)
             if doppler is None:
                 fsum *= 1 + (self.Doppler_boosting(logteff, logg) * self.Doppler_shift(phase)[inds]).mean()

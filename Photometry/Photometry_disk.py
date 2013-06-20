@@ -171,7 +171,8 @@ class Photometry_disk:
             chi2 = chi2_data + chi2_band
         else:
             # Calculate the theoretical flux
-            pred_flux = self.Get_flux(par, flat=False, nsamples=nsamples, verbose=verbose)
+            #pred_flux = self.Get_flux(par, flat=False, nsamples=nsamples, verbose=verbose)
+            pred_flux = self.Get_flux(par, flat=False, verbose=verbose)
             # Calculate the residuals between observed and theoretical flux
             if influx: # Calculate the residuals in the flux domain
                 res1 = numpy.array([ Utils.Fit_linear(self.data['flux'][i], x=Utils.Mag_to_flux(pred_flux[i], flux0=self.atmo_grid[i].flux0), err=self.data['flux_err'][i], b=0., inline=True) for i in numpy.arange(self.ndataset) ])
@@ -265,7 +266,7 @@ class Photometry_disk:
             return ((mag + self.atmo_grid[i].ext*par[8] + par[7]) - self.data['mag'][i]) / self.data['err'][i]
         
         if len(par) > 10:
-            disk = par[9:]
+            disk = numpy.array(par[9:])
             disk_slope = numpy.zeros_like(disk)
         else:
             disk = numpy.ones(self.ndataset) * par[9]
@@ -364,17 +365,21 @@ class Photometry_disk:
             for i in numpy.arange(self.ndataset):
                 #print 'Dataset '+str(i)
                 flux.append(numpy.array([self.lightcurve.Mag_flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=par[9+i]) for phase in self.data['phase'][i]]))
-        else:
+        elif len(par) == 10: # in that situation, only one disk flux value is provided
             for i in numpy.arange(self.ndataset):
                 #print 'Dataset '+str(i)
                 flux.append(numpy.array([self.lightcurve.Mag_flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=par[9]) for phase in self.data['phase'][i]]))
+        else: # otherwise there is no disk
+            for i in numpy.arange(self.ndataset):
+                #print 'Dataset '+str(i)
+                flux.append(numpy.array([self.lightcurve.Mag_flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=0.) for phase in self.data['phase'][i]]))
         if flat:
             return numpy.hstack(flux)
         else:
             return flux
 
-    def Get_flux_theoretical(self, par, phases, func_par=None, disk_slope=None):
-        """Get_flux_theoretical(par, phases, func_par=None, disk_slope=None)
+    def Get_flux_theoretical(self, par, phases, func_par=None, disk_slope=None, return_disk=False):
+        """Get_flux_theoretical(par, phases, func_par=None, disk_slope=None, return_disk=False)
         Returns the predicted flux by the model evaluated at the
         observed values in the data set.
         
@@ -399,6 +404,8 @@ class Photometry_disk:
             on the parameters. The vector returned by func_par must have a length
             equal to the number of expected parameters.
         disk_slope (None): The disk slope values if provided.
+        return_disk (False): If true, will get the disk flux values from
+            Calc_chi2_disk.
         
         Note: tirr = (par[6]**4 - par[3]**4)**0.25
         
@@ -409,7 +416,10 @@ class Photometry_disk:
             par = func_par(par)
         q = par[5] * self.K_to_q
         tirr = (par[6]**4 - par[3]**4)**0.25
-        self.lightcurve.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
+        if return_disk:
+            chi2, disk, disk_slope = self.Calc_chi2_disk(par, offset_free=1, verbose=False, return_disk=return_disk)
+        else:
+            self.lightcurve.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
         flux = []
         if len(par) > 10: # in that situation, individual disk flux values are provided
             for i in numpy.arange(self.ndataset):
@@ -557,6 +567,34 @@ class Photometry_disk:
         ppgplot.pgtext(0.4, y0+(11+ndisk)*dy, 'Chi2: %7.2f, d.o.f.: %i'%(chi2,self.mag.size-len(par)))
         ppgplot.pgsch(1.0) # Restore the font size
         return
+
+    def Prep_plot(self, par, nphases=31, return_disk=True):
+        """Prep_plot(par, nphases=31, return_disk=True)
+        Returns the lightcurve and orbital phase that would be used to plot the lightcurve.
+        par: Parameter list.
+            [0]: Orbital inclination in radians.
+            [1]: Corotation factor.
+            [2]: Roche-lobe filling.
+            [3]: Companion temperature.
+            [4]: Gravity darkening coefficient.
+            [5]: K (projected velocity semi-amplitude) in m/s.
+            [6]: Front side temperature.
+            [7]: Distance modulus.
+            [8]: Absorption A_J.
+            [9-?]: Disk flux.
+            Note: If there extra parameters after [9], they are assumed to
+            be the individual disk fluxes of each data set.
+        nphases (31): Orbital phase resolution of the model
+            light curve.
+        return_disk (True): If true, will get the disk flux values from
+            Calc_chi2_disk.
+
+        >>> phases, fluxes = Prep_plot(par, nphases)
+        phases, fluxes (array): shape (ndataset, nphases)
+        """
+        phs = numpy.tile(numpy.linspace(0, 1, nphases), (self.ndataset,1))
+        fluxes = self.Get_flux_theoretical(par, phs, return_disk=return_disk)
+        return phs, fluxes
 
     def Pretty_print(self, par, make_surface=True, verbose=True):
         """
