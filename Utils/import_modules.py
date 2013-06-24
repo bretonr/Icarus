@@ -26,7 +26,11 @@ try:
     import Pgplot
     from Pgplot import plotxy, plot2d, plotbinned, nextplotpage, closeplot, resetdefaults, ppgplot
 except:
-    print( "Cannot import Pgplot." )
+    print( "Cannot import Pgplot. This is not a critical error, but some of the plotting functionalities might be impossible." )
+try:
+    import matplotlib, pylab
+except:
+    print( "Cannot import matplotlib/pylab. This is not a critical error, but some of the plotting functionalities might be impossible." )
 
 # define some useful constants
 cts = scipy.constants

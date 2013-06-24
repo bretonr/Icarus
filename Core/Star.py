@@ -36,7 +36,14 @@ class Star(Star_base):
             Note: when only 5 faces associated, 6th value is equal to -99
         """
         print( "Generating the geodesic surface using PyGTS" )
-        import gts
+        try:
+            import gts
+        except:
+            print( "You likely don't have the PyGTS package installed on your computer." )
+            print( "It is impossible to create the surface vertices from scratch." )
+            print( "Will trying reading them from the restart file instead." )
+            self._Read_geodesic()
+            return
         # Generate the geodesic primitives
         s = gts.sphere(self.nalf)
         x,y,z,t = gts.get_coords_and_face_indices(s,True)
