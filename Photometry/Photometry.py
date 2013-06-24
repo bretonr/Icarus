@@ -363,7 +363,7 @@ class Photometry:
             atmo_grid = self.atmo_grid[dataset]
         # Get the Keffs and fluxes
         phases = numpy.arange(nphases)/float(nphases)
-        Keffs = numpy.array( [self.lightcurve.Keff(phase, atmo_grid=atmo_grid) for phase in phases] )[:,1]
+        Keffs = numpy.array( [self.lightcurve.Keff(phase, atmo_grid=atmo_grid) for phase in phases] )
         tmp = Utils.Fit_linear(-Keffs, numpy.sin(TWOPI*(phases)), inline=True)
         if verbose:
             plotxy(-tmp[1]*numpy.sin(numpy.linspace(0.,1.)*TWOPI)+tmp[0], numpy.linspace(0.,1.))
