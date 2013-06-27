@@ -223,8 +223,8 @@ class Photometry:
         if isinstance(par, dict):
             par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['aj']]
         
-        # We call _Make_surface to make the companion's surface.
-        self._Make_surface(par, verbose=verbose)
+        # We call Make_surface to make the companion's surface.
+        self.Make_surface(par, verbose=verbose)
         
         # If nsamples is None we evaluate the lightcurve at each data point.
         if nsamples is None:
@@ -300,8 +300,8 @@ class Photometry:
         if isinstance(par, dict):
             par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['aj']]
         
-        # We call _Make_surface to make the companion's surface.
-        self._Make_surface(par, verbose=verbose)
+        # We call Make_surface to make the companion's surface.
+        self.Make_surface(par, verbose=verbose)
         
         DM_AJ = self.data['ext']*par[8] + par[7]
         
@@ -381,8 +381,8 @@ class Photometry:
         self.lightcurve = Core.Star(nalf, read=read)
         return
 
-    def _Make_surface(self, par, func_par=None, verbose=False):
-        """_Make_surface(par, func_par=None, verbose=False)
+    def Make_surface(self, par, func_par=None, verbose=False):
+        """Make_surface(par, func_par=None, verbose=False)
         This function gets the parameters to construct to companion
         surface model and calls the Make_surface function from the
         Lightcurve object.
@@ -406,7 +406,7 @@ class Photometry:
             on the parameters. The vector returned by func_par must have a length
             equal to the number of expected parameters.
         
-        >>> self._Make_surface([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
+        >>> self.Make_surface([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
         # Apply a function that can modify the value of parameters.
         if func_par is not None:

@@ -158,6 +158,12 @@ class Star(Star_base):
         """Roche()
         Returns the volume-averaged Roche lobe radius
         of the star in units of orbital separation.
+
+        For the geodesic tessellation, the volume-averaged
+        Roche-lobe radius is easilly found since each surface
+        element subtend the same solid angle. Therefore, the
+        volume-averaged radius is the cubic root of the average
+        values of the radii cubed <rc^3>^1/3.
         
         >>> self.Roche()
         """
@@ -166,21 +172,6 @@ class Star(Star_base):
         radius = self.Radius()
         self.Make_surface(filling=filling)
         return radius
-
-    def Roche1(self):
-        """Roche(self)
-        Returns the volume-averaged Roche-lobe radius.
-        
-        For the geodesic tessellation, the volume-averaged
-        Roche-lobe radius is easilly found since each surface
-        element subtend the same solid angle. Therefore, the
-        volume-averaged radius is the cubic root of the average
-        values of the radii cubed <rc^3>^1/3.
-        
-        >>> self.Roche()
-        roche
-        """
-        return (self.rc**3).mean()**(1./3)
 
     def _Surface(self, debug=False):
         """_Surface(debug=False)
