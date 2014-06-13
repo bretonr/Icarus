@@ -60,7 +60,7 @@ class StarBinary:
         
         print( "Instantiating the primary star" )
         # Single resolution for the primary
-        if type(nalf1) is type(4):
+        if isinstance(nalf1, int):
             print( " ...working at a single resolution" )
             self.nalf1 = nalf1
             self.primary = Core.Star(self.nalf1, atmo_grid=atmo_grid, read=read)
@@ -89,14 +89,14 @@ class StarBinary:
                         print( " ...subsampling from %s to %s" %(i-1,i) )
                         self.primary_hd = Core.Star(i, atmo_grid=atmo_grid, read=read)
                         x_high, y_high, z_high = self.primary_hd.cosx, self.primary_hd.cosy, self.primary_hd.cosz
-                        triangle_assoc.append( Utils.Match_triangles(x_high, y_high, z_high, x, y, z) )
+                        triangle_assoc.append( Utils.Tessellation.Match_triangles(x_high, y_high, z_high, x, y, z) )
                         x, y, z = x_high, y_high, z_high
                     # Now we go backward and associate the triangles from the highest resolution down to the lowest resolution. Results are stored in self.ind_subsampling.
                     print( " ...almost done" )
                     self.ind_subsampling1 = triangle_assoc.pop()
                     while triangle_assoc:
                         print( " ...associations..." )
-                        self.ind_subsampling1 = Utils.Match_subtriangles(self.ind_subsampling1, triangle_assoc.pop())
+                        self.ind_subsampling1 = Utils.Tessellation.Match_subtriangles(self.ind_subsampling1, triangle_assoc.pop())
                 # We also store the total weight, which is 3 vertices * 4**(nalf_hd-nalf) for the normalization
                 self.total_weight1 = 3 * 4**(self.nalf1_hd-self.nalf1)
         # In case of problem for the primary's resolution
@@ -105,7 +105,7 @@ class StarBinary:
         
         print( "Instantiating the secondary star" )
         # Single resolution for the secondary
-        if type(nalf2) is type(4):
+        if isinstance(nalf2, int):
             print( " ...working at a single resolution" )
             self.nalf2 = nalf2
             self.secondary = Core.Star(self.nalf2, atmo_grid=atmo_grid, read=read)
@@ -134,14 +134,14 @@ class StarBinary:
                         print( " ...subsampling from %s to %s" %(i-1,i) )
                         self.secondary_hd = Core.Star(i, atmo_grid=atmo_grid, read=read)
                         x_high, y_high, z_high = self.secondary_hd.cosx, self.secondary_hd.cosy, self.secondary_hd.cosz
-                        triangle_assoc.append( Utils.Match_triangles(x_high, y_high, z_high, x, y, z) )
+                        triangle_assoc.append( Utils.Tessellation.Match_triangles(x_high, y_high, z_high, x, y, z) )
                         x, y, z = x_high, y_high, z_high
                     # Now we go backward and associate the triangles from the highest resolution down to the lowest resolution. Results are stored in self.ind_subsampling.
                     print( " ...almost done" )
                     self.ind_subsampling2 = triangle_assoc.pop()
                     while triangle_assoc:
                         print( " ...associations..." )
-                        self.ind_subsampling2 = Utils.Match_subtriangles(self.ind_subsampling2, triangle_assoc.pop())
+                        self.ind_subsampling2 = Utils.Tessellation.Match_subtriangles(self.ind_subsampling2, triangle_assoc.pop())
                 # We also store the total weight, which is 3 vertices * 4**(nalf_hd-nalf) for the normalization
                 self.total_weight2 = 3 * 4**(self.nalf2_hd-self.nalf2)
         # In case of problem for the secondary's resolution
@@ -201,7 +201,7 @@ class StarBinary:
             fsum1 = 0.
         elif type1 == "partial":
             radii = self.secondary.Outline(ntheta)
-            weights1 = Eclipse.Occultation_approx(self.primary.vertices, self.primary.r_vertices, self.primary.assoc, self.primary.n_faces, self.primary.incl, phase*TWOPI, self.primary.q, ntheta, radii)
+            weights1 = Eclipse.Occultation_approx(self.primary.vertices, self.primary.r_vertices, self.primary.assoc, self.primary.n_faces, self.primary.incl, phase*cts.twopi, self.primary.q, ntheta, radii)
             mu = self.primary._Mu(phase)
             inds = (mu>0)*(weights1<3)
             fsum1 = self.primary.Flux(phase, atmo_grid=atmo_grid, nosum=True, mu=mu, inds=inds, doppler=doppler1)
@@ -209,7 +209,7 @@ class StarBinary:
             fsum1 = fsum1.sum() * self.normalize1
         elif type1 == "partial_hd":
             radii = self.secondary.Outline(ntheta)
-            weights1 = Eclipse.Occultation_approx(self.primary_hd.vertices, self.primary_hd.r_vertices, self.primary_hd.assoc, self.primary_hd.n_faces, self.primary_hd.incl, phase*TWOPI, self.primary_hd.q, ntheta, radii)
+            weights1 = Eclipse.Occultation_approx(self.primary_hd.vertices, self.primary_hd.r_vertices, self.primary_hd.assoc, self.primary_hd.n_faces, self.primary_hd.incl, phase*cts.twopi, self.primary_hd.q, ntheta, radii)
             mu = self.primary_hd._Mu(phase)
             inds = (mu>0)*(weights1<3)
             fsum1 = self.primary_hd.Flux(phase, atmo_grid=atmo_grid, nosum=True, mu=mu, inds=inds, doppler=doppler1)
@@ -222,7 +222,7 @@ class StarBinary:
             fsum2 = 0.
         elif type2 == "partial":
             radii = self.primary.Outline(ntheta)
-            weights2 = Eclipse.Occultation_approx(self.secondary.vertices, self.secondary.r_vertices, self.secondary.assoc, self.secondary.n_faces, self.secondary.incl, ((phase+0.5)%1)*TWOPI, self.secondary.q, ntheta, radii)
+            weights2 = Eclipse.Occultation_approx(self.secondary.vertices, self.secondary.r_vertices, self.secondary.assoc, self.secondary.n_faces, self.secondary.incl, ((phase+0.5)%1)*cts.twopi, self.secondary.q, ntheta, radii)
             mu = self.secondary._Mu((phase+0.5)%1)
             inds = (mu>0)*(weights2<3)
             fsum2 = self.secondary.Flux((phase+0.5)%1, atmo_grid=atmo_grid, nosum=True, mu=mu, inds=inds, doppler=doppler2)
@@ -230,7 +230,7 @@ class StarBinary:
             fsum2 = fsum2.sum() * self.normalize2
         elif type2 == "partial_hd":
             radii = self.primary.Outline(ntheta)
-            weights2 = Eclipse.Occultation_approx(self.secondary_hd.vertices, self.secondary_hd.r_vertices, self.secondary_hd.assoc, self.secondary_hd.n_faces, self.secondary_hd.incl, ((phase+0.5)%1)*TWOPI, self.secondary_hd.q, ntheta, radii)
+            weights2 = Eclipse.Occultation_approx(self.secondary_hd.vertices, self.secondary_hd.r_vertices, self.secondary_hd.assoc, self.secondary_hd.n_faces, self.secondary_hd.incl, ((phase+0.5)%1)*cts.twopi, self.secondary_hd.q, ntheta, radii)
             mu = self.secondary_hd._Mu((phase+0.5)%1)
             inds = (mu>0)*(weights2<3)
             fsum2 = self.secondary_hd.Flux((phase+0.5)%1, atmo_grid=atmo_grid, nosum=True, mu=mu, inds=inds, doppler=doppler2)
@@ -399,7 +399,7 @@ class StarBinary:
             fsum1 = 0.
         elif type1 == "partial":
             radii = self.secondary.Outline(ntheta)
-            weights1 = Eclipse.Occultation_approx(self.primary.vertices, self.primary.r_vertices, self.primary.assoc, self.primary.n_faces, self.primary.incl, phase*TWOPI, self.primary.q, ntheta, radii)
+            weights1 = Eclipse.Occultation_approx(self.primary.vertices, self.primary.r_vertices, self.primary.assoc, self.primary.n_faces, self.primary.incl, phase*cts.twopi, self.primary.q, ntheta, radii)
             mu = self.primary._Mu(phase)
             inds = (mu>0)*(weights1<3)
             fsum1 = self.primary.Flux(phase, atmo_grid=atmo_grid, nosum=True, mu=mu, inds=inds, doppler=doppler1)
@@ -407,7 +407,7 @@ class StarBinary:
             fsum1 = fsum1.sum() * self.normalize1
         elif type1 == "partial_hd":
             radii = self.secondary.Outline(ntheta)
-            weights_highres = Eclipse.Occultation_approx(self.primary_hd.vertices, self.primary_hd.r_vertices, self.primary_hd.assoc, self.primary_hd.n_faces, self.primary_hd.incl, phase*TWOPI, self.primary_hd.q, ntheta, radii)
+            weights_highres = Eclipse.Occultation_approx(self.primary_hd.vertices, self.primary_hd.r_vertices, self.primary_hd.assoc, self.primary_hd.n_faces, self.primary_hd.incl, phase*cts.twopi, self.primary_hd.q, ntheta, radii)
             weights1 = Eclipse.Weights_transit(self.ind_subsampling1, weights_highres, self.primary.n_faces)
             mu = self.primary._Mu(phase)
             inds = (mu>0)*(weights1<self.total_weight1)
@@ -421,7 +421,7 @@ class StarBinary:
             fsum2 = 0.
         elif type2 == "partial":
             radii = self.primary.Outline(ntheta)
-            weights2 = Eclipse.Occultation_approx(self.secondary.vertices, self.secondary.r_vertices, self.secondary.assoc, self.secondary.n_faces, self.secondary.incl, ((phase+0.5)%1)*TWOPI, self.secondary.q, ntheta, radii)
+            weights2 = Eclipse.Occultation_approx(self.secondary.vertices, self.secondary.r_vertices, self.secondary.assoc, self.secondary.n_faces, self.secondary.incl, ((phase+0.5)%1)*cts.twopi, self.secondary.q, ntheta, radii)
             mu = self.secondary._Mu((phase+0.5)%1)
             inds = (mu>0)*(weights2<3)
             fsum2 = self.secondary.Flux((phase+0.5)%1, atmo_grid=atmo_grid, nosum=True, mu=mu, inds=inds, doppler=doppler2)
@@ -429,7 +429,7 @@ class StarBinary:
             fsum2 = fsum2.sum() * self.normalize2
         elif type2 == "partial_hd":
             radii = self.primary.Outline(ntheta)
-            weights_highres = Eclipse.Occultation_approx(self.secondary_hd.vertices, self.secondary_hd.r_vertices, self.secondary_hd.assoc, self.secondary_hd.n_faces, self.secondary_hd.incl, ((phase+0.5)%1)*TWOPI, self.secondary_hd.q, ntheta, radii)
+            weights_highres = Eclipse.Occultation_approx(self.secondary_hd.vertices, self.secondary_hd.r_vertices, self.secondary_hd.assoc, self.secondary_hd.n_faces, self.secondary_hd.incl, ((phase+0.5)%1)*cts.twopi, self.secondary_hd.q, ntheta, radii)
             weights2 = Eclipse.Weights_transit(self.ind_subsampling2, weights_highres, self.secondary.n_faces)
             mu = self.secondary._Mu((phase+0.5)%1)
             inds = (mu>0)*(weights2<self.total_weight2)
@@ -516,32 +516,32 @@ class StarBinary:
         self.overlap = (abs(numpy.cos(incl)) - self.r1max - self.r2max) < 0
         # If an overlap is possible, we calculate the orbital phase around which this should happened
         if self.overlap:
-            #self.overlap_phs = numpy.arcsin(self.r1max + self.r2max)/TWOPI
+            #self.overlap_phs = numpy.arcsin(self.r1max + self.r2max)/cts.twopi
             cosi2 = numpy.cos(incl)**2
             sini2 = numpy.sin(incl)**2
             ## From Phoebe Science guide
-            #self.overlap_phs = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2*numpy.cos(phs)**2+numpy.sin(phs)**2) - self.r1max - self.r2max, 0.05*TWOPI) / TWOPI
+            #self.overlap_phs = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2*numpy.cos(phs)**2+numpy.sin(phs)**2) - self.r1max - self.r2max, 0.05*cts.twopi) / cts.twopi
             ## From Kallrath and Milone
             #print( "incl: {}, r1max: {}, r2max: {}, r1min: {}, r2min: {}".format(incl, self.r1max, self.r2max, self.r1min, self.r2min) )
-            self.overlap_phs = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2+sini2*numpy.sin(phs)**2) - self.r1max - self.r2max, 0.05*TWOPI) / TWOPI
+            self.overlap_phs = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2+sini2*numpy.sin(phs)**2) - self.r1max - self.r2max, 0.05*cts.twopi) / cts.twopi
             # Determining if a total eclipse will ever happen
             if self.r1min < self.r2min:
                 self.full_eclipse1 = (numpy.cos(incl) + self.r1max - self.r2min) < 0
                 self.full_eclipse2 = False
                 if self.full_eclipse1:
                     ## From Phoebe Science guide
-                    #self.full_eclipse_phs1 = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2*numpy.cos(phs)**2+numpy.sin(phs)**2) + self.r1max - self.r2max, self.overlap_phs) / TWOPI
+                    #self.full_eclipse_phs1 = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2*numpy.cos(phs)**2+numpy.sin(phs)**2) + self.r1max - self.r2max, self.overlap_phs) / cts.twopi
                     ## From Kallrath and Milone
-                    self.full_eclipse_phs1 = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2+sini2*numpy.sin(phs)**2) + self.r1max - self.r2min, self.overlap_phs) / TWOPI
+                    self.full_eclipse_phs1 = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2+sini2*numpy.sin(phs)**2) + self.r1max - self.r2min, self.overlap_phs) / cts.twopi
                 self.full_eclipse_phs2 = None
             else:
                 self.full_eclipse2 = (numpy.cos(incl) + self.r2max - self.r1min) < 0
                 self.full_eclipse1 = False
                 if self.full_eclipse2:
                     ## From Phoebe Science guide
-                    #self.full_eclipse_phs2 = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2*numpy.cos(phs)**2+numpy.sin(phs)**2) + self.r2max - self.r1max, self.overlap_phs) / TWOPI
+                    #self.full_eclipse_phs2 = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2*numpy.cos(phs)**2+numpy.sin(phs)**2) + self.r2max - self.r1max, self.overlap_phs) / cts.twopi
                     ## From Kallrath and Milone
-                    self.full_eclipse_phs2 = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2+sini2*numpy.sin(phs)**2) + self.r2max - self.r1min, self.overlap_phs) / TWOPI
+                    self.full_eclipse_phs2 = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2+sini2*numpy.sin(phs)**2) + self.r2max - self.r1min, self.overlap_phs) / cts.twopi
                 self.full_eclipse_phs1 = None
         else:
             self.overlap_phs = None

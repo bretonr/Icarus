@@ -14,6 +14,11 @@ except:
     _HAS_SHAPELY = False
 
 
+##----- ----- ----- ----- ----- ----- ----- ----- ----- -----##
+## Contain functions to perform eclipse calculations
+##----- ----- ----- ----- ----- ----- ----- ----- ----- -----##
+
+
 def Hsr(y1, z1, y2, z2, faces):
     """Hsr(y1, z1, y2, z2, faces)
     Hidden surface removal algorithm.
@@ -381,7 +386,7 @@ def Occultation_shapely(vertices, faces_ind, incl, orbph, q, ntheta, radii):
     T.append(time.time())
     
     # Defining the front star polygon
-    theta = numpy.arange(ntheta, dtype=float)/ntheta * TWOPI
+    theta = numpy.arange(ntheta, dtype=float)/ntheta * cts.twopi
     xoff, yoff = Observer_2Dprojection(1./(1+q), 0., 0., incl, orbph+0.5)
     x_front = radii * numpy.cos(theta) + xoff
     y_front = radii * numpy.sin(theta) + yoff
@@ -456,8 +461,8 @@ def Observer_2Dprojection(x, y, z, incl, orbph, xoffset=None):
     orbph = orbph%1
     cos_incl = numpy.cos(incl)
     sin_incl = numpy.sin(incl)
-    cos_phs = numpy.cos(orbph*TWOPI)
-    sin_phs = numpy.sin(orbph*TWOPI)
+    cos_phs = numpy.cos(orbph*cts.twopi)
+    sin_phs = numpy.sin(orbph*cts.twopi)
     xnew = x*cos_phs + y*sin_phs
     ynew = -x*sin_phs + y*cos_phs
     znew = z*sin_incl + xnew*cos_incl
@@ -482,8 +487,8 @@ def Observer_3Dprojection(x, y, z, incl, orbph, xoffset=None):
     orbph = orbph%1
     cos_incl = numpy.cos(incl)
     sin_incl = numpy.sin(incl)
-    cos_phs = numpy.cos(orbph*TWOPI)
-    sin_phs = numpy.sin(orbph*TWOPI)
+    cos_phs = numpy.cos(orbph*cts.twopi)
+    sin_phs = numpy.sin(orbph*cts.twopi)
     xnew = x*cos_phs + y*sin_phs
     ynew = -x*sin_phs + y*cos_phs
     znew = z

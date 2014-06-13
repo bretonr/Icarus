@@ -71,7 +71,7 @@ class Photometry_temperature(Photometry):
         
         >>> self._Init_lightcurve(nalf)
         """
-        self.lightcurve = Core.Star_temperature(nalf)
+        self.star = Core.Star_temperature(nalf)
         return
 
     def _Make_surface(self, par, func_par=None, verbose=False):
@@ -126,7 +126,7 @@ class Photometry_temperature(Photometry):
         if verbose:
             print( "#####\n" + str(par[0]) + ", " + str(par[1]) + ", " + str(par[2]) + ", " + str(par[3]) + ", " + str(par[4]) + ", " + str(par[5]) + ", " + str(par[6]) + ", " + str(par[7]) + ", " + str(par[8]) + "\n" + "q: " + str(q) )
         
-        self.lightcurve.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=par[6], porb=self.porb, k1=par[5], incl=par[0])
+        self.star.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=par[6], porb=self.porb, k1=par[5], incl=par[0])
         return
 
 ######################## class Photometry_temperature ########################

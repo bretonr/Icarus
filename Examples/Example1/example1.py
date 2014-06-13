@@ -21,6 +21,11 @@ nalf = 5
 porb = 10 * 3600
 x2sini = 1.1
 
+print( "Loading the data into an Icarus.Photometry object (failure to do so is likely due to missing atmosphere models).\n" )
+fit = Icarus.Photometry.Photometry(atmo_fln, data_fln, nalf, porb, x2sini)
+
+
+##### This is the list of true parameters for the stars, as per construction
 incl = 75.*cts.degree
 corotation = 1.
 filling = 0.90
@@ -32,9 +37,6 @@ DM = 10.0
 AJ = 0.02
 par0 = numpy.r_[incl, corotation, filling, Tnight, gravdark, K, Tday, DM, AJ]
 
-print( "Loading the data into an Icarus.Photometry object (failure to do so is likely due to missing atmosphere models).\n" )
-fit = Icarus.Photometry.Photometry(atmo_fln, data_fln, nalf, porb, x2sini)
-
 
 ##### Fitting the data using a simple fmin algorithm from scipy
 ##### Here we make use of the Calc_chi2 function with offset_free = 1 in order to allow for a possible band calibration error, which we assume is 0.3 mag (see column 5 in data.txt).
@@ -42,7 +44,7 @@ fit = Icarus.Photometry.Photometry(atmo_fln, data_fln, nalf, porb, x2sini)
 ## Defining the func_par
 func_par = lambda p: numpy.r_[p[0], 1., p[1], p[2], 0.08, 300e3, p[3], p[4], p[5]]
 ## Wrapper function for the figure of merit to optimize
-def FoM (p):
+def FoM(p):
     p = numpy.asarray(p)
     ## Return large value if parameters are out of bound
     if (p < numpy.r_[0.1, 0.1, 1500., p[2], 8., 0.]).any() or (p > numpy.r_[numpy.pi/2, 1.0, 8000., 8000., 12., 0.1]).any():

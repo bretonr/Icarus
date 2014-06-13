@@ -6,6 +6,8 @@ from ..Utils.import_modules import *
 from .. import Utils
 from .Star_base import Star_base
 
+logger = logging.getLogger(__name__)
+
 
 ######################## class Star ########################
 class Star(Star_base):
@@ -17,6 +19,11 @@ class Star(Star_base):
     The noticeable difference is that the surface is constructed
     from a geodesic tesselation of equilateral triangles derived
     from an isocahedron.
+
+    Axis convention:
+        x: From the primary center of mass towards the secondary.
+        y: Along the orbital plane along the orbital motion.
+        z: Along the orbital angular momentum.
     """
     def __init__(self, nalf, atmo_grid=None, read=False):
         Star_base.__init__(self, nalf, atmo_grid=atmo_grid)
@@ -52,7 +59,7 @@ class Star(Star_base):
         self.n_vertices = self.vertices.shape[0]
         self.n_faces = self.faces.shape[0]
         print( "Calculatating the associations" )
-        self.assoc = Utils.Match_assoc(self.faces, self.n_vertices)
+        self.assoc = Utils.Tessellation.Match_assoc(self.faces, self.n_vertices)
         
         # We will pre-calculate the surface areas. They will need to be multiplied by rc^2.
         # The calculation is simply the Pythagorean sum of the areas of the respective projections on the x,y,z planes.
@@ -77,7 +84,7 @@ class Star(Star_base):
         """
         print( "Generating the geodesic surface" )
         # Generate the geodesic primitives
-        self.n_faces, self.n_vertices, self.faces, self.vertices, self.assoc = Utils.Make_geodesic(self.nalf)
+        self.n_faces, self.n_vertices, self.faces, self.vertices, self.assoc = Utils.Tessellation.Make_geodesic(self.nalf)
         # We will pre-calculate the surface areas. They will need to be multiplied by rc^2.
         # The calculation is simply the Pythagorean sum of the areas of the respective projections on the x,y,z planes.
         print( "meshing the surface" )
@@ -104,7 +111,7 @@ class Star(Star_base):
         """
         if debug: print( 'Begin _Outline()' )
         
-        theta = numpy.arange(ntheta, dtype=float)/ntheta * TWOPI
+        theta = numpy.arange(ntheta, dtype=float)/ntheta * cts.twopi
         y = numpy.cos(theta)
         z = numpy.sin(theta)
         # radii of the outline of the star.
@@ -135,7 +142,7 @@ class Star(Star_base):
         self.faces = self.faces[:,1:]
         
         # We calculate the associations
-        self.assoc = Utils.Match_assoc(self.faces, self.n_vertices)
+        self.assoc = Utils.Tessellation.Match_assoc(self.faces, self.n_vertices)
         
         # We will pre-calculate the surface areas. They will need to be multiplied by rc^2.
         # The calculation is simply the Pythagorean sum of the areas of the respective projections on the x,y,z planes.
@@ -183,6 +190,7 @@ class Star(Star_base):
         
         >>> self._Surface()
         """
+        logger.debug("start")
         if debug: print( 'Begin _Surface()' )
         # Calculate some quantities
         self._Calc_qp1by2om2()
@@ -237,6 +245,7 @@ class Star(Star_base):
         
         # surface area. shape = n_faces
         self.area = self.rc**2 * self.pre_area
+        logger.debug("end")
         return
 
 ######################## class Star ########################

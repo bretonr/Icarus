@@ -74,7 +74,7 @@ class Star_disk(Star):
         if gravscale is None:
             gravscale = self._Gravscale()
         mu = self._Mu(phase)
-        v = self.Doppler_shift(phase)
+        v = self._Velocity_surface(phase)
         inds = (mu > 0).nonzero()[0]
 #        fsum = 0.
 #        for i in inds:

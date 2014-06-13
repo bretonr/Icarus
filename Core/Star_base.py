@@ -5,6 +5,8 @@ __all__ = ["Star_base"]
 from ..Utils.import_modules import *
 from .. import Utils
 
+logger = logging.getLogger(__name__)
+
 
 ######################## class Star_base ########################
 class Star_base(object):
@@ -38,6 +40,7 @@ class Star_base(object):
         
         >>> star = Star_base(nafl)
         """
+        logger.debug("start")
         # We define some useful quantities.
         # We set the class attributes
         if atmo_grid is not None:
@@ -53,6 +56,7 @@ class Star_base(object):
         self.porb = None
         self.k1 = None
         self.incl = None
+        logger.debug("end")
 
     def _Area(self, arl, r):
         """_Area(arl, r)
@@ -88,9 +92,9 @@ class Star_base(object):
         limbnorm = 1.-limbdark/3.
         limb0 = 1/limbnorm
         limb1 = limbdark/limbnorm
-        bbconst = const1/(C*100)/PI/atmo_grid.grid_lam**3
+        bbconst = const1/(C*100)/cts.pi/atmo_grid.wav**3
         f = bbconst/(numpy.exp(const2/self.temp/atmo_grid.grid_lam)-1)
-        if type(f) == type(numpy.empty(0)):
+        if isinstance(f, numpy.ndarray):
             f.shape = f.size,1
         inds = mu > 0
         return (self.area[inds] * f * mu[inds] * (limb0-limb1*(1-mu[inds]))).sum(axis=-1)
@@ -106,7 +110,7 @@ class Star_base(object):
         >>> self.Bol_flux(phase)
         bol_flux
         """
-        sigmabypi = 5.67051e-5/PI # sigma/pi (sigma is the stefan-boltzman constant)
+        sigmabypi = 5.67051e-5/cts.pi # sigma/pi (sigma is the stefan-boltzman constant)
         mu = self._Mu(phase)
         inds = mu > 0
         return (self.area[inds] * (mu[inds]*sigmabypi*self.temp**4)).sum()
@@ -205,11 +209,11 @@ class Star_base(object):
         
         #lookup.shape = logg_vec.size, logteff_vec.size
         ### Here we use a shortcut by taking the average
-        w_logg, j_logg = Utils.Getaxispos_scalar(logg_vec, logg.mean())
-        w_logteff, j_logteff = Utils.Getaxispos_scalar(logteff_vec, logteff.mean())
+        w_logg, j_logg = Utils.Series.Getaxispos_scalar(logg_vec, logg.mean())
+        w_logteff, j_logteff = Utils.Series.Getaxispos_scalar(logteff_vec, logteff.mean())
         ### here we use the full blown version
-        #w_logg, j_logg = Utils.Getaxispos_vector(logg_vec, logg)
-        #w_logteff, j_logteff = Utils.Getaxispos_vector(logteff_vec, logteff)
+        #w_logg, j_logg = Utils.Series.Getaxispos_vector(logg_vec, logg)
+        #w_logteff, j_logteff = Utils.Series.Getaxispos_vector(logteff_vec, logteff)
         doppler = (1-w_logg) * ( (1-w_logteff)*lookup[j_logg,j_logteff] + w_logteff*lookup[j_logg,1+j_logteff] ) + w_logg * ( (1-w_logteff)*lookup[1+j_logg,j_logteff] + w_logteff*lookup[1+j_logg,1+j_logteff] )
         return doppler
     
@@ -261,31 +265,6 @@ class Star_base(object):
             return 0.
         doppler = ( (Q11*(x2-logg) + Q21*(logg-x1))*(y2-logteff) + (Q12*(x2-logg) + Q22*(logg-x1))*(logteff-y1) ) / ((x2-x1)*(y2-y1))
         return doppler
-
-    def Doppler_shift(self, phase):
-        """Doppler_shift(phase)
-        Returns the Doppler shift of each surface element
-        of the star in v/c.
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
-            in front, 0.5: companion behind).
-        
-        >>> self.Doppler_shift(phase)
-        """
-        phi = TWOPI*phase
-#        # vx = w*y
-#        # vy = w*(b-x) # b = semi-major axis
-#        # Vx = vx*cos(phi) + vx*sin(phi)
-#        # Vy = -vx*sin(phi) + vy*cos(phi)
-#        # Rbary: distance between the companion and the barycenter in units of orbital separation
-#        Rbary = self.q/(1+self.q)
-#        # Kbary: projected velocity amplitude of the companion center of mass in units of c.
-#        #    The minus sign is to make the same convention as the findvelocity code: negative velocity means going away from Earth.
-#        Kbary = -self.k1 / cts.c
-#        Vx = Kbary * (self.rc*self.cosy*numpy.cos(phi) + (Rbary - self.rc*self.cosx)*numpy.sin(phi))
-#        #print( Vx.min()*cts.c, Vx.max()*cts.c, Vx.mean()*cts.c, (Vx-Vx.mean()).min()*cts.c, (Vx-Vx.mean()).max()*cts.c )
-        Vx = self.k1/cts.c * ( self.omega*self.rc*(1+self.q)/self.q * (-numpy.cos(phi)*self.cosy + numpy.sin(phi)*self.cosx) - numpy.sin(phi) )
-        return Vx
 
     def Filling(self):
         """Filling()
@@ -348,20 +327,20 @@ class Star_base(object):
         area = self.area[inds]
         
         if details:
-            v = self.Doppler_shift(phase)[inds]
+            v = self._Velocity_surface(phase)[inds]
             fsum, Keff, Teff = atmo_grid.Get_flux_details(logteff, logg, mu, area, v)
             if doppler is None:
                 fsum *= 1 + (self.Doppler_boosting(logteff, logg) * v).mean()
             elif doppler != 0.:
-                fsum *= 1 - doppler * self.k1/cts.c * numpy.sin(phase*TWOPI)
+                fsum *= 1 - doppler * self.k1/cts.c * numpy.sin(phase*cts.twopi)
             return fsum, Keff*cts.c, Teff
         
         if nosum:
             fsum = atmo_grid.Get_flux_nosum(logteff, logg, mu, area)
             if doppler is None:
-                fsum *= 1 + self.Doppler_boosting(logteff, logg) * self.Doppler_shift(phase)[inds]
+                fsum *= 1 + self.Doppler_boosting(logteff, logg) * self._Velocity_surface(phase)[inds]
             elif doppler != 0.:
-                fsum *= 1 - doppler * self.Doppler_shift(phase)[inds]
+                fsum *= 1 - doppler * self._Velocity_surface(phase)[inds]
             return fsum
         
         else:
@@ -375,9 +354,9 @@ class Star_base(object):
             ##### temporary hack
             fsum = atmo_grid.Get_flux(logteff, logg, mu, area)
             if doppler is None:
-                fsum *= 1 + (self.Doppler_boosting(logteff, logg) * self.Doppler_shift(phase)[inds]).mean()
+                fsum *= 1 + (self.Doppler_boosting(logteff, logg) * self._Velocity_surface(phase)[inds]).mean()
             elif doppler != 0.:
-                fsum *= 1 - doppler * self.k1/cts.c * numpy.sin(phase*TWOPI)
+                fsum *= 1 - doppler * self.k1/cts.c * numpy.sin(phase*cts.twopi)
             return fsum
         
         return fsum
@@ -398,20 +377,16 @@ class Star_base(object):
         >>> self.Flux_doppler(phase)
         flux
         """
+        logger.debug("start")
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
         if gravscale is None:
             gravscale = self._Gravscale()
         mu = self._Mu(phase)
-        #inds = (mu > 0).nonzero()[0]
         inds = mu > 0
-        v = self.Doppler_shift(phase)
-#        print( "Teff --> min: " + str(self.logteff[inds].min()) + ", max: " + str(self.logteff[inds].max()) )
-#        print( "log(g) --> min: " + str(self.logg[inds].min()+gravscale) + ", max: " + str(self.logg[inds].max()+gravscale) )
-#        print( "mu --> min: " + str(mu[inds].min()) + ", max: " + str(mu[inds].max()) )
-#        print( "v --> min: " + str(v[inds].min()) + ", max: " + str(v[inds].max()) )
-#        print( "area --> min: " + str(self.area[inds].min()) + ", max: " + str(self.area[inds].max()) )
+        v = self._Velocity_surface(phase)
         fsum = atmo_grid.Get_flux_doppler(self.logteff[inds],self.logg[inds]+gravscale,mu[inds],v[inds]+velocity/cts.c, self.area[inds])
+        logger.debug("stop")
         return fsum
 
     def _Geff(self, dpsidx, dpsidy, dpsidz):
@@ -473,7 +448,7 @@ class Star_base(object):
         if gravscale is None:
             gravscale = self._Gravscale()
         mu = self._Mu(phase)
-        v = self.Doppler_shift(phase)
+        v = self._Velocity_surface(phase)
         inds = (mu > 0).nonzero()[0]
         fsum, Keff = atmo_grid.Get_flux_Keff(self.logteff[inds],self.logg[inds]+gravscale,mu[inds],self.area[inds],v[inds])
         return Keff*cts.c
@@ -599,6 +574,7 @@ class Star_base(object):
         
         >>> self.Make_surface(q, omega, filling, temp, tempgrav, tirr, porb, k1, incl)
         """
+        logger.debug("start")
         #print 'Begin Make_surface'
         #print q, omega, filling, temp, tempgrav, tirr
         redo_surface = False
@@ -623,9 +599,7 @@ class Star_base(object):
                 redo_surface = True
                 redo_teff = True
         if temp is not None:
-            if ( type(temp) != type(numpy.array([])) ) and ( type(temp) != type([]) ):
-                temp = [temp]
-            temp = numpy.asarray(temp)
+            temp = numpy.atleast_1d(temp)
             if numpy.any(temp != self.temp):
                 self.temp = temp
                 redo_teff = True
@@ -659,6 +633,7 @@ class Star_base(object):
             #print 'Going to _Orbital_parameters()'
             self._Orbital_parameters()
         #print 'End Make_surface'
+        logger.debug("end")
         return
 
     def _Mu(self, phase):
@@ -672,7 +647,7 @@ class Star_base(object):
         >>> self._Mu(phase)
         mu
         """
-        return -numpy.sin(self.incl)*(numpy.cos(TWOPI*phase)*self.gradx+numpy.sin(TWOPI*phase)*self.grady)+numpy.cos(self.incl)*self.gradz
+        return -numpy.sin(self.incl)*(numpy.cos(cts.twopi*phase)*self.gradx+numpy.sin(cts.twopi*phase)*self.grady)+numpy.cos(self.incl)*self.gradz
 
     def _Orbital_parameters(self):
         """_Orbital_parameters()
@@ -683,14 +658,14 @@ class Star_base(object):
         >>> self._Orbital_parameters()
         """
         # We calculate the projected semi-major axis
-        self.a1sini = self.k1 * self.porb / TWOPI
+        self.a1sini = self.k1 * self.porb / cts.twopi
         self.a1 = self.a1sini / numpy.sin(self.incl)
         # We calculate the orbital separation
         # Note: (1+q)/q is the ratio of the separation to the semi-major axis
         self.separation = self.a1 * (1+self.q)/self.q
         # We calculate the mass of the primary using Kepler's 3rd law and convert to Msun
         # Law: (Porb/TWOPI)**2 = a**3/G/(M+m)
-        self.mass1 = (self.separation**3 / (cts.G * (self.porb/TWOPI)**2 * (1+self.q))) / cts.Msun
+        self.mass1 = (self.separation**3 / (cts.G * (self.porb/cts.twopi)**2 * (1+self.q))) / cts.Msun
         self.mass2 = self.q*self.mass1
         return
 
@@ -703,7 +678,9 @@ class Star_base(object):
         >>> self._Potential(x, y, z)
         rc, rx, dpsi, dpsidx, dpsidy, dpsidz, psi
         """
-        rc, rx, dpsi, dpsidx, dpsidy, dpsidz, psi = Utils.Potential(x, y, z, self.q, self.qp1by2om2)
+        logger.debug("start")
+        rc, rx, dpsi, dpsidx, dpsidy, dpsidz, psi = Utils.Binary.Potential(x, y, z, self.q, self.qp1by2om2)
+        logger.debug("end")
         return rc, rx, dpsi, dpsidx, dpsidy, dpsidz, psi
 
     def _Proj(self, r):
@@ -731,13 +708,12 @@ class Star_base(object):
         >>> self._Radius(cosx, cosy, cosz, psi0, rtry)
         radius
         """
-#        print cosx, cosy, cosz, psi0, rtry
-#        print type(cosx), type(cosy), type(cosz), type(psi0), type(rtry)
-        if type(cosx) == type(numpy.empty(0)):
-            radius = Utils.Radii(cosx, cosy, cosz, psi0, rtry, self.q, self.qp1by2om2)
+        logger.debug("start")
+        if isinstance(cosx, numpy.ndarray):
+            radius = Utils.Binary.Radii(cosx, cosy, cosz, psi0, rtry, self.q, self.qp1by2om2)
         else:
-#            print cosx, cosy, cosz, psi0, rtry
-            radius = Utils.Radius(cosx, cosy, cosz, psi0, rtry, self.q, self.qp1by2om2)
+            radius = Utils.Binary.Radius(cosx, cosy, cosz, psi0, rtry, self.q, self.qp1by2om2)
+        logger.debug("end")
         return radius
 
     def _Radius_slow(self, cosx, cosy, cosz, psi0, rtry):
@@ -757,7 +733,7 @@ class Star_base(object):
             dpsidr = dpsidx*cosx+dpsidy*cosy+dpsidz*cosz
             dr = -(psi-psi0)/dpsidr
             return dr
-        if type(cosx) == type(numpy.array([])):
+        if isinstance(cosx, (list,tuple,numpy.ndarray)):
             try:
                 radius = numpy.array([scipy.optimize.newton(get_radius, rtry, args=(cosx[i], cosy[i], cosz[i])) for i in numpy.arange(cosx.size)])
             except:
@@ -774,14 +750,16 @@ class Star_base(object):
         
         >>> self.Radius()
         """
-        sindeltalfby2 = numpy.sin(PIBYTWO/self.nalf)
+        logger.debug("start")
+        sindeltalfby2 = numpy.sin(cts.pibytwo/self.nalf)
         solidangle = []
-        solidangle.append(TWOPI*(1.-numpy.sqrt(1.-sindeltalfby2**2)))
-        solidangle_nbet = 4*PI*numpy.sin(PI*numpy.arange(1,self.nalf)/self.nalf)*sindeltalfby2/self.nbet
+        solidangle.append(cts.twopi*(1.-numpy.sqrt(1.-sindeltalfby2**2)))
+        solidangle_nbet = 4*cts.pi*numpy.sin(cts.pi*numpy.arange(1,self.nalf)/self.nalf)*sindeltalfby2/self.nbet
         [solidangle.extend(s.repeat(i)) for s,i in zip(solidangle_nbet,self.nbet)]
-        solidangle.append(TWOPI*(1.-numpy.sqrt(1.-sindeltalfby2**2)))
+        solidangle.append(cts.twopi*(1.-numpy.sqrt(1.-sindeltalfby2**2)))
         vol = (self.rc**3*numpy.array(solidangle)).sum()/3
-        return (vol/(4*PI/3))**(1./3.)
+        logger.debug("end")
+        return (vol/(4*cts.pi/3))**(1./3.)
 
     def Roche(self):
         """Roche()
@@ -790,10 +768,12 @@ class Star_base(object):
         
         >>> self.Roche()
         """
+        logger.debug("start")
         filling = self.filling
         self.Make_surface(filling=1.)
         radius = self.Radius()
         self.Make_surface(filling=filling)
+        logger.debug("end")
         return radius
 
     def _Saddle(self, xtry):
@@ -805,7 +785,8 @@ class Star_base(object):
         >>> self._Saddle(0.5)
         saddle
         """
-        return Utils.Saddle(xtry, self.q, self.qp1by2om2)
+        logger.debug("call")
+        return Utils.Binary.Saddle(xtry, self.q, self.qp1by2om2)
 
     def _Saddle_old(self, xtry):
         """_Saddle_old(xtry)
@@ -833,11 +814,12 @@ class Star_base(object):
         
         >>> self._Surface()
         """
+        logger.debug("start")
 #        print( "Begin _Surface()" )
         # Calculate some quantities
         self._Calc_qp1by2om2()
-        sindeltalfby2 = numpy.sin(PIBYTWO/self.nalf)
-        arl1 = TWOPI*(1.-numpy.sqrt(1.-sindeltalfby2**2)) # solid angle
+        sindeltalfby2 = numpy.sin(cts.pibytwo/self.nalf)
+        arl1 = cts.twopi*(1.-numpy.sqrt(1.-sindeltalfby2**2)) # solid angle
         
 #        print 'Start surface'
         # Calculate the initial saddle point
@@ -899,7 +881,7 @@ class Star_base(object):
         
 #        print 'Start surface loop'
         # Calculate useful quantities for each slice of the surface
-        tcosx = numpy.cos(PI*numpy.arange(1,self.nalf)/self.nalf)
+        tcosx = numpy.cos(cts.pi*numpy.arange(1,self.nalf)/self.nalf)
         tsinx = numpy.sqrt(1.-tcosx**2)
         #rl = self._Radius(tcosx, tsinx, numpy.zeros(self.nalf, dtype=float), psil1, numpy.repeat(rl180,self.nalf-1))
 #        print 'about to calculate rl'
@@ -907,13 +889,13 @@ class Star_base(object):
 #        print 'rl '#+str(rl)
         rtry = self._Radius(-1., 0., 0., psi0, rl180)
 #        print 'rtry '+str(rtry)
-        ar = 4*PI*tsinx*sindeltalfby2
+        ar = 4*cts.pi*tsinx*sindeltalfby2
         nbet = numpy.round(ar/arl1*(rl/rl180)**2).astype(int)
         ar = ar/nbet
         # Define a function to calculate the quantities for each slice
         def get_slice(tcosx, tsinx, nbet, ar):
             tcosx = numpy.resize(tcosx,nbet)
-            bet = TWOPI*(numpy.arange(1,nbet+1)-0.5)/nbet
+            bet = cts.twopi*(numpy.arange(1,nbet+1)-0.5)/nbet
             tcosy = tsinx*numpy.cos(bet)
             tcosz = tsinx*numpy.sin(bet)
             #r = self._Radius(tcosx, tcosy, tcosz, psi0, numpy.repeat(rl180,nbet))
@@ -962,18 +944,47 @@ class Star_base(object):
 #        print 'rc_pole,dpsidx,dpsidy,dpsidz '+str(rc_pole)+' '+str(dpsidx)+' '+str(dpsidy)+' '+str(dpsidz)
         # Making so variable class attributes
         self.nbet = nbet
-        self.rc = numpy.array(rc)
-        self.rx = numpy.array(rx)
-        self.cosx = numpy.array(cosx)
-        self.cosy = numpy.array(cosy)
-        self.cosz = numpy.array(cosz)
-        self.coschi = numpy.array(coschi)
-        self.area = numpy.array(area)
-        self.logg = numpy.array(logg)
-        self.gradx = numpy.array(gradx)
-        self.grady = numpy.array(grady)
-        self.gradz = numpy.array(gradz)
+        self.rc = numpy.ascontiguousarray(rc)
+        self.rx = numpy.ascontiguousarray(rx)
+        self.cosx = numpy.ascontiguousarray(cosx)
+        self.cosy = numpy.ascontiguousarray(cosy)
+        self.cosz = numpy.ascontiguousarray(cosz)
+        self.coschi = numpy.ascontiguousarray(coschi)
+        self.area = numpy.ascontiguousarray(area)
+        self.logg = numpy.ascontiguousarray(logg)
+        self.gradx = numpy.ascontiguousarray(gradx)
+        self.grady = numpy.ascontiguousarray(grady)
+        self.gradz = numpy.ascontiguousarray(gradz)
+        logger.debug("end")
         return
+
+    def _Velocity_surface(self, phase):
+        """_Velocity_surface(phase)
+        Returns the velocity (in v/c) of each surface element
+        of the star.
+        
+        Positive velocity is away from observer (i.e. redshift).
+        Negative velocity is towards observer (i.e. blueshift).
+
+        phase: orbital phase (in orbital fraction; 0: companion 
+            in front, 0.5: companion behind).
+        
+        >>> self._Velocity_surface(phase)
+        """
+        phi = cts.twopi*phase
+#        # vx = w*y
+#        # vy = w*(b-x) # b = semi-major axis
+#        # Vx = vx*cos(phi) + vx*sin(phi)
+#        # Vy = -vx*sin(phi) + vy*cos(phi)
+#        # Rbary: distance between the companion and the barycenter in units of orbital separation
+#        Rbary = self.q/(1+self.q)
+#        # Kbary: projected velocity amplitude of the companion center of mass in units of c.
+#        #    The minus sign is to make the same convention as the findvelocity code: negative velocity means going away from Earth.
+#        Kbary = -self.k1 / cts.c
+#        Vx = Kbary * (self.rc*self.cosy*numpy.cos(phi) + (Rbary - self.rc*self.cosx)*numpy.sin(phi))
+#        #print( Vx.min()*cts.c, Vx.max()*cts.c, Vx.mean()*cts.c, (Vx-Vx.mean()).min()*cts.c, (Vx-Vx.mean()).max()*cts.c )
+        Vx = -self.k1/cts.c * ( self.omega*self.rc*(1+self.q)/self.q * (-numpy.cos(phi)*self.cosy + numpy.sin(phi)*self.cosx) - numpy.sin(phi) )
+        return Vx
 
 ######################## class Star_base ########################
 

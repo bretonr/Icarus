@@ -25,6 +25,12 @@ nalf = 5
 porb = 10 * 3600
 x2sini = 1.1
 
+
+##### We create an Icarus photometry instance
+fit = Icarus.Photometry.Photometry(atmo_fln, data_fln, nalf, porb, x2sini)
+
+
+##### This is the list of true parameters for the stars, as per construction
 incl = 75.*cts.degree
 corotation = 1.
 filling = 0.90
@@ -35,8 +41,6 @@ Tday = 5000.
 DM = 10.0
 AJ = 0.02
 par0 = numpy.r_[incl, corotation, filling, Tnight, gravdark, K, Tday, DM, AJ]
-
-fit = Icarus.Photometry.Photometry(atmo_fln, data_fln, nalf, porb, x2sini)
 
 
 ##### Generating theoretical data

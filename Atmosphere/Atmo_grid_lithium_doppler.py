@@ -25,22 +25,22 @@ class Atmo_grid_lithium_doppler(Atmo_grid_lithium):
         #print( 'Rebinning to linear in logarithmic spacing' )
         #self.__Make_log()
     
-    def Get_flux_doppler(self, val_logteff, val_logg, val_mu, val_vel, val_area):
-        """Get_flux_doppler(val_logteff, val_logg, val_mu, val_vel, val_area)
+    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_vel, val_area):
+        """Get_flux_doppler(val_logtemp, val_logg, val_mu, val_vel, val_area)
         Returns the flux interpolated from the atmosphere grid.
-        val_logteff: log of effective temperature
+        val_logtemp: log of effective temperature
         val_logg: log of surface gravity
         val_mu: cos(angle) of angle of emission
         val_vel: velocity of the grid point in units of speed of light
         val_area: area of the surface element
         
-        >>> flux = self.Get_flux_doppler(val_logteff, val_logg, val_mu, val_vel, val_area)
+        >>> flux = self.Get_flux_doppler(val_logtemp, val_logg, val_mu, val_vel, val_area)
         """
         grid = self.grid
-        logteff = self.grid_teff
-        logg = self.grid_logg
-        mu = self.grid_mu
-        wteff, jteff = self.Getaxispos(logteff,val_logteff)
+        logtemp = self.logtemp
+        logg = self.logg
+        mu = self.mu
+        wtemp, jtemp = self.Getaxispos(logtemp,val_logtemp)
         wlogg, jlogg = self.Getaxispos(logg,val_logg)
         wmu, jmu = self.Getaxispos(mu,val_mu)
         # Here we convert val_vel to be the number of bins which
@@ -48,43 +48,42 @@ class Atmo_grid_lithium_doppler(Atmo_grid_lithium):
         # This is more precise than just v_obs / v_gridsampling.
         #val_vel = (numpy.sqrt((1+val_vel)/(1-val_vel)) - 1) / self.z
         #val_vel /= self.v
-        #jlam = numpy.floor(val_vel).astype('i')
-        #wlam = val_vel - jlam
+        #jwav = numpy.floor(val_vel).astype('i')
+        #wwav = val_vel - jwav
         if self.savememory:
-            mu_grid = self.mu
-            #flux = Utils.Inter8_doppler_savememory(grid, wteff, wlogg, wmu, wlam, jteff, jlogg, jmu, jlam, mu_grid, val_area, val_mu)
+            grid_mu = self.grid_mu
             if self.z0:
-                flux = Utils.Inter8_doppler_savememory_linear(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, mu_grid, val_area, val_mu, val_vel, self.z0)
+                flux = Utils.Grid.Inter8_doppler_savememory_linear(grid, wtemp, wlogg, wmu, jtemp, jlogg, jmu, grid_mu, val_area, val_mu, val_vel, self.z0)
             else:
                 print( 'Hey! Wake up! The grid is not linear in lambda and has been transformed to linear in log(lambda)!' )
         else:
-            flux = Utils.Inter8_doppler(grid, wteff, wlogg, wmu, wlam, jteff, jlogg, jmu, jlam, val_area, val_mu)
+            flux = Utils.Grid.Inter8_doppler(grid, wtemp, wlogg, wmu, wwav, jtemp, jlogg, jmu, jwav, val_area, val_mu)
         return flux
     
-    def Get_flux_doppler_nomu(self, val_logteff, val_logg, val_mu, val_vel, val_area):
-        """Get_flux_doppler_nomu(val_logteff, val_logg, val_mu, val_vel, val_area)
+    def Get_flux_doppler_nomu(self, val_logtemp, val_logg, val_mu, val_vel, val_area):
+        """Get_flux_doppler_nomu(val_logtemp, val_logg, val_mu, val_vel, val_area)
         Returns the flux interpolated from the atmosphere grid.
-        val_logteff: log of effective temperature
+        val_logtemp: log of effective temperature
         val_logg: log of surface gravity
         val_mu: cos(angle) of angle of emission
         val_vel: velocity of the grid point in units of speed of light
         val_area: area of the surface element
         
-        >>> flux = self.Get_flux_doppler_nomu(val_logteff, val_logg, val_mu, val_vel, val_area)
+        >>> flux = self.Get_flux_doppler_nomu(val_logtemp, val_logg, val_mu, val_vel, val_area)
         """
         grid = self.grid
-        logteff = self.grid_teff
-        logg = self.grid_logg
-        wteff, jteff = self.Getaxispos(logteff,val_logteff)
+        logtemp = self.logtemp
+        logg = self.logg
+        wtemp, jtemp = self.Getaxispos(logtemp,val_logtemp)
         wlogg, jlogg = self.Getaxispos(logg,val_logg)
         # Here we convert val_vel to be the number of bins which
         # corresponds to the Doppler shift. That is z_obs / z_gridsampling.
         # This is more precise than just v_obs / v_gridsampling.
         val_vel = (numpy.sqrt((1+val_vel)/(1-val_vel)) - 1) / self.z
         #val_vel /= self.v
-        jlam = numpy.floor(val_vel).astype('i')
-        wlam = val_vel - jlam
-        flux = Utils.Inter8_doppler_nomu(grid, wteff, wlogg, wlam, jteff, jlogg, jlam, val_area, val_mu*self.Limb_darkening(val_mu))
+        jwav = numpy.floor(val_vel).astype('i')
+        wwav = val_vel - jwav
+        flux = Utils.Grid.Inter8_doppler_nomu(grid, wtemp, wlogg, wwav, jtemp, jlogg, jwav, val_area, val_mu*self.Limb_darkening(val_mu))
         return flux
     
     def __Make_log(self):
@@ -94,11 +93,11 @@ class Atmo_grid_lithium_doppler(Atmo_grid_lithium):
         
         >>> __Make_log()
         """
-        new_grid_lam, self.v, self.z = Utils.Resample_linlog(self.grid_lam)
-        ws, inds = Utils.Getaxispos_vector(self.grid_lam, new_grid_lam)
-        self.grid_lam = new_grid_lam
+        new_wav, self.v, self.z = Utils.Series.Resample_linlog(self.wav)
+        ws, inds = Utils.Series.Getaxispos_vector(self.wav, new_wav)
+        self.wav = new_wav
         self.grid = self.grid.take(inds, axis=-1)*(1-ws) + self.grid.take(inds+1, axis=-1)*ws
-        self.Coeff_limb_darkening(self.grid_lam/1e4)
+        self.Coeff_limb_darkening(self.wav/1e4)
         return
 ######################## class Atmo_grid_lithium_doppler ########################
 
