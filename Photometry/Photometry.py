@@ -20,8 +20,8 @@ class Photometry:
     calculate the predicted flux of the model at every data point (i.e.
     for a given orbital phase).
     """
-    def __init__(self, atmo_fln, data_fln, nalf, porb, x2sini, edot=1., read=True):
-        """__init__(atmo_fln, data_fln, nalf, porb, x2sini, edot=1., read=True)
+    def __init__(self, atmo_fln, data_fln, ndiv, porb, x2sini, edot=1., read=True):
+        """__init__(atmo_fln, data_fln, ndiv, porb, x2sini, edot=1., read=True)
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
         (which in most cases will be a pulsar).
@@ -42,7 +42,7 @@ class Photometry:
                     data_file
             Here, the first column has index 0.
             Here, orbital phase 0. is the superior conjunction of the pulsar.
-        nalf (int): The number of surface slice. Defines how coarse/fine the
+        ndiv (int): The number of surface slice. Defines how coarse/fine the
             surface grid is.
         porb (float): Orbital period of the system in seconds.
         x2sini (float): Projected semi-major axis of the secondary (pulsar)
@@ -55,7 +55,7 @@ class Photometry:
             primitives. This is the recommended option, unless you have the
             pygts package installed to calculate it on the spot.
         
-        >>> fit = Photometry(atmo_fln, data_fln, nalf, porb, x2sini)
+        >>> fit = Photometry(atmo_fln, data_fln, ndiv, porb, x2sini)
         """
         # We define some class attributes.
         self.porb = porb
@@ -73,7 +73,7 @@ class Photometry:
             # We keep in mind the number of datasets
             self.ndataset = len(self.atmo_grid)
         # We initialize some important class attributes.
-        self._Init_lightcurve(nalf, read=read)
+        self._Init_lightcurve(ndiv, read=read)
         self._Setup()
 
     def Calc_chi2(self, par, offset_free=1, func_par=None, nsamples=None, influx=False, full_output=False, verbose=False):
@@ -316,8 +316,8 @@ class Photometry:
                 flux.append( numpy.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AJ[i] )            
         return flux
 
-    def Get_Keff(self, par, nphases=20, dataset=None, func_par=None, make_surface=False, verbose=False):
-        """Get_Keff(par, phases, dataset=None, func_par=None, make_surface=False, verbose=False)
+    def Get_Keff(self, par, nphases=20, dataset=0, func_par=None, make_surface=False, verbose=False):
+        """
         Returns the effective projected velocity semi-amplitude of the star in m/s.
         The luminosity-weighted average velocity of the star is returned for
         nphases, for the specified dataset, and a sin wave is fitted to them.
@@ -333,10 +333,8 @@ class Photometry:
             [7]: Distance modulus.
             [8]: Absorption A_J.
         nphases (int): Number of phases to evaluate the velocity at.
-        dataset (int): The dataset for which the velocity is evaluated
-            (i.e. the atmosphere grid to use).
-            This parameter must be set if not atmosphere grid was specified
-            for the Keff evaluation in the class initialization.
+        dataset (int): The index of the atmosphere grid to use for the velocity
+            calculation. By default the first one is chosen.
         func_par (function): Function that takes the parameter vector and
             returns the parameter vector. This allow for possible constraints
             on the parameters. The vector returned by func_par must have a length
@@ -355,13 +353,7 @@ class Photometry:
             tirr = (par[6]**4 - par[3]**4)**0.25
             self.star.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
         # Deciding which atmosphere grid we use to evaluate Keff
-        if dataset is None:
-            try:
-                atmo_grid = self.keff_atmo_grid
-            except:
-                atmo_grid = self.atmo_grid[0]
-        else:
-            atmo_grid = self.atmo_grid[dataset]
+        atmo_grid = self.atmo_grid[dataset]
         # Get the Keffs and fluxes
         phases = numpy.arange(nphases)/float(nphases)
         Keffs = numpy.array( [self.star.Keff(phase, atmo_grid=atmo_grid) for phase in phases] )
@@ -372,14 +364,14 @@ class Photometry:
         Keff = tmp[1]
         return Keff
 
-    def _Init_lightcurve(self, nalf, read=False):
-        """_Init_lightcurve(nalf, read=False)
+    def _Init_lightcurve(self, ndiv, read=False):
+        """_Init_lightcurve(ndiv, read=False)
         Call the appropriate Lightcurve class and initialize
         the stellar array.
         
-        >>> self._Init_lightcurve(nalf)
+        >>> self._Init_lightcurve(ndiv)
         """
-        self.star = Core.Star(nalf, read=read)
+        self.star = Core.Star(ndiv, read=read)
         return
 
     def Make_surface(self, par, func_par=None, verbose=False):
@@ -669,8 +661,7 @@ class Photometry:
         
         atmo_fln: A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
-                band_name, center_wavelength, delta_wavelength, flux0,
-                    extinction, grid_file
+                band_name, grid_file
         
         >>> self._Read_atmo(atmo_fln)
         """
@@ -680,18 +671,7 @@ class Photometry:
         for line in lines:
             if (line[0] != '#') and (line[0] != '\n'):
                 tmp = line.split()
-                # We read the BT-Settl.7 data with the proper class
-                if tmp[5].find('BT-Settl.7') != -1:
-                    self.atmo_grid.append(Atmosphere.Atmo_grid_BTSettl7(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4])))
-                else:
-                    self.atmo_grid.append(Atmosphere.Atmo_grid(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4])))
-            elif (line[:2] == '#!'):
-                tmp = line.split()
-                tmp = tmp[1:]
-                if tmp[5].find('BT-Settl.7') != -1:
-                    self.keff_atmo_grid = Atmosphere.Atmo_grid_BTSettl7(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4]))
-                else:
-                    self.keff_atmo_grid = Atmosphere.Atmo_grid(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4]))
+                self.atmo_grid.append(Atmosphere.AtmoGridPhot.ReadHDF5(tmp[1]))
         return
 
     def _Read_data(self, data_fln):
@@ -755,12 +735,12 @@ class Photometry:
         # The grouping will define datasets that are in the same band and can be evaluated only once in order to save on computation.
         grouping = numpy.arange(self.ndataset)
         for i in numpy.arange(self.ndataset):
-            ext.extend(self.data['phase'][i]*0.+self.atmo_grid[i].ext)
-            self.data['ext'].append(self.atmo_grid[i].ext)
+            ext.extend(self.data['phase'][i]*0.+self.atmo_grid[i].meta['ext'])
+            self.data['ext'].append(self.atmo_grid[i].meta['ext'])
             if self.data['softening'][i] == 0:
-                flux,flux_err = Utils.Flux.Mag_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].flux0)
+                flux,flux_err = Utils.Flux.Mag_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].meta['zp'])
             else:
-                flux,flux_err = Utils.Flux.Asinh_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].flux0, softening=self.data['softening'][i])
+                flux,flux_err = Utils.Flux.Asinh_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].meta['zp'], softening=self.data['softening'][i])
             self.data['flux'].append( flux )
             self.data['flux_err'].append( flux_err )
             for j in numpy.arange(i+1):

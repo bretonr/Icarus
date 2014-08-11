@@ -23,12 +23,6 @@ import scipy.stats
 import numpy
 import numpy as np
 
-# try to import ppgplot and Presto's Pgplot to enable some plotting capabilities
-try:
-    import Pgplot
-    from Pgplot import plotxy, plot2d, plotbinned, nextplotpage, closeplot, resetdefaults, ppgplot
-except:
-    print( "Cannot import Pgplot. This is not a critical error, but some of the plotting functionalities might be impossible." )
 try:
     import matplotlib, pylab
 except:

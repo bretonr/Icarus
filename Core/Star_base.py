@@ -26,12 +26,12 @@ class Star_base(object):
         luminosity of the star. It is taken into account that some energy received
         from the companion heats up the exposed side of the star.
     """
-    def __init__(self, nalf, atmo_grid=None):
+    def __init__(self, ndiv, atmo_grid=None):
         """__init__
         Initialize the class instance.
         
-        nalf: The number of surface slices. Defines how coarse/fine
-            the surface grid is.
+        ndiv: The number of surface element subdivisions. Defines how
+            coarse/fine the surface grid is.
         atmo_grid (None): An atmosphere model grid from which the
             radiance is interpolated.
         
@@ -45,7 +45,7 @@ class Star_base(object):
         # We set the class attributes
         if atmo_grid is not None:
            self.atmo_grid = atmo_grid 
-        self.nalf = nalf
+        self.ndiv = ndiv
         # Instantiating some class attributes.
         self.q = None
         self.omega = None
@@ -473,7 +473,7 @@ class Star_base(object):
             proj = self._Proj(a)
         else:
             proj = self._Proj(self.separation)
-        return -2.5*numpy.log10(self.Bbody_flux(phase, limbdark, atmo_grid=atmo_grid)*proj/atmo_grid.flux0)
+        return -2.5*numpy.log10(self.Bbody_flux(phase, limbdark, atmo_grid=atmo_grid)*proj) + atmo_grid.meta['zp']
 
     def Mag_bol_flux(self, phase, a=None):
         """Mag_bol_flux(phase, a=None)
@@ -519,7 +519,7 @@ class Star_base(object):
             proj = self._Proj(self.separation)
         if gravscale is None:
             gravscale = self._Gravscale()
-        return -2.5*numpy.log10(self.Flux(phase, gravscale=gravscale, atmo_grid=atmo_grid)*proj/atmo_grid.flux0)
+        return -2.5*numpy.log10(self.Flux(phase, gravscale=gravscale, atmo_grid=atmo_grid)*proj) + atmo_grid.meta['zp']
 
     def Mag_flux_doppler(self, phase, gravscale=None, a=None, atmo_grid=None, velocity=0.):
         """Mag_flux_doppler(phase, gravscale=None, a=None, atmo_grid=None, velocity=0.)
@@ -548,7 +548,7 @@ class Star_base(object):
             proj = self._Proj(self.separation)
         if gravscale is None:
             gravscale = self._Gravscale()
-        return -2.5*numpy.log10(self.Flux_doppler(phase, gravscale=gravscale, atmo_grid=atmo_grid, velocity=velocity)*proj/atmo_grid.flux0)
+        return -2.5*numpy.log10(self.Flux_doppler(phase, gravscale=gravscale, atmo_grid=atmo_grid, velocity=velocity)*proj) + atmo_grid.meta['zp']
 
     def Make_surface(self, q=None, omega=None, filling=None, temp=None, tempgrav=None, tirr=None, porb=None, k1=None, incl=None):
         """Make_surface(q=None, omega=None, filling=None, temp=None, tempgrav=None, tirr=None, porb=None, k1=None, incl=None)
@@ -751,10 +751,10 @@ class Star_base(object):
         >>> self.Radius()
         """
         logger.debug("start")
-        sindeltalfby2 = numpy.sin(cts.pibytwo/self.nalf)
+        sindeltalfby2 = numpy.sin(cts.pibytwo/self.ndiv)
         solidangle = []
         solidangle.append(cts.twopi*(1.-numpy.sqrt(1.-sindeltalfby2**2)))
-        solidangle_nbet = 4*cts.pi*numpy.sin(cts.pi*numpy.arange(1,self.nalf)/self.nalf)*sindeltalfby2/self.nbet
+        solidangle_nbet = 4*cts.pi*numpy.sin(cts.pi*numpy.arange(1,self.ndiv)/self.ndiv)*sindeltalfby2/self.nbet
         [solidangle.extend(s.repeat(i)) for s,i in zip(solidangle_nbet,self.nbet)]
         solidangle.append(cts.twopi*(1.-numpy.sqrt(1.-sindeltalfby2**2)))
         vol = (self.rc**3*numpy.array(solidangle)).sum()/3
@@ -818,7 +818,7 @@ class Star_base(object):
 #        print( "Begin _Surface()" )
         # Calculate some quantities
         self._Calc_qp1by2om2()
-        sindeltalfby2 = numpy.sin(cts.pibytwo/self.nalf)
+        sindeltalfby2 = numpy.sin(cts.pibytwo/self.ndiv)
         arl1 = cts.twopi*(1.-numpy.sqrt(1.-sindeltalfby2**2)) # solid angle
         
 #        print 'Start surface'
@@ -881,11 +881,11 @@ class Star_base(object):
         
 #        print 'Start surface loop'
         # Calculate useful quantities for each slice of the surface
-        tcosx = numpy.cos(cts.pi*numpy.arange(1,self.nalf)/self.nalf)
+        tcosx = numpy.cos(cts.pi*numpy.arange(1,self.ndiv)/self.ndiv)
         tsinx = numpy.sqrt(1.-tcosx**2)
-        #rl = self._Radius(tcosx, tsinx, numpy.zeros(self.nalf, dtype=float), psil1, numpy.repeat(rl180,self.nalf-1))
+        #rl = self._Radius(tcosx, tsinx, numpy.zeros(self.ndiv, dtype=float), psil1, numpy.repeat(rl180,self.ndiv-1))
 #        print 'about to calculate rl'
-        rl = self._Radius(tcosx, tsinx, numpy.zeros(self.nalf, dtype=float), psil1, rl180)
+        rl = self._Radius(tcosx, tsinx, numpy.zeros(self.ndiv, dtype=float), psil1, rl180)
 #        print 'rl '#+str(rl)
         rtry = self._Radius(-1., 0., 0., psi0, rl180)
 #        print 'rtry '+str(rtry)

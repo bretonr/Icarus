@@ -45,6 +45,15 @@ def Inter8_photometry(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu):
     }
     return_val = fl;
     """
+    grid = np.ascontiguousarray(grid)
+    wteff = np.ascontiguousarray(wteff)
+    wlogg = np.ascontiguousarray(wlogg)
+    wmu = np.ascontiguousarray(wmu)
+    jteff = np.ascontiguousarray(jteff)
+    jlogg = np.ascontiguousarray(jlogg)
+    jmu = np.ascontiguousarray(jmu)
+    area = np.ascontiguousarray(area)
+    val_mu = np.ascontiguousarray(val_mu)
     nsurf = jteff.size
     try:
         if os.uname()[0] == 'Darwin':
@@ -57,14 +66,14 @@ def Inter8_photometry(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu):
     fl = get_flux
     return fl
 
-def Inter8_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, v, logteff):
+def Inter8_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, v, val_teff):
     """
     """
     code = """
     double fl = 0.;
     double Keff = 0.;
     double Teff = 0.;
-    #pragma omp parallel shared(grid,wteff,wlogg,wmu,jteff,jlogg,jmu,area,val_mu,v,logteff,nsurf,fl,Keff,Teff) default(none)
+    #pragma omp parallel shared(grid,wteff,wlogg,wmu,jteff,jlogg,jmu,area,val_mu,v,val_teff,nsurf,fl,Keff,Teff) default(none)
     {
     double w1teff, w0teff, w1logg, w0logg, w1mu, w0mu, tmp_fl;
     int j0teff, j1teff, j0logg, j1logg, j0mu, j1mu;
@@ -89,7 +98,7 @@ def Inter8_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, 
         tmp_fl = exp(tmp_fl) * area(i) * val_mu(i);
         fl = fl + tmp_fl;
         Keff = Keff + v(i) * tmp_fl;
-        Teff = Teff + exp(logteff(i)) * tmp_fl;
+        Teff = Teff + exp(val_teff(i)) * tmp_fl;
     }
     }
     Keff = Keff/fl;
@@ -98,6 +107,17 @@ def Inter8_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, 
     results(1) = Keff;
     results(2) = Teff;
     """
+    grid = np.ascontiguousarray(grid)
+    wteff = np.ascontiguousarray(wteff)
+    wlogg = np.ascontiguousarray(wlogg)
+    wmu = np.ascontiguousarray(wmu)
+    jteff = np.ascontiguousarray(jteff)
+    jlogg = np.ascontiguousarray(jlogg)
+    jmu = np.ascontiguousarray(jmu)
+    area = np.ascontiguousarray(area)
+    val_mu = np.ascontiguousarray(val_mu)
+    v = np.ascontiguousarray(v)
+    val_teff = np.ascontiguousarray(val_teff)
     nsurf = jteff.size
     results = numpy.zeros(3, dtype=float)
     try:
@@ -105,9 +125,9 @@ def Inter8_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, 
             extra_compile_args = extra_link_args = ['-O3']
         else:
             extra_compile_args = extra_link_args = ['-O3 -fopenmp']
-        get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'jteff', 'jlogg', 'jmu', 'area', 'val_mu', 'v', 'logteff', 'nsurf', 'results'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>','<cmath>'], libraries=['m'], verbose=2)
+        get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'jteff', 'jlogg', 'jmu', 'area', 'val_mu', 'v', 'val_teff', 'nsurf', 'results'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>','<cmath>'], libraries=['m'], verbose=2)
     except:
-        get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'jteff', 'jlogg', 'jmu', 'area', 'val_mu', 'v', 'logteff', 'nsurf', 'results'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], headers=['<cmath>'], libraries=['m'], verbose=2)
+        get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'jteff', 'jlogg', 'jmu', 'area', 'val_mu', 'v', 'val_teff', 'nsurf', 'results'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], headers=['<cmath>'], libraries=['m'], verbose=2)
     tmp = get_flux
     fl, Keff, Teff = results
     return fl, Keff, Teff
@@ -148,6 +168,16 @@ def Inter8_photometry_Keff(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val
     results(0) = fl;
     results(1) = Keff;
     """
+    grid = np.ascontiguousarray(grid)
+    wteff = np.ascontiguousarray(wteff)
+    wlogg = np.ascontiguousarray(wlogg)
+    wmu = np.ascontiguousarray(wmu)
+    jteff = np.ascontiguousarray(jteff)
+    jlogg = np.ascontiguousarray(jlogg)
+    jmu = np.ascontiguousarray(jmu)
+    area = np.ascontiguousarray(area)
+    val_mu = np.ascontiguousarray(val_mu)
+    v = np.ascontiguousarray(v)
     nsurf = jteff.size
     results = numpy.zeros(2, dtype=float)
     try:
@@ -192,6 +222,15 @@ def Inter8_photometry_nosum(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, va
     }
     }
     """
+    grid = np.ascontiguousarray(grid)
+    wteff = np.ascontiguousarray(wteff)
+    wlogg = np.ascontiguousarray(wlogg)
+    wmu = np.ascontiguousarray(wmu)
+    jteff = np.ascontiguousarray(jteff)
+    jlogg = np.ascontiguousarray(jlogg)
+    jmu = np.ascontiguousarray(jmu)
+    area = np.ascontiguousarray(area)
+    val_mu = np.ascontiguousarray(val_mu)
     nsurf = jteff.size
     fl = numpy.zeros(nsurf, dtype=float)
     try:
@@ -216,18 +255,6 @@ def Inter8_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
         the data.
     """
     logger.debug("start")
-    grid = numpy.ascontiguousarray(grid)
-    wteff = numpy.ascontiguousarray(wteff)
-    wlogg = numpy.ascontiguousarray(wlogg)
-    wmu = numpy.ascontiguousarray(wmu)
-    wwav = numpy.ascontiguousarray(wwav)
-    jteff = numpy.ascontiguousarray(jteff)
-    jlogg = numpy.ascontiguousarray(jlogg)
-    jmu = numpy.ascontiguousarray(jmu)
-    jwav = numpy.ascontiguousarray(jwav)
-    area = numpy.ascontiguousarray(area)
-    val_mu = numpy.ascontiguousarray(val_mu)
-
     code = """
     #pragma omp parallel shared(grid,wteff,wlogg,wmu,wwav,jteff,jlogg,jmu,jwav,area,val_mu,nsurf,nwav,fl) default(none)
     {
@@ -298,6 +325,17 @@ def Inter8_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
     }
     }
     """
+    grid = numpy.ascontiguousarray(grid)
+    wteff = numpy.ascontiguousarray(wteff)
+    wlogg = numpy.ascontiguousarray(wlogg)
+    wmu = numpy.ascontiguousarray(wmu)
+    wwav = numpy.ascontiguousarray(wwav)
+    jteff = numpy.ascontiguousarray(jteff)
+    jlogg = numpy.ascontiguousarray(jlogg)
+    jmu = numpy.ascontiguousarray(jmu)
+    jwav = numpy.ascontiguousarray(jwav)
+    area = numpy.ascontiguousarray(area)
+    val_mu = numpy.ascontiguousarray(val_mu)
     nsurf = jteff.size
     nwav = grid.shape[-1]
     fl = numpy.ones(nwav, dtype=float)
@@ -308,7 +346,7 @@ def Inter8_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
         extra_compile_args = extra_link_args = ['-O3 -fopenmp']
     get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'wwav', 'jteff', 'jlogg', 'jmu', 'jwav', 'area', 'val_mu', 'nsurf', 'nwav', 'fl'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>','<cmath>'], libraries=['m'], verbose=2)
     tmp = get_flux
-    logger.debug("start")
+    logger.debug("end")
     return fl
 
 def Inter8_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, mu_grid, area, val_mu):
@@ -322,19 +360,6 @@ def Inter8_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, 
         the data.
     """
     logger.debug("start")
-    grid = numpy.ascontiguousarray(grid)
-    wteff = numpy.ascontiguousarray(wteff)
-    wlogg = numpy.ascontiguousarray(wlogg)
-    wmu = numpy.ascontiguousarray(wmu)
-    wwav = numpy.ascontiguousarray(wwav)
-    jteff = numpy.ascontiguousarray(jteff)
-    jlogg = numpy.ascontiguousarray(jlogg)
-    jmu = numpy.ascontiguousarray(jmu)
-    jwav = numpy.ascontiguousarray(jwav)
-    mu_grid = numpy.ascontiguousarray(mu_grid)
-    area = numpy.ascontiguousarray(area)
-    val_mu = numpy.ascontiguousarray(val_mu)
-
     code = """
     #pragma omp parallel shared(grid,wteff,wlogg,wmu,wwav,jteff,jlogg,jmu,jwav,mu_grid,area,val_mu,nsurf,nwav,fl) default(none)
     {
@@ -385,9 +410,20 @@ def Inter8_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, 
     }
     }
     """
+    grid = numpy.ascontiguousarray(grid)
+    wteff = numpy.ascontiguousarray(wteff)
+    wlogg = numpy.ascontiguousarray(wlogg)
+    wmu = numpy.ascontiguousarray(wmu)
+    wwav = numpy.ascontiguousarray(wwav)
+    jteff = numpy.ascontiguousarray(jteff)
+    jlogg = numpy.ascontiguousarray(jlogg)
+    jmu = numpy.ascontiguousarray(jmu)
+    jwav = numpy.ascontiguousarray(jwav)
+    mu_grid = numpy.ascontiguousarray(mu_grid)
+    area = numpy.ascontiguousarray(area)
+    val_mu = numpy.ascontiguousarray(val_mu)
     nsurf = jteff.size
     nwav = grid.shape[-1]
-    mu_grid = numpy.asarray(mu_grid, dtype=float)
     fl = numpy.zeros(nwav, dtype=float)
     if os.uname()[0] == 'Darwin':
         extra_compile_args = extra_link_args = ['-O3']
@@ -430,21 +466,21 @@ def Inter8_doppler_savememory_linear(grid, wteff, wlogg, wmu, jteff, jlogg, jmu,
         the data.
     """
     code = """
-    #pragma omp parallel shared(grid,wteff,wlogg,wmu,jteff,jlogg,jmu,mu_grid,area,val_mu,val_vel,z0,nsurf,nlam,fl) default(none)
+    #pragma omp parallel shared(grid,wteff,wlogg,wmu,jteff,jlogg,jmu,mu_grid,area,val_mu,val_vel,z0,nsurf,nwav,fl) default(none)
     {
     double w1teff, w0teff, w1logg, w0logg, w1mu, w0mu;
     int j0teff, j1teff, j0logg, j1logg, j0mu, j1mu;
     double zplusone, kprime, w0k, w1k; // The weights on the interpolated lambda
     int j0k, j1k; // The indices on the interpolated lambda
     #pragma omp for
-    for (int k=0; k<nlam; k++) {
+    for (int k=0; k<nwav; k++) {
         for (int i=0; i<nsurf; i++) {
             // The interpolation on lambda due to the Doppler shift
             zplusone = sqrt( (1.+val_vel(i))/(1.-val_vel(i)) );
             kprime = zplusone*k + (zplusone-1.)/z0;
-            if (kprime >= nlam){
-                j0k = nlam-1;
-                j1k = nlam-1;
+            if (kprime >= nwav){
+                j0k = nwav-1;
+                j1k = nwav-1;
                 w1k = 1.;
                 w0k = 0.;
             } else if (kprime < 0) {
@@ -484,18 +520,29 @@ def Inter8_doppler_savememory_linear(grid, wteff, wlogg, wmu, jteff, jlogg, jmu,
     }
     }
     """
+    grid = numpy.ascontiguousarray(grid)
+    wteff = numpy.ascontiguousarray(wteff)
+    wlogg = numpy.ascontiguousarray(wlogg)
+    wmu = numpy.ascontiguousarray(wmu)
+    wwav = numpy.ascontiguousarray(wwav)
+    jteff = numpy.ascontiguousarray(jteff)
+    jlogg = numpy.ascontiguousarray(jlogg)
+    jmu = numpy.ascontiguousarray(jmu)
+    jwav = numpy.ascontiguousarray(jwav)
+    area = numpy.ascontiguousarray(area)
+    val_mu = numpy.ascontiguousarray(val_mu)
     nsurf = jteff.size
-    nlam = grid.shape[-1]
-    fl = numpy.ones(nlam, dtype=float)
+    nwav = grid.shape[-1]
+    fl = numpy.ones(nwav, dtype=float)
     if os.uname()[0] == 'Darwin':
         extra_compile_args = extra_link_args = ['-O3']
     else:
         extra_compile_args = extra_link_args = ['-O3 -fopenmp']
-    get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'jteff', 'jlogg', 'jmu', 'mu_grid', 'area', 'val_mu', 'val_vel', 'z0', 'nsurf', 'nlam', 'fl'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>','<cmath>'], libraries=['m'], verbose=2)
+    get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'jteff', 'jlogg', 'jmu', 'mu_grid', 'area', 'val_mu', 'val_vel', 'z0', 'nsurf', 'nwav', 'fl'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>','<cmath>'], libraries=['m'], verbose=2)
     tmp = get_flux
     return fl
 
-def Inter8_doppler_nomu(grid, wteff, wlogg, wlam, jteff, jlogg, jlam, area, val_mu):
+def Inter8_doppler_nomu(grid, wteff, wlogg, wwav, jteff, jlogg, jwav, area, val_mu):
     """
     Note: Because of the Doppler shift, the interpolation on the wavelength
         will necessarily go out of bound, on the lower or upper range. We 
@@ -505,10 +552,10 @@ def Inter8_doppler_nomu(grid, wteff, wlogg, wlam, jteff, jlogg, jlam, area, val_
         ### Check the fl(k) += foo
     """
     code = """
-    #pragma omp parallel shared(grid,wteff,wlogg,wlam,jteff,jlogg,jlam,area,val_mu,nsurf,nlam,fl) default(none)
+    #pragma omp parallel shared(grid,wteff,wlogg,wwav,jteff,jlogg,jwav,area,val_mu,nsurf,nwav,fl) default(none)
     {
-    double w1teff, w0teff, w1logg, w0logg, w1lam, w0lam;
-    int j0teff, j1teff, j0logg, j1logg, j0lam, j1lam, j0lamk, j1lamk;
+    double w1teff, w0teff, w1logg, w0logg, w1wav, w0wav;
+    int j0teff, j1teff, j0logg, j1logg, j0wav, j1wav, j0wavk, j1wavk;
     #pragma omp for
     for (int i=0; i<nsurf; i++) {
             w1teff = wteff(i);
@@ -519,37 +566,46 @@ def Inter8_doppler_nomu(grid, wteff, wlogg, wlam, jteff, jlogg, jlam, area, val_
             w0logg = 1.-w1logg;
             j0logg = jlogg(i);
             j1logg = 1.+j0logg;
-            w1lam = wlam(i);
-            w0lam = 1.-w1lam;
-            j0lam = jlam(i);
-            j1lam = 1.+j0lam;
-        for (int k=0; k<nlam; k++) {
-            j0lamk = j0lam+k;
-            j1lamk = j1lam+k;
-            if (j0lamk < 0){
-                j0lamk = 0;
-                j1lamk = 0;
-            } else if (j1lamk >= nlam){
-                j0lamk = nlam-1;
-                j1lamk = nlam-1;
+            w1wav = wwav(i);
+            w0wav = 1.-w1wav;
+            j0wav = jwav(i);
+            j1wav = 1.+j0wav;
+        for (int k=0; k<nwav; k++) {
+            j0wavk = j0wav+k;
+            j1wavk = j1wav+k;
+            if (j0wavk < 0){
+                j0wavk = 0;
+                j1wavk = 0;
+            } else if (j1wavk >= nwav){
+                j0wavk = nwav-1;
+                j1wavk = nwav-1;
             }
-            fl(k) += (w0lam*(w0logg*(w0teff*grid(j0teff,j0logg,j0lamk) + w1teff*grid(j1teff,j0logg,j0lamk)) \
-                        + w1logg*(w0teff*grid(j0teff,j1logg,j0lamk) + w1teff*grid(j1teff,j1logg,j0lamk))) \
-                    + w1lam*(w0logg*(w0teff*grid(j0teff,j0logg,j1lamk) + w1teff*grid(j1teff,j0logg,j1lamk)) \
-                        + w1logg*(w0teff*grid(j0teff,j1logg,j1lamk) + w1teff*grid(j1teff,j1logg,j1lamk)))) * area(i) * val_mu(i);
+            fl(k) += (w0wav*(w0logg*(w0teff*grid(j0teff,j0logg,j0wavk) + w1teff*grid(j1teff,j0logg,j0wavk)) \
+                        + w1logg*(w0teff*grid(j0teff,j1logg,j0wavk) + w1teff*grid(j1teff,j1logg,j0wavk))) \
+                    + w1wav*(w0logg*(w0teff*grid(j0teff,j0logg,j1wavk) + w1teff*grid(j1teff,j0logg,j1wavk)) \
+                        + w1logg*(w0teff*grid(j0teff,j1logg,j1wavk) + w1teff*grid(j1teff,j1logg,j1wavk)))) * area(i) * val_mu(i);
             /*fl(i,k) = pow(10,fl(i,k));*/
         }
     }
     }
     """
+    grid = numpy.ascontiguousarray(grid)
+    wteff = numpy.ascontiguousarray(wteff)
+    wlogg = numpy.ascontiguousarray(wlogg)
+    wwav = numpy.ascontiguousarray(wwav)
+    jteff = numpy.ascontiguousarray(jteff)
+    jlogg = numpy.ascontiguousarray(jlogg)
+    jwav = numpy.ascontiguousarray(jwav)
+    area = numpy.ascontiguousarray(area)
+    val_mu = numpy.ascontiguousarray(val_mu)
     nsurf = jteff.size
-    nlam = grid.shape[-1]
-    fl = numpy.empty(nlam, dtype=float)
+    nwav = grid.shape[-1]
+    fl = numpy.ones(nwav, dtype=float)
     if os.uname()[0] == 'Darwin':
         extra_compile_args = extra_link_args = ['-O3']
     else:
         extra_compile_args = extra_link_args = ['-O3 -fopenmp']
-    get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wlam', 'jteff', 'jlogg', 'jlam', 'area', 'val_mu', 'nsurf', 'nlam', 'fl'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>','<cmath>'], libraries=['m'], verbose=2)
+    get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wwav', 'jteff', 'jlogg', 'jwav', 'area', 'val_mu', 'nsurf', 'nwav', 'fl'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>','<cmath>'], libraries=['m'], verbose=2)
     tmp = get_flux
     return fl
 
@@ -574,8 +630,8 @@ def Shift_spectrum(fref, wobs, v, refstart, refstep):
     nobs = int(wobs.size)
     nref = int(fref.size)
     fbin = numpy.zeros(nobs, dtype=float)
-    fref = numpy.asarray(fref, dtype=float)
-    wobs = numpy.asarray(wobs, dtype=float)
+    fref = numpy.ascontiguousarray(fref, dtype=float)
+    wobs = numpy.ascontiguousarray(wobs, dtype=float)
     v = float(v)
     refstart = float(refstart)
     refstep = float(refstep)

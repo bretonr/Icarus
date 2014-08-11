@@ -16,12 +16,12 @@ class Atmo_grid_lithium_doppler(Atmo_grid_lithium):
     shifts. The flux calculation takes an extra parameter for the
     velocity
     """
-    def __init__(self, flns, oversample=None, smooth=None, thin=None, convert=None, flux0=1, wave_cut=[3000,11000], verbose=False, savememory=True):
+    def __init__(self, flns, oversample=None, smooth=None, thin=None, convert=None, zp=0., wave_cut=[3000,11000], verbose=False, savememory=True):
         """
         """
         if verbose: print( 'Reading atmosphere grid files' )
-        #Atmo_grid_lithium.__init__(self, flns, oversample=oversample, smooth=smooth, thin=thin, convert=convert, flux0=flux0, wave_cut=wave_cut, linlog=True, verbose=verbose, savememory=savememory)
-        Atmo_grid_lithium.__init__(self, flns, oversample=oversample, smooth=smooth, thin=thin, convert=convert, flux0=flux0, wave_cut=wave_cut, linlog=False, verbose=verbose, savememory=savememory)
+        #Atmo_grid_lithium.__init__(self, flns, oversample=oversample, smooth=smooth, thin=thin, convert=convert, zp=zp, wave_cut=wave_cut, linlog=True, verbose=verbose, savememory=savememory)
+        Atmo_grid_lithium.__init__(self, flns, oversample=oversample, smooth=smooth, thin=thin, convert=convert, zp=zp, wave_cut=wave_cut, linlog=False, verbose=verbose, savememory=savememory)
         #print( 'Rebinning to linear in logarithmic spacing' )
         #self.__Make_log()
     

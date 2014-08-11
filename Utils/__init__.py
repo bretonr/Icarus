@@ -3,7 +3,6 @@
 __all__ = ["Binary",
             "Eclipse",
             "Filter",
-            "Filter_BTSettl",
             "Flux",
             "Grid",
             "Misc",

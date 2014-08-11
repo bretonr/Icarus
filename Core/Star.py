@@ -25,8 +25,8 @@ class Star(Star_base):
         y: Along the orbital plane along the orbital motion.
         z: Along the orbital angular momentum.
     """
-    def __init__(self, nalf, atmo_grid=None, read=False):
-        Star_base.__init__(self, nalf, atmo_grid=atmo_grid)
+    def __init__(self, ndiv, atmo_grid=None, read=False):
+        Star_base.__init__(self, ndiv, atmo_grid=atmo_grid)
         if read:
             self._Read_geodesic()
         else:
@@ -52,7 +52,7 @@ class Star(Star_base):
             self._Read_geodesic()
             return
         # Generate the geodesic primitives
-        s = gts.sphere(self.nalf)
+        s = gts.sphere(self.ndiv)
         x,y,z,t = gts.get_coords_and_face_indices(s,True)
         self.vertices = numpy.c_[x,y,z]
         self.faces = numpy.array(t)
@@ -84,7 +84,7 @@ class Star(Star_base):
         """
         print( "Generating the geodesic surface" )
         # Generate the geodesic primitives
-        self.n_faces, self.n_vertices, self.faces, self.vertices, self.assoc = Utils.Tessellation.Make_geodesic(self.nalf)
+        self.n_faces, self.n_vertices, self.faces, self.vertices, self.assoc = Utils.Tessellation.Make_geodesic(self.ndiv)
         # We will pre-calculate the surface areas. They will need to be multiplied by rc^2.
         # The calculation is simply the Pythagorean sum of the areas of the respective projections on the x,y,z planes.
         print( "meshing the surface" )
@@ -124,8 +124,8 @@ class Star(Star_base):
         sphere has already been precalculated. We simply load the
         one have the desired precision.
         """
-        #f = open('geodesic/geodesic_n%i.txt'%self.nalf, 'r')
-        f = open(Utils.__path__[0][:-5]+'geodesic/geodesic_n%i.txt'%self.nalf, 'r')
+        #f = open('geodesic/geodesic_n%i.txt'%self.ndiv, 'r')
+        f = open(Utils.__path__[0][:-5]+'geodesic/geodesic_n%i.txt'%self.ndiv, 'r')
         lines = f.readlines()
         
         # We store the number of vertices, faces and edges as class variables.

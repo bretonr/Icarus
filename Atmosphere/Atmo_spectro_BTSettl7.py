@@ -15,12 +15,12 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
     This class handles the atmosphere grid containing a spectral
     dimension.
     """
-    def __init__(self, flns, oversample=None, sigma=None, tophat=None, thin=None, convert=None, flux0=1, wave_cut=[3000,11000], temp_cut=None, logg_cut=None, linlog=False, verbose=False, savememory=True):
+    def __init__(self, flns, oversample=None, sigma=None, tophat=None, thin=None, convert=None, zp=0., wave_cut=[3000,11000], temp_cut=None, logg_cut=None, linlog=False, verbose=False, savememory=True):
         """__init__
         """
-        # flux0 is for compatibility of spectroscopic and photometric atmosphere grids and scales the
+        # zp is for compatibility of spectroscopic and photometric atmosphere grids and scales the
         # zero point for the magnitude conversion.
-        self.flux0 = flux0
+        self.zp = zp
         self.flns = flns
         self.Flux_init(flns, oversample=oversample, sigma=sigma, tophat=tophat, thin=thin, convert=convert, wave_cut=wave_cut, temp_cut=temp_cut, logg_cut=logg_cut, linlog=linlog, verbose=verbose)
         self.Coeff_limb_darkening(self.wav/1e4, verbose=verbose)

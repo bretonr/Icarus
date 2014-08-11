@@ -13,12 +13,12 @@ class Atmo_grid_BTSettl7(Atmo_grid):
     This class handles the atmosphere grid for photometric data
     from the BT-Settl.7 atmosphere models.
     """
-    def __init__(self, fln, wav, dwav, flux0, ext=0., logg_lims=[3.,5.], AB=True):
-        """__init__(self, fln, wav, dwav, flux0, ext=0., logg_lims=[3.,5.], AB=True)
+    def __init__(self, fln, wav, dwav, zp, ext=0., logg_lims=[3.,5.], AB=True):
+        """__init__(self, fln, wav, dwav, zp, ext=0., logg_lims=[3.,5.], AB=True)
         """
         self.wav = wav
         self.dwav = dwav
-        self.flux0 = flux0
+        self.zp = zp
         self.ext = ext
         self.fln = fln
         self.Flux_init(logg_lims=logg_lims, AB=AB)

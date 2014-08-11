@@ -22,7 +22,7 @@ class Spectroscopy:
     calculate the predicted flux of the model at every data point (i.e.
     for a given orbital phase).
     """
-    def __init__(self, atmo_grid, data_fln, nalf, porb, x2sini, phase_offset=-0.25, seeing=-1, read=True):
+    def __init__(self, atmo_grid, data_fln, ndiv, porb, x2sini, phase_offset=-0.25, seeing=-1, read=True):
         """
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
@@ -55,8 +55,8 @@ class Spectroscopy:
                 velocity offset
                 velocity offset error
                 approximate velocity
-        nalf: The number of surface slice. Defines how coarse/fine the
-            surface grid is.
+        ndiv: The number of surface element subdivisions. Defines how coarse/fine
+            the surface grid is.
         porb: Orbital period of the system in seconds.
         x2sini: Projected semi-major axis of the secondary (pulsar)
             in light-second.
@@ -67,7 +67,7 @@ class Spectroscopy:
             primitives. This is the recommended option, unless you have the
             pygts package installed to calculate it on the spot.
         
-        >>> fit = Spectroscopy(atmo_fln, data_fln, nalf, porb, x2sini)
+        >>> fit = Spectroscopy(atmo_fln, data_fln, ndiv, porb, x2sini)
         """
         # We define some class attributes.
         self.porb = porb
@@ -87,7 +87,7 @@ class Spectroscopy:
         self.ndataset = len(self.data['phase'])
         # We initialize some important class attributes.
         print( 'Initializing the lightcurve attribute' )
-        self.star = Core.Star(nalf, atmo_grid=self.atmo_grid, read=read)
+        self.star = Core.Star(ndiv, atmo_grid=self.atmo_grid, read=read)
         print( 'Performing some more initialization' )
         self.Initialize(seeing=seeing)
         print( 'Done. Play and have fun...' )
