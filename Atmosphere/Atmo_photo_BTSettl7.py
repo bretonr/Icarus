@@ -8,8 +8,8 @@ from .Atmo_grid import Atmo_grid
 
 
 ######################## class Atmo_grid_BTSettl7 ########################
-class Atmo_grid_BTSettl7(Atmo_grid):
-    """Atmo_grid_BTSettl7(Atmo_grid)
+class Atmo_phot_BTSettl7(Atmo_grid):
+    """Atmo_phot_BTSettl7(Atmo_grid)
     This class handles the atmosphere grid for photometric data
     from the BT-Settl.7 atmosphere models.
     """
@@ -21,6 +21,7 @@ class Atmo_grid_BTSettl7(Atmo_grid):
         self.zp = zp
         self.ext = ext
         self.fln = fln
+        self.meta = {'zp':zp, 'ext':ext}
         self.Flux_init(logg_lims=logg_lims, AB=AB)
 
     def Flux_init(self, logg_lims=[3.,5.], AB=True):
