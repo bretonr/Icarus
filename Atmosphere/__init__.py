@@ -12,4 +12,4 @@ __all__ = ["Atmo_grid",
 
 #from .Atmo_grid import *
 #from .Atmo_photo_BTSettl7 import *
-
+from Atmo_photo_BTSettl7 import Atmo_photo_BTSettl7

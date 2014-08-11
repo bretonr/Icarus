@@ -682,14 +682,14 @@ class Photometry:
                 tmp = line.split()
                 # We read the BT-Settl.7 data with the proper class
                 if tmp[5].find('BT-Settl.7') != -1:
-                    self.atmo_grid.append(Atmosphere.Atmo_grid_BTSettl7(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4])))
+                    self.atmo_grid.append(Atmosphere.Atmo_photo_BTSettl7(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4])))
                 else:
                     self.atmo_grid.append(Atmosphere.Atmo_grid(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4])))
             elif (line[:2] == '#!'):
                 tmp = line.split()
                 tmp = tmp[1:]
                 if tmp[5].find('BT-Settl.7') != -1:
-                    self.keff_atmo_grid = Atmosphere.Atmo_grid_BTSettl7(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4]))
+                    self.keff_atmo_grid = Atmosphere.Atmo_photo_BTSettl7(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4]))
                 else:
                     self.keff_atmo_grid = Atmosphere.Atmo_grid(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4]))
         return

@@ -8,8 +8,8 @@ from .Atmo_grid import Atmo_grid
 
 
 ######################## class Atmo_grid_BTSettl7 ########################
-class Atmo_grid_BTSettl7(Atmo_grid):
-    """Atmo_grid_BTSettl7(Atmo_grid)
+class Atmo_photo_BTSettl7(Atmo_grid):
+    """Atmo_photo_BTSettl7(Atmo_grid)
     This class handles the atmosphere grid for photometric data
     from the BT-Settl.7 atmosphere models.
     """
