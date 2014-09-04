@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
-__all__ = ["Photometry"]
+__all__ = ["Photometry_doppler"]
 
 from ..Utils.import_modules import *
 from .. import Utils
@@ -233,7 +233,7 @@ class Photometry_doppler(Photometry):
         
         atmo_fln: A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
-                band_name, grid_file
+                band_name, grid_file, doppler_file
         
         >>> self._Read_atmo(atmo_fln)
         """
