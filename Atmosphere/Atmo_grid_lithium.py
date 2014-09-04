@@ -4,7 +4,7 @@ __all__ = ["Atmo_grid_lithium"]
 
 from ..Utils.import_modules import *
 from .. import Utils
-from .Atmo_grid import Atmo_grid
+from .Atmo import Atmo_grid
 
 
 ######################## class Atmo_grid_lithium ########################
@@ -13,12 +13,12 @@ class Atmo_grid_lithium(Atmo_grid):
     This class handles the atmosphere grid containing a spectral
     dimension.
     """
-    def __init__(self, flns, oversample=None, smooth=None, thin=None, convert=None, flux0=1, wave_cut=[3000,11000], linlog=False, verbose=False, savememory=True):
+    def __init__(self, flns, oversample=None, smooth=None, thin=None, convert=None, zp=0., wave_cut=[3000,11000], linlog=False, verbose=False, savememory=True):
         """__init__
         """
-        # flux0 is for compatibility of spectroscopic and photometric atmosphere grids and scales the
+        # zp is for compatibility of spectroscopic and photometric atmosphere grids and scales the
         # zero point for the magnitude conversion.
-        self.flux0 = flux0
+        self.zp = zp
         self.flns = flns
         self.Flux_init(flns, oversample=oversample, smooth=smooth, thin=thin, convert=convert, wave_cut=wave_cut, linlog=linlog, verbose=verbose)
         self.Coeff_limb_darkening(self.wav/1e4, verbose=verbose)
@@ -234,7 +234,7 @@ class Atmo_grid_lithium(Atmo_grid):
             numpy.savetxt(fln+convert,numpy.vstack((wav,numpy.log10(grid))).T)
         return grid, wav
 
-    def Inter8_orig(self, val_temp, val_logg, val_mu):
+    def Interp_orig(self, val_temp, val_logg, val_mu):
         """
         Obsolete!!!
         """
@@ -264,7 +264,7 @@ class Atmo_grid_lithium(Atmo_grid):
 #        flux = 10**fl * val_mu
         return flux
 
-    def Inter8_orig_nomu(self, val_temp, val_logg, val_mu):
+    def Interp_orig_nomu(self, val_temp, val_logg, val_mu):
         """
         Obsolete!!!
         """
@@ -304,7 +304,7 @@ class Atmo_grid_lithium(Atmo_grid):
         
         savememory (=False): If true, will keep the mu factors on the
             side and will account for them at the flux calculation time
-            in the modified Inter8 function.
+            in the modified Interp function.
         verbose (=False): verbosity.
         """
         self.savememory = savememory

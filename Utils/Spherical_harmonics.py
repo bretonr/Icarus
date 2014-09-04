@@ -54,7 +54,7 @@ def Composition(alm,phi,theta):
     
     >>> f = Composition(alm,phi,theta)
     """
-    if isinstance(alm, float):
+    if isinstance(alm, (float, int)):
         alm = [alm]
     else:
         alm = list(alm[::-1]) # making the alm a list will be easier and reversing so that the first element pops first
@@ -105,7 +105,7 @@ def Legendre_assoc(l,m,x):
     x: Argument, typically x=cos(theta) (abs(x)<=1).
     """
     l,m = int(l),int(m)
-    assert 0<=m<=l and all(abs(x)<=1.)
+    assert 0<=m<=l and np.all(abs(x)<=1.)
     if Norm_type == 0: norm = numpy.sqrt(2*l+1) / numpy.sqrt(4*cts.pi)
     elif Norm_type == 1: norm = 1.
     if m == 0:

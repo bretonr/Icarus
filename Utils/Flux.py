@@ -131,7 +131,7 @@ def Flux_to_asinh(flux, flux_err=None, zeropoint=0., flux0=1., softening=None):
     
     flux: flux
     flux_err (None): flux error
-    zeropoint (0.): zero-point value, in magnitude
+    zeropoint (0.): zero-point value, in magnitude, added to the magnitude
     flux0 (1.): zero-point value, in flux
     softening (None): softening parameter. If none is provided, it will
         be calculated as: softening = flux_err * sqrt(2.5*log10(e))
@@ -166,7 +166,7 @@ def Flux_to_mag(flux, flux_err=None, zeropoint=0., flux0=1.):
     
     flux: flux in erg/s/cm^2/Hz (note 1 Jy = 1e-23 erg/s/cm^2/Hz)
     flux_err (None): flux error
-    zeropoint (0.): zero-point value, in magnitude
+    zeropoint (0.): zero-point value, in magnitude, added to the magnitude
     flux0 (1.): zero-point value, in flux
         in erg/s/cm^2/Hz
     

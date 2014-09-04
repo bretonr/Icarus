@@ -4,7 +4,7 @@ __all__ = ["Photometry_temperature"]
 
 from ..Utils.import_modules import *
 from .. import Core
-from Photometry import Photometry
+from .Photometry import Photometry
 
 
 ######################## class Photometry_temperature ########################
@@ -19,8 +19,8 @@ class Photometry_temperature(Photometry):
     calculate the predicted flux of the model at every data point (i.e.
     for a given orbital phase).
     """
-    def __init__(self, atmo_fln, data_fln, nalf, porb, x2sini, edot=1., read=True):
-        """__init__(atmo_fln, data_fln, nalf, porb, x2sini, edot=1., read=True)
+    def __init__(self, atmo_fln, data_fln, ndiv, porb, x2sini, edot=1., read=True):
+        """__init__(atmo_fln, data_fln, ndiv, porb, x2sini, edot=1., read=True)
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
         (which in most cases will be a pulsar).
@@ -40,8 +40,8 @@ class Photometry_temperature(Photometry):
                     shift_to_phase_zero, calibration_error, data_file
             Here, the first column has index 0.
             Here, orbital phase 0. is the superior conjunction of the pulsar.
-        nalf (int): The number of surface slice. Defines how coarse/fine the
-            surface grid is.
+        ndiv (int): The number of surface element subdivisions. Defines how
+            coarse/fine the surface grid is.
         porb (float): Orbital period of the system in seconds.
         x2sini (float): Projected semi-major axis of the secondary (pulsar)
             in light-second.
@@ -58,24 +58,24 @@ class Photometry_temperature(Photometry):
         set tempgrav = 0., which disables the gravity darkening, and
         also set tirr = 0., which disables the irradiation.
         
-        >>> fit = Photometry_temperature(atmo_fln, data_fln, nalf, porb, x2sini, edot)
+        >>> fit = Photometry_temperature(atmo_fln, data_fln, ndiv, porb, x2sini, edot)
         """
         # Calling the parent class
-        Photometry.__init__(self, atmo_fln, data_fln, nalf, porb, x2sini, edot=edot, read=read)
-        #self._Init_lightcurve(nalf)
+        Photometry.__init__(self, atmo_fln, data_fln, ndiv, porb, x2sini, edot=edot, read=read)
+        #self._Init_lightcurve(ndiv)
         
-    def _Init_lightcurve(self, nalf, read=True):
-        """_Init_lightcurve(nalf, read=True)
+    def _Init_lightcurve(self, ndiv, read=True):
+        """_Init_lightcurve(ndiv, read=True)
         Call the appropriate Lightcurve class and initialize
         the stellar array.
         
-        >>> self._Init_lightcurve(nalf)
+        >>> self._Init_lightcurve(ndiv)
         """
-        self.star = Core.Star_temperature(nalf)
+        self.star = Core.Star_temperature(ndiv)
         return
 
-    def _Make_surface(self, par, func_par=None, verbose=False):
-        """_Make_surface(par, func_par=None, verbose=False)
+    def Make_surface(self, par, func_par=None, verbose=False):
+        """Make_surface(par, func_par=None, verbose=False)
         This function gets the parameters to construct to companion
         surface model and calls the Make_surface function from the
         Lightcurve object.
@@ -109,7 +109,7 @@ class Photometry_temperature(Photometry):
         set tempgrav = 0., which disables the gravity darkening, and
         also set tirr = 0., which disables the irradiation.
         
-        >>> _Make_surface(par)
+        >>> Make_surface(par)
         """
         # Apply a function that can modify the value of parameters.
         if func_par is not None:

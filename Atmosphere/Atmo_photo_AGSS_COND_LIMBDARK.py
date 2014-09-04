@@ -1,11 +1,12 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
-__all__ = ["Atmo_BTSettl7_spectro","Read_BTSettl7"]
+__all__ = ["Atmo_BTSettl7_spectro", "Read_BTSettl7"]
+
+from astropy.io import fits
 
 from ..Utils.import_modules import *
 from .. import Utils
-from .Atmo_grid import Atmo_grid
-from astropy.io import fits
+from .Atmo import Atmo_grid
 
 logger = logging.getLogger(__name__)
 
@@ -15,10 +16,10 @@ class Atmo_photo_AGSS_COND_LIMBDARK(Atmo_grid):
     """
     This class handles the photometric atmosphere grid from AGSS_COND_LIMBDARK.
     """
-    def __init__(self, fln, temp_cut=None, logg_cut=None, flux0=1., verbose=False):
+    def __init__(self, fln, temp_cut=None, logg_cut=None, zp=0., verbose=False):
         """
         """
-        self.flux0 = flux0
+        self.zp = zp
         self.fln = fln
         self.Flux_init(flns, temp_cut=temp_cut, logg_cut=logg_cut, verbose=verbose)
 

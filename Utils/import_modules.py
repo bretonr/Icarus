@@ -10,6 +10,7 @@ import datetime
 import operator
 import string
 import logging
+import warnings
 
 # import numpy and scipy modules
 import scipy
@@ -23,12 +24,6 @@ import scipy.stats
 import numpy
 import numpy as np
 
-# try to import ppgplot and Presto's Pgplot to enable some plotting capabilities
-try:
-    import Pgplot
-    from Pgplot import plotxy, plot2d, plotbinned, nextplotpage, closeplot, resetdefaults, ppgplot
-except:
-    print( "Cannot import Pgplot. This is not a critical error, but some of the plotting functionalities might be impossible." )
 try:
     import matplotlib, pylab
 except:
@@ -64,6 +59,8 @@ cts.pibytwo       = cts.pi / 2
 cts.SECPERDAY   = float('86400.0')
 cts.SECPERJULYR = float('31557600.0')
 
+# import some useful utility functions
+from .Misc import Pprint
 
 
 

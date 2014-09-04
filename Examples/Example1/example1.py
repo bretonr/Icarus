@@ -17,12 +17,12 @@ print( "Analysing some mock data. It is recommended to run it within the `ipytho
 ##### Loading the data
 atmo_fln = 'atmo_models.txt'
 data_fln = 'data.txt'
-nalf = 5
+ndiv = 5
 porb = 10 * 3600
 x2sini = 1.1
 
 print( "Loading the data into an Icarus.Photometry object (failure to do so is likely due to missing atmosphere models).\n" )
-fit = Icarus.Photometry.Photometry(atmo_fln, data_fln, nalf, porb, x2sini)
+fit = Icarus.Photometry.Photometry(atmo_fln, data_fln, ndiv, porb, x2sini)
 
 
 ##### This is the list of true parameters for the stars, as per construction

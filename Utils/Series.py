@@ -1,10 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
-from .import_modules import *
 try:
     from numba import autojit
 except:
     print("Cannot load the numba module.")
+
+from .import_modules import *
 
 logger = logging.getLogger(__name__)
 

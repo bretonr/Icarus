@@ -34,12 +34,12 @@ class StarBinary:
     (hence possibly eclipsed by star 2) and at inferior conjunction at phase 0
     (hence possibly eclipsing star 2).
     """
-    def __init__(self, nalf1, nalf2, atmo_grid=None, read=False):
+    def __init__(self, ndiv1, ndiv2, atmo_grid=None, read=False):
         """__init__
         Initialize the class instance.
         
-        nalf: The number of surface slices. Defines how coarse/fine
-            the surface grid is.
+        ndiv: The number of surface element subdivisions. Defines how
+            coarse/fine the surface grid is.
             Can be a two-element array (e.g. [5,8]), which would define the
             regular and the high-resolution level. If defined this way, the
             high-resolution level will be used in the partial eclipse case.
@@ -51,7 +51,7 @@ class StarBinary:
         It is optional to provide an atmosphere grid. If none is provided, it will
         have to be passed as a parameter to the routine calculating the flux.
         
-        >>> lightcurve = StarBinary(nafl1, nalf2)
+        >>> lightcurve = StarBinary(nafl1, ndiv2)
         """
         # We define some useful quantities.
         # We set the class attributes
@@ -60,32 +60,32 @@ class StarBinary:
         
         print( "Instantiating the primary star" )
         # Single resolution for the primary
-        if isinstance(nalf1, int):
+        if isinstance(ndiv1, int):
             print( " ...working at a single resolution" )
-            self.nalf1 = nalf1
-            self.primary = Core.Star(self.nalf1, atmo_grid=atmo_grid, read=read)
+            self.ndiv1 = ndiv1
+            self.primary = Core.Star(self.ndiv1, atmo_grid=atmo_grid, read=read)
             self.primary_hd = None
         # Dual resolution for the primary
-        elif len(nalf1) == 2:
+        elif len(ndiv1) == 2:
             print( " ...working at a dual resolution" )
-            self.nalf1, self.nalf1_hd = nalf1
-            self.primary = Core.Star(self.nalf1, atmo_grid=atmo_grid, read=read)
+            self.ndiv1, self.ndiv1_hd = ndiv1
+            self.primary = Core.Star(self.ndiv1, atmo_grid=atmo_grid, read=read)
             # If the resolution of the second argument is smaller or equal to the first argument, there will be no high resolution
-            if self.nalf1_hd <= self.nalf1:
+            if self.ndiv1_hd <= self.ndiv1:
                 print( " ...not quite, working at a single resolution" )
                 self.primary_hd = None
             # If high resolution is required, we will keep track of the association between the high resolution triangle and the low resolution ones
             else:
                 print( " ...calculating the surface subsampling" )
                 if read:
-                    self.primary_hd = Core.Star(self.nalf1_hd, atmo_grid=atmo_grid, read=read)
-                    #self.ind_subsampling1 = numpy.loadtxt('geodesic/ind_subsampling_n%i_n%i.txt'%(self.nalf1, self.nalf1_hd), dtype='int')
-                    self.ind_subsampling1 = numpy.loadtxt(Utils.__path__[0][:-5]+'geodesic/ind_subsampling_n%i_n%i.txt'%(self.nalf1, self.nalf1_hd), dtype='int')
+                    self.primary_hd = Core.Star(self.ndiv1_hd, atmo_grid=atmo_grid, read=read)
+                    #self.ind_subsampling1 = numpy.loadtxt('geodesic/ind_subsampling_n%i_n%i.txt'%(self.ndiv1, self.ndiv1_hd), dtype='int')
+                    self.ind_subsampling1 = numpy.loadtxt(Utils.__path__[0][:-5]+'geodesic/ind_subsampling_n%i_n%i.txt'%(self.ndiv1, self.ndiv1_hd), dtype='int')
                 else:
                     triangle_assoc = []
                     x, y, z = self.primary.cosx, self.primary.cosy, self.primary.cosz
                     # For each extra subdivision, we calculate the surface and determine the association between the triangle of this refinement level and the one just before
-                    for i in numpy.arange(self.nalf1,self.nalf1_hd)+1:
+                    for i in numpy.arange(self.ndiv1,self.ndiv1_hd)+1:
                         print( " ...subsampling from %s to %s" %(i-1,i) )
                         self.primary_hd = Core.Star(i, atmo_grid=atmo_grid, read=read)
                         x_high, y_high, z_high = self.primary_hd.cosx, self.primary_hd.cosy, self.primary_hd.cosz
@@ -97,40 +97,40 @@ class StarBinary:
                     while triangle_assoc:
                         print( " ...associations..." )
                         self.ind_subsampling1 = Utils.Tessellation.Match_subtriangles(self.ind_subsampling1, triangle_assoc.pop())
-                # We also store the total weight, which is 3 vertices * 4**(nalf_hd-nalf) for the normalization
-                self.total_weight1 = 3 * 4**(self.nalf1_hd-self.nalf1)
+                # We also store the total weight, which is 3 vertices * 4**(ndiv_hd-ndiv) for the normalization
+                self.total_weight1 = 3 * 4**(self.ndiv1_hd-self.ndiv1)
         # In case of problem for the primary's resolution
         else:
-            print( "Problem with nalf1. Has to be a float or two-element array" )
+            print( "Problem with ndiv1. Has to be a float or two-element array" )
         
         print( "Instantiating the secondary star" )
         # Single resolution for the secondary
-        if isinstance(nalf2, int):
+        if isinstance(ndiv2, int):
             print( " ...working at a single resolution" )
-            self.nalf2 = nalf2
-            self.secondary = Core.Star(self.nalf2, atmo_grid=atmo_grid, read=read)
+            self.ndiv2 = ndiv2
+            self.secondary = Core.Star(self.ndiv2, atmo_grid=atmo_grid, read=read)
             self.secondary_hd = None
         # Dual resolution for the secondary
-        elif len(nalf2) == 2:
+        elif len(ndiv2) == 2:
             print( " ...working at a dual resolution" )
-            self.nalf2, self.nalf2_hd = nalf2
-            self.secondary = Core.Star(self.nalf2, atmo_grid=atmo_grid, read=read)
+            self.ndiv2, self.ndiv2_hd = ndiv2
+            self.secondary = Core.Star(self.ndiv2, atmo_grid=atmo_grid, read=read)
             # If the resolution of the second argument is smaller or equal to the first argument, there will be no high resolution
-            if self.nalf2_hd <= self.nalf2:
+            if self.ndiv2_hd <= self.ndiv2:
                 print( " ...not quite, working at a single resolution" )
                 self.secondary_hd = None
             # If high resolution is required, we will keep track of the association between the high resolution triangle and the low resolution ones
             else:
                 print( " ...calculating the surface subsampling" )
                 if read:
-                    self.secondary_hd = Core.Star(self.nalf2_hd, atmo_grid=atmo_grid, read=read)
-                    #self.ind_subsampling2 = numpy.loadtxt('geodesic/ind_subsampling_n%i_n%i.txt'%(self.nalf2, self.nalf2_hd), dtype='int')
-                    self.ind_subsampling2 = numpy.loadtxt(Utils.__path__[0][:-5]+'geodesic/ind_subsampling_n%i_n%i.txt'%(self.nalf2, self.nalf2_hd), dtype='int')
+                    self.secondary_hd = Core.Star(self.ndiv2_hd, atmo_grid=atmo_grid, read=read)
+                    #self.ind_subsampling2 = numpy.loadtxt('geodesic/ind_subsampling_n%i_n%i.txt'%(self.ndiv2, self.ndiv2_hd), dtype='int')
+                    self.ind_subsampling2 = numpy.loadtxt(Utils.__path__[0][:-5]+'geodesic/ind_subsampling_n%i_n%i.txt'%(self.ndiv2, self.ndiv2_hd), dtype='int')
                 else:
                     triangle_assoc = []
                     x, y, z = self.secondary.cosx, self.secondary.cosy, self.secondary.cosz
                     # For each extra subdivision, we calculate the surface and determine the association between the triangle of this refinement level and the one just before
-                    for i in numpy.arange(self.nalf2,self.nalf2_hd)+1:
+                    for i in numpy.arange(self.ndiv2,self.ndiv2_hd)+1:
                         print( " ...subsampling from %s to %s" %(i-1,i) )
                         self.secondary_hd = Core.Star(i, atmo_grid=atmo_grid, read=read)
                         x_high, y_high, z_high = self.secondary_hd.cosx, self.secondary_hd.cosy, self.secondary_hd.cosz
@@ -142,11 +142,11 @@ class StarBinary:
                     while triangle_assoc:
                         print( " ...associations..." )
                         self.ind_subsampling2 = Utils.Tessellation.Match_subtriangles(self.ind_subsampling2, triangle_assoc.pop())
-                # We also store the total weight, which is 3 vertices * 4**(nalf_hd-nalf) for the normalization
-                self.total_weight2 = 3 * 4**(self.nalf2_hd-self.nalf2)
+                # We also store the total weight, which is 3 vertices * 4**(ndiv_hd-ndiv) for the normalization
+                self.total_weight2 = 3 * 4**(self.ndiv2_hd-self.ndiv2)
         # In case of problem for the secondary's resolution
         else:
-            print( "Problem with nalf2. Has to be a float or two-element array" )
+            print( "Problem with ndiv2. Has to be a float or two-element array" )
         # This is the end of the initialization function
         return
 

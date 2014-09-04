@@ -74,9 +74,10 @@ class Star_temperature(Star):
         if self.tempgrav != 0:
             teff *= self._Gravdark()
         # We apply the irradiation to the surface visible to the irradiation source. Only if there are surface elements facing the irradiation source and if the irradiation is not null.
-        inds = self.coschi > 0
-        if inds.any() and self.tirr != 0.:
-            teff[inds] = (teff[inds]**4+self.coschi[inds]*self.tirr**4/self.rx[inds]**2)**0.25
+        if self.tirr != 0.:
+            inds = self.coschi > 0
+            if inds.any():
+                teff[inds] = (teff[inds]**4+self.coschi[inds]*self.tirr**4/self.rx[inds]**2)**0.25
         self.logteff = numpy.log(teff)
         return
 

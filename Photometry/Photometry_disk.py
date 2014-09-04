@@ -22,8 +22,8 @@ class Photometry_disk:
     calculate the predicted flux of the model at every data point (i.e.
     for a given orbital phase).
     """
-    def __init__(self, atmo_fln, data_fln, nalf, porb, x2sini, edot=1., DM=0., DMerr=0., AJ=0., AJerr=0., Keff=0., Kefferr=0., read=False):
-        """__init__(atmo_fln, data_fln, nalf, porb, x2sini, edot=1., DM=0., DMerr=0., AJ=0., AJerr=0., Keff=0., Kefferr=0., read=False)
+    def __init__(self, atmo_fln, data_fln, ndiv, porb, x2sini, edot=1., DM=0., DMerr=0., AJ=0., AJerr=0., Keff=0., Kefferr=0., read=False):
+        """__init__(atmo_fln, data_fln, ndiv, porb, x2sini, edot=1., DM=0., DMerr=0., AJ=0., AJerr=0., Keff=0., Kefferr=0., read=False)
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
         (which in most cases will be a pulsar).
@@ -48,8 +48,8 @@ class Photometry_disk:
                 band_name, column_phase, column_flux, column_error_flux,
                     shift_to_phase_zero, calibration_error, data_file
             Lines with '#' are comments and not read.
-        nalf: The number of surface slice. Defines how coarse/fine the
-            surface grid is.
+        ndiv: The number of surface element subdivisions. Defines how
+            coarse/fine the surface grid is.
         porb: Orbital period of the system in seconds.
         x2sini: Projected semi-major axis of the secondary (pulsar)
             in light-second.
@@ -69,7 +69,7 @@ class Photometry_disk:
         read (False): Whether the geodesic surface should be read from a file or
             generated from scratch.
         
-        >>> fit = Photometry(atmo_fln, data_fln, nalf, porb, x2sini, edot)
+        >>> fit = Photometry(atmo_fln, data_fln, ndiv, porb, x2sini, edot)
         """
         # We define some class attributes.
         self.porb = porb
@@ -93,7 +93,7 @@ class Photometry_disk:
             # We keep in mind the number of datasets
             self.ndataset = len(self.atmo_grid)
         # We initialize some important class attributes.
-        self.star = Core.Star_disk(nalf, read=read)
+        self.star = Core.Star_disk(ndiv, read=read)
         self.__Setup()
 
     def Calc_chi2(self, par, offset_free=1, func_par=None, nsamples=None, influx=False, full_output=False, verbose=False):
@@ -437,8 +437,8 @@ class Photometry_disk:
                 flux.append(numpy.array([self.star.Mag_flux_disk(phases[i][n], atmo_grid=self.atmo_grid[i], disk=disk[n]) for n in xrange(len(phases[i]))]) + self.atmo_grid[i].ext*par[8] + par[7])
         return flux
 
-    def Get_Keff(self, par, nphases=20, dataset=None, func_par=None, make_surface=False, verbose=False):
-        """Get_Keff(par, phases, dataset=None, func_par=None, make_surface=False, verbose=False)
+    def Get_Keff(self, par, nphases=20, dataset=0, func_par=None, make_surface=False, verbose=False):
+        """
         Returns the effective projected velocity semi-amplitude of the star in m/s.
         The luminosity-weighted average velocity of the star is returned for
         nphases, for the specified dataset, and a sin wave is fitted to them.
@@ -457,10 +457,8 @@ class Photometry_disk:
             Note: If there extra parameters after [9], they are assumed to
             be the individual disk fluxes of each data set.
         nphases (20): Number of phases to evaluate the velocity at.
-        dataset (None): The dataset for which the velocity is evaluated
-            (i.e. the atmosphere grid to use).
-            This parameter must be set if not atmosphere grid was specified
-            for the Keff evaluation in the class initialization.
+        dataset (int): The index of the atmosphere grid to use for the velocity
+            calculation. By default the first one is chosen.
         func_par (None): Function that takes the parameter vector and
             returns the parameter vector. This allow for possible constraints
             on the parameters. The vector returned by func_par must have a length
@@ -479,13 +477,7 @@ class Photometry_disk:
             tirr = (par[6]**4 - par[3]**4)**0.25
             self.star.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
         # Deciding which atmosphere grid we use to evaluate Keff
-        if dataset is None:
-            try:
-                atmo_grid = self.keff_atmo_grid
-            except:
-                atmo_grid = self.atmo_grid[0]
-        else:
-            atmo_grid = self.atmo_grid[dataset]
+        atmo_grid = self.atmo_grid[dataset]
         # Get the Keffs and fluxes
         phases = numpy.arange(nphases)/float(nphases)
         Keffs = numpy.array( [self.star.Flux_disk_Keff(phase, atmo_grid=atmo_grid, disk=0.) for phase in phases] )[:,1]
@@ -704,13 +696,6 @@ class Photometry_disk:
                     self.atmo_grid.append( Atmosphere.Atmo_grid_BTSettl7(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4]), logg_lims=[3.0,4.5]) )
                 else:
                     self.atmo_grid.append(Atmosphere.Atmo_grid(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4])))
-            elif (line[:2] == '#!'):
-                tmp = line.split()
-                tmp = tmp[1:]
-                if tmp[5].find('BT-Settl.7') != -1:
-                    self.keff_atmo_grid = Atmosphere.Atmo_grid_BTSettl7(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4]))
-                else:
-                    self.keff_atmo_grid = Atmosphere.Atmo_grid(tmp[5], float(tmp[1]), float(tmp[2]), float(tmp[3]), float(tmp[4]))
         return
 
     def __Read_data(self, data_fln):

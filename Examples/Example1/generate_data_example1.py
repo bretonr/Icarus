@@ -21,13 +21,13 @@ numpy.savetxt('mock_g.txt', numpy.c_[phs[1], mag[1], mag_err[1]])
 ##### Loading the data
 atmo_fln = 'atmo_models.txt'
 data_fln = 'data.txt'
-nalf = 5
+ndiv = 5
 porb = 10 * 3600
 x2sini = 1.1
 
 
 ##### We create an Icarus photometry instance
-fit = Icarus.Photometry.Photometry(atmo_fln, data_fln, nalf, porb, x2sini)
+fit = Icarus.Photometry.Photometry(atmo_fln, data_fln, ndiv, porb, x2sini)
 
 
 ##### This is the list of true parameters for the stars, as per construction

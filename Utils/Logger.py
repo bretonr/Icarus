@@ -1,11 +1,13 @@
+# Licensed under a 3-clause BSD style license - see LICENSE
+
 #import os
 import logging
 
 ## Possible levels are 'INFO', 'DEBUG', a numeral between 5-9.
 LEVEL = 'INFO'
-#LEVEL = 6
+#LEVEL = 'DEBUG'
 
-for i in xrange(5,10):
+for i in xrange(5,9):
     logging.addLevelName(i, "DEBUG{}".format(i))
 
 if False:

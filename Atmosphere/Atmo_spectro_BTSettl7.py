@@ -1,10 +1,10 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
-__all__ = ["Atmo_BTSettl7_spectro","Read_BTSettl7"]
+__all__ = ["Atmo_BTSettl7_spectro", "Read_BTSettl7"]
 
 from ..Utils.import_modules import *
 from .. import Utils
-from .Atmo_grid import Atmo_grid
+from .Atmo import Atmo_grid
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +15,12 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
     This class handles the atmosphere grid containing a spectral
     dimension.
     """
-    def __init__(self, flns, oversample=None, sigma=None, tophat=None, thin=None, convert=None, flux0=1, wave_cut=[3000,11000], temp_cut=None, logg_cut=None, linlog=False, verbose=False, savememory=True):
+    def __init__(self, flns, oversample=None, sigma=None, tophat=None, thin=None, convert=None, zp=0., wave_cut=[3000,11000], temp_cut=None, logg_cut=None, linlog=False, verbose=False, savememory=True):
         """__init__
         """
-        # flux0 is for compatibility of spectroscopic and photometric atmosphere grids and scales the
+        # zp is for compatibility of spectroscopic and photometric atmosphere grids and scales the
         # zero point for the magnitude conversion.
-        self.flux0 = flux0
+        self.zp = zp
         self.flns = flns
         self.Flux_init(flns, oversample=oversample, sigma=sigma, tophat=tophat, thin=thin, convert=convert, wave_cut=wave_cut, temp_cut=temp_cut, logg_cut=logg_cut, linlog=linlog, verbose=verbose)
         self.Coeff_limb_darkening(self.wav/1e4, verbose=verbose)
@@ -221,16 +221,16 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
             self.wav_frac, self.wav_inds = Utils.Series.Getaxispos_vector(self.wav, self.wav_linear)
         return
 
-    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_vel, val_area):
-        """Get_flux_doppler(val_logtemp, val_logg, val_mu, val_vel, val_area)
+    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel):
+        """
         Returns the flux interpolated from the atmosphere grid.
         val_logtemp: log of effective temperature
         val_logg: log of surface gravity
         val_mu: cos(angle) of angle of emission
-        val_vel: velocity of the grid point in units of speed of light
         val_area: area of the surface element
+        val_vel: velocity of the grid point in units of speed of light
         
-        >>> flux = self.Get_flux_doppler(val_logtemp, val_logg, val_mu, val_vel, val_area)
+        >>> flux = self.Get_flux_doppler(val_logtemp, val_logg, val_mu, val_area, val_vel)
         """
         logger.debug("start")
         grid = self.grid
@@ -251,12 +251,12 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
                 val_vel = val_vel/(-self.z0)
                 wwav = numpy.remainder(val_vel, 1)
                 jwav = numpy.floor(val_vel).astype(int)
-                flux = Utils.Grid.Inter8_doppler_savememory(grid, wtemp, wlogg, wmu, wwav, jtemp, jlogg, jmu, jwav, grid_mu, val_area, val_mu)
+                flux = Utils.Grid.Interp_doppler_savememory(grid, wtemp, wlogg, wmu, wwav, jtemp, jlogg, jmu, jwav, grid_mu, val_area, val_mu)
             else:
                 print( 'Hey! Wake up! The grid is linear in lambda and should have been transformed to linear in log(lambda)!' )
         else:
             print( 'This option (savememory=False) is not available at the moment!' )
-            #flux = Utils.Grid.Inter8_doppler(grid, wtemp, wlogg, wmu, wwav, jtemp, jlogg, jmu, jwav, val_area, val_mu)
+            #flux = Utils.Grid.Interp_doppler(grid, wtemp, wlogg, wmu, wwav, jtemp, jlogg, jmu, jwav, val_area, val_mu)
         #return flux, wtemp, wlogg, wmu, wwav, jtemp, jlogg, jmu, jwav, grid_mu, val_area, val_mu
         logger.debug("end")
         return flux
@@ -279,7 +279,7 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
         
         savememory (=False): If true, will keep the mu factors on the
             side and will account for them at the flux calculation time
-            in the modified Inter8 function.
+            in the modified Interp function.
         verbose (=False): verbosity.
         """
         self.savememory = savememory
