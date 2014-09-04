@@ -1,13 +1,16 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
-__all__ = ["AtmoGrid", "AtmoGridPhot"]
+__all__ = ["AtmoGrid", "AtmoGridPhot", "AtmoGridDoppler", "Atmo_grid"]
 
-from ..Utils.import_modules import *
-from .. import Utils
-from astropy.table import TableColumns, Column, MaskedColumn
+from copy import deepcopy
+
+from astropy.table import TableColumns, Column, MaskedColumn, Table
 from astropy.utils.metadata import MetaData
 from astropy.utils import OrderedDict
 from astropy.extern import six
+
+from ..Utils.import_modules import *
+from .. import Utils
 
 
 ######################## class Atmo_grid ########################
@@ -57,49 +60,205 @@ class AtmoGrid(Column):
         logflux = np.random.normal(size=(logtemp.size,logg.size,mu.size))
         atmo = AtmoGrid(data=logflux, cols=[('logtemp',logtemp), ('logg',logg), ('mu',mu)])
 
-    Note that in principle the axis and data could be any format. However, we recommend using
-    log(flux) and log(temperature) because the linear interpolation of such a grid would make
-    more sense (say, from the blackbody $F \propto sigma T^4$).
-
     To read/save a file:
 
         atmo = AtmoGridPhot.ReadHDF5('vband.h5')
         atmo.WriteHDF5('vband_new.h5')
+
+    Notes
+    --------------
+    Note that in principle the axis and data could be any format. However, we recommend using
+    log(flux) and log(temperature) because the linear interpolation of such a grid would make
+    more sense (say, from the blackbody $F \propto sigma T^4$).
+
     """
     def __new__(cls, data=None, name=None, dtype=None, shape=(), length=0, description=None, unit=None, format=None, meta=None, cols=None):
 
         self = super(AtmoGrid, cls).__new__(cls, data=data, name=name, dtype=dtype, shape=shape, length=length, description=description, unit=unit, format=format, meta=meta)
 
         if cols is None:
-            self.cols = TableColumns()
-            for i in range(self.ndim):
-                key = str(i)
-                val = np.arange(self.shape[i])
-                self.cols[key] = val
+            self.cols = TableColumns([ Column(name=str(i), data=np.arange(self.shape[i], dtype=float)) for i in range(self.ndim) ])
         else:
             if len(cols) != self.ndim:
                 raise ValueError('cols must contain a number of elements equal to the dimension of the data grid.')
             else:
-                try:
-                    if isinstance(cols, (list,tuple)):
-                        cols = OrderedDict(cols)
-                    self.cols = TableColumns(cols)
-                except:
-                    raise ValueError('Cannot make a TableColumns out of the provided cols parameter.')
-                shape = tuple(col.size for col in self.cols.itervalues())
-                if self.shape != shape:
-                    raise ValueError('The dimension of the data grid and the cols are not matching.')
+                if isinstance(cols, TableColumns):
+                    self.cols = cols
+                else:
+                    try:
+                        self.cols = TableColumns([ Column(name=col[0], data=col[1]) if isinstance(col, (list,tuple)) else col for col in cols ])
+                    except:
+                        raise ValueError('Cannot make a TableColumns out of the provided cols parameter.')
+            shape = tuple(col.size for col in self.cols.itervalues())
+            if self.shape != shape:
+                raise ValueError('The dimension of the data grid and the cols are not matching.')
         return self
+
+    def __copy__(self):
+        return self.copy(copy_data=False)
+
+    def __deepcopy__(self):
+        return self.copy(copy_data=True)
 
     def __getitem__(self, item):
         if isinstance(item, six.string_types):
             return self.cols[item]
         else:
-            return super(AtmoGrid, self).__getitem__(item)
+            #return super(AtmoGrid, self).__getitem__(item)
+            return self.view(np.ndarray)[item]
 
     @property
     def colnames(self):
         return self.cols.keys()
+
+    def copy(self, order='C', data=None, copy_data=True):
+        """
+        Copy of the instance. If ``data`` is supplied
+        then a view (reference) of ``data`` is used, and ``copy_data`` is ignored.
+        """
+        if data is None:
+            data = self.view(np.ndarray)
+            if copy_data:
+                data = data.copy(order)
+
+        return self.__class__(name=self.name, data=data, unit=self.unit, format=self.format, description=self.description, meta=deepcopy(self.meta), cols=self.cols)
+
+    def Fill_nan(self, axis=0, method='spline', bounds_error=False, fill_value=np.nan, k=1, s=1):
+        """
+        Fill the empty grid cells (marked as np.nan) with interpolated values
+        along a given axis (i.e. interpolation is done in 1D).
+
+        Parameters
+        ----------
+        axis : interpolate
+            Axis along which the interpolation should be performed.
+        method : str
+            Interpolation method to use. Possible choices are 'spline' and
+            'interp1d'.
+            'spline' allows for the use of optional keywords k (the order) and
+            s (the smoothing parameter). See scipy.interpolate.splrep.
+            'interp1d' allows for the use of optional keywords bounds_error and
+            fill_value. See scipy.interpolate.interp1d.
+        bounds_error : bool
+            Whether to raise an error when attempting to extrapolate out of
+            bounds. Only works with 'interp1d'.
+        fill_value : float
+            Value to use when bounds_error is False. Only works with 'interp1d'.
+        k : int
+            Order of the spline to use. We recommend 1. Only works with
+            'spline'.
+        s : int
+            Smoothing parameter for the spline. We recommend 0 (exact
+            interpolation), or 1. Only works with 'spline'.
+
+        Examples
+        ----------
+          Examples::
+            atmo.Fill_nan(axis=0, method='interp1d', bounds_error=False, fill_value=np.nan)
+        
+        This would fill in the value that are not out of bound with a linear fit. Values
+        out of bound would be np.nan.
+
+            atmo.Fill_nan(axis=0, method='spline', k=1, s=0)
+
+        This would produce exactly the same interpolation as above, except that values
+        out of bound would be extrapolated.
+
+        Notes
+        ----------
+        From our experience, it is recommended to first fill the values within
+        the bounds using 'interp1d' with bounds_error=False and fill_value=np.nan,
+        and then use 'spline' with k=1 and s=1 in order to extrapolate outside
+        the bounds. To interpolate within the bounds, the temperature axis
+        (i.e. 0) is generally best and more smooth, whereas the logg axis (i.e. 1)
+        works better to extrapolate outside.
+
+
+          Examples::
+            atmo.Fill_nan(axis=0, method='interp1d', bounds_error=False, fill_value=np.nan)
+            atmo.Fill_nan(axis=1, method='spline', k=1, s=1)
+        """
+        if method not in ['interp1d','spline']:
+            raise Exception('Wrong method input! Must be either interp1d, spline or grid.')
+        ndim = list(self.shape)
+        ndim.pop(axis)
+        inds_tmp = np.indices(ndim)
+        inds = [ind.flatten() for ind in inds_tmp]
+        niter = len(inds[0])
+        inds.insert(axis, [slice(None)]*niter)
+        for ind in zip(*inds):
+            col = self.__getitem__(ind)
+            inds_good = np.isfinite(col)
+            inds_bad = ~inds_good
+            if np.any(inds_bad):
+                if method == 'interp1d':
+                    interpolator = scipy.interpolate.interp1d(self.cols[axis][inds_good], col[inds_good], assume_sorted=True, bounds_error=bounds_error, fill_value=fill_value)
+                    col[inds_bad] = interpolator(self.cols[axis][inds_bad])
+                elif method == 'spline':
+                    tck = scipy.interpolate.splrep(self.cols[axis][inds_good], col[inds_good], k=k, s=s)
+                    col[inds_bad] = scipy.interpolate.splev(self.cols[axis][inds_bad], tck)
+
+    def Getaxispos(self, colname, x):
+        """
+        Return the index and weight of the linear interpolation of the point
+        along a given axis.
+
+        Parameters
+        ----------
+        colname : str
+            Name of the axis to interpolate from.
+        x : float, ndarray
+            Value to interpolate at.
+
+        Examples
+        ----------
+          Examples::
+            temp = Getaxispos('logtemp', np.log(3550.)
+            logg = Getaxispos('logg', [4.11,4.13,4.02])
+        """
+        if isinstance(x, (list, tuple, numpy.ndarray)):
+            return Utils.Series.Getaxispos_vector(self.cols[colname], x)
+        else:
+            return Utils.Series.Getaxispos_scalar(self.cols[colname], x)
+
+    def Pprint(self, slices):
+        """
+        Print a 2-dimensional slice of the atmosphere grid for visualisation.
+
+        Parameters
+        ----------
+        slices : list
+            List of sliceable elements to extract the 2-dim slice to display.
+
+        Examples
+        ----------
+          Examples::
+            # Display the equivalent of atmo[:,:,4]
+            atmo.Pprint([None,None,4])
+            # Same as above but using fancier slice objects
+            atmo.Pprint([slice(None),slice(None),4])
+            # Display the equivalent of atmo[3:9,3,:]
+            atmo.Pprint([slice(3,9),3,None])
+        """
+        slices = list(slices)
+        labels = []
+        for i,s in enumerate(slices):
+            if s is None:
+                s = slice(None)
+                slices[i] = s
+            if isinstance(s, (int,slice)):
+                tmp_label = self.cols[i][s]
+                if self.colnames[i] == 'logtemp':
+                    tmp_label = np.exp(tmp_label)
+                if tmp_label.size > 1:
+                    labels.append(tmp_label)
+            else:
+                raise Exception("The element {} is not a slice or integer or cannot be converted to a sliceable entity.".format(s))
+        if len(labels) != 2:
+            raise Exception("The slices should generate a 2 dimensional array. Verify your input slices.")
+        t = Table(data=self.__getitem__(slices), names=labels[1].astype(str), copy=True)
+        t.add_column(Column(data=labels[0]), index=0)
+        t.pprint()
 
     @classmethod
     def ReadHDF5(cls, fln):
@@ -127,6 +286,42 @@ class AtmoGrid(Column):
 
         f.close()
         return cls(data=flux, name=name, description=description, meta=meta, cols=cols)
+
+    def Trim(self, colname, low=None, high=None):
+        """
+        Return a copy of the atmosphere grid whose 'colname' axis has been
+        trimmed at the 'low' and 'high' values: low <= colvalues <= high.
+
+        Parameters
+        ----------
+        colname : str
+            Name of the column to trim the grid on.
+        low : float
+            Lowest value to cut from. If None, will use the minimum value.
+        high: float
+            Highest value to cut from. If None, will use the maximum value.
+
+        Examples
+        ----------
+          Examples::
+          The following would trim along the temperature axis and keep values
+          between 4000 and 6000, inclusively.
+            new_atmo = atmo.Trim('logtemp', low=np.log(4000.), high=np.log(6000.))
+        """
+        if colname not in self.colnames:
+            raise Exception("The provided column name is not valid.")
+        colind = self.colnames.index(colname)
+        cols = self.cols.copy()
+        if low is None:
+            low = cols[colname].min()
+        if high is None:
+            high = cols[colname].max()
+        inds = [slice(None)]*self.ndim
+        inds[colind] = np.logical_and(self.cols[colname] >= low, self.cols[colname] <= high)
+        cols[colname] = Column(data=cols[colname][inds[colind]], name=colname)
+        data = self.data[inds].copy()
+        meta = deepcopy(self.meta)
+        return self.__class__(name=self.name, data=data, unit=self.unit, format=self.format, description=self.description, meta=meta, cols=cols)
 
     def WriteHDF5(self, fln, overwrite=False):
         try:
@@ -158,48 +353,71 @@ class AtmoGrid(Column):
                     dset.attrs[key_attrs] = val_attrs
         f.close()
 
-    def Getaxispos(self, colname, x):
-        """
-        Return the index and weight of the linear interpolation of the point
-        along a given axis.
 
+class AtmoGridDoppler(AtmoGrid):
+    """
+    Define a subclass of AtmoGrid dedicated to storing the Doppler boosting
+    factor.
+
+    This class is exactly like AtmoGrid.
+
+    Examples
+    --------
+    A AtmoGridDoppler can be created like this:
+
+      Examples::
+
+        logtemp = np.exp(np.arange(3000.,10001.,250.))
+        logg = np.arange(2.0, 5.6, 0.5)
+        mu = np.arange(0.,1.01,0.02)
+        boost = np.random.normal(size=(logtemp.size,logg.size,mu.size))
+        atmo = AtmoGridDoppler(data=boost, cols=[('logtemp',logtemp), ('logg',logg), ('mu',mu)])
+
+    Note that in principle the axis and data could be any format. However, we recommend using
+    log(flux) and log(temperature) because the linear interpolation of such a grid would make
+    more sense (say, from the blackbody $F \propto sigma T^4$).
+
+    To read/save a file:
+
+        atmo = AtmoGridDoppler.ReadHDF5('vband.h5')
+        atmo.WriteHDF5('vband_new.h5')
+    """
+    def __new__(cls, *args, **kwargs):
+        self = super(AtmoGridDoppler, cls).__new__(cls, *args, **kwargs)
+        return self
+
+    def Get_boost(self, val_logtemp, val_logg, val_mu):
+        """
+        Return the interpolated Doppler boosting factor
+        
         Parameters
         ----------
-        colname : str
-            Name of the axis to interpolate from.
-        x : float, ndarray
-            Value to interpolate at.
-
+        val_logtemp: log effective temperature
+        val_logg: log surface gravity
+        val_mu: cos(angle) of angle of emission
+        
         Examples
         ----------
           Examples::
-            temp = Getaxispos('logtemp', np.log(3550.)
-            logg = Getaxispos('logg', [4.11,4.13,4.02])
-
+            boost = Get_boost(val_logtemp, val_logg, val_mu)
         """
-        if isinstance(x, (list, tuple, numpy.ndarray)):
-            return Utils.Series.Getaxispos_vector(self.cols[colname], x)
-        else:
-            return Utils.Series.Getaxispos_scalar(self.cols[colname], x)
-
-    def Trim(self, colname, low=None, high=None):
-        """
-        """
-        if low is None:
-            low = self.cols[colname].min()
-        if high is None:
-            high = self.cols[colname].max()
-        raise Exception('Needs to be completed!!!')
+        w1logtemp, jlogtemp = self.Getaxispos('logtemp', val_logtemp)
+        w1logg, jlogg = self.Getaxispos('logg', val_logg)
+        w1mu, jmu = self.Getaxispos('mu', val_mu)
+        boost = Utils.Grid.Interp_3Dgrid(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu)
+        return boost
 
 
 class AtmoGridPhot(AtmoGrid):
     """
-    Define a subclass of AtmoGrid dedicated to Inter8_photometry
+    Define a subclass of AtmoGrid dedicated to Interp_photometry
 
     This class is exactly like AtmoGrid, except for the fact that it is
     required to contain a seta of meta data describing the filter. For
     instance meta should contain:
 
+    Parameters
+    ----------
     zp: float
         The zeropoint of the band for conversion from flux to mag
     ext: float
@@ -221,7 +439,7 @@ class AtmoGridPhot(AtmoGrid):
 
     Examples
     --------
-    A AtmoGrid can be created like this:
+    A AtmoGridPhot can be created like this:
 
       Examples::
 
@@ -229,7 +447,7 @@ class AtmoGridPhot(AtmoGrid):
         logg = np.arange(2.0, 5.6, 0.5)
         mu = np.arange(0.,1.01,0.02)
         logflux = np.random.normal(size=(logtemp.size,logg.size,mu.size))
-        atmo = AtmoGrid(data=logflux, cols=[('logtemp',logtemp), ('logg',logg), ('mu',mu)])
+        atmo = AtmoGridPhot(data=logflux, cols=[('logtemp',logtemp), ('logg',logg), ('mu',mu)])
 
     Note that in principle the axis and data could be any format. However, we recommend using
     log(flux) and log(temperature) because the linear interpolation of such a grid would make
@@ -270,7 +488,7 @@ class AtmoGridPhot(AtmoGrid):
         w1logtemp, jlogtemp = self.Getaxispos('logtemp', val_logtemp)
         w1logg, jlogg = self.Getaxispos('logg', val_logg)
         w1mu, jmu = self.Getaxispos('mu', val_mu)
-        flux = Utils.Grid.Inter8_photometry(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu)
+        flux = Utils.Grid.Interp_photometry(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu)
         return flux
 
     def Get_flux_details(self, val_logtemp, val_logg, val_mu, val_area, val_v):
@@ -293,10 +511,65 @@ class AtmoGridPhot(AtmoGrid):
         w1logtemp, jlogtemp = self.Getaxispos('logtemp', val_logtemp)
         w1logg, jlogg = self.Getaxispos('logg', val_logg)
         w1mu, jmu = self.Getaxispos('mu', val_mu)
-        flux, Keff, temp = Utils.Grid.Inter8_photometry_details(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu, val_v, val_logtemp)
+        flux, Keff, temp = Utils.Grid.Interp_photometry_details(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu, val_v, val_logtemp)
         return flux, Keff, temp
 
-    def Get_flux_Keff(self, val_temp, val_logg, val_mu, val_area, val_v):
+    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel, atmo_doppler):
+        """
+        Return the flux interpolated from the atmosphere grid.
+        Each surface element is multiplied by the appropriate Doppler boosting
+        factor.
+        
+        Parameters
+        ----------
+        val_logtemp: log effective temperature
+        val_logg: log surface gravity
+        val_mu: cos(angle) of angle of emission
+        val_area: area of the surface element
+        val_vel: velocity of the surface element (units of c)
+        atmo_doppler: AtmoGridDoppler instance containing a grid of Doppler
+            boosting factors. Must be the same dimensions as the atmosphere grid.
+        
+        Examples
+        ----------
+          Examples::
+            flux = Get_flux_doppler(val_logtemp, val_logg, val_mu, val_area, val_vel, atmo_doppler)
+        """
+        w1logtemp, jlogtemp = self.Getaxispos('logtemp', val_logtemp)
+        w1logg, jlogg = self.Getaxispos('logg', val_logg)
+        w1mu, jmu = self.Getaxispos('mu', val_mu)
+        flux = Utils.Grid.Interp_photometry_doppler(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu, val_vel, atmo_doppler.data)
+        return flux
+
+    def Get_flux_doppler_nosum(self, val_logtemp, val_logg, val_mu, val_area, val_vel, atmo_doppler):
+        """
+        Return the flux interpolated from the atmosphere grid.
+        Each surface element is multiplied by the appropriate Doppler boosting
+        factor.
+        
+        Parameters
+        ----------
+        val_logtemp: log effective temperature
+        val_logg: log surface gravity
+        val_mu: cos(angle) of angle of emission
+        val_area: area of the surface element
+        val_vel: velocity of the surface element (units of c)
+        atmo_doppler: AtmoGridDoppler instance containing a grid of Doppler
+            boosting factors. Must be the same dimensions as the atmosphere grid.
+
+        
+        Examples
+        ----------
+          Examples::
+            flux = Get_flux_doppler_nosum(val_logtemp, val_logg, val_mu, val_area, val_vel, atmo_doppler)
+        """
+        w1logtemp, jlogtemp = self.Getaxispos('logtemp', val_logtemp)
+        w1logg, jlogg = self.Getaxispos('logg', val_logg)
+        w1mu, jmu = self.Getaxispos('mu', val_mu)
+        flux = Utils.Grid.Interp_photometry_doppler_nosum(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu, val_vel, atmo_doppler.data)
+        return flux
+
+    def Get_flux_Keff(self, val_logtemp, val_logg, val_mu, val_area, val_v):
         """
         Returns the flux interpolated from the atmosphere grid.
 
@@ -316,7 +589,7 @@ class AtmoGridPhot(AtmoGrid):
         w1logtemp, jlogtemp = self.Getaxispos('logtemp', val_logtemp)
         w1logg, jlogg = self.Getaxispos('logg', val_logg)
         w1mu, jmu = self.Getaxispos('mu', val_mu)
-        flux, Keff = Utils.Grid.Inter8_photometry_Keff(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu, val_v)
+        flux, Keff = Utils.Grid.Interp_photometry_Keff(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu, val_v)
         return flux, Keff
 
     def Get_flux_nosum(self, val_logtemp, val_logg, val_mu, val_area):
@@ -338,7 +611,7 @@ class AtmoGridPhot(AtmoGrid):
         w1logtemp, jlogtemp = self.Getaxispos('logtemp', val_logtemp)
         w1logg, jlogg = self.Getaxispos('logg', val_logg)
         w1mu, jmu = self.Getaxispos('mu', val_mu)
-        flux = Utils.Grid.Inter8_photometry_nosum(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu)
+        flux = Utils.Grid.Interp_photometry_nosum(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu)
         return flux
 
 
@@ -409,90 +682,90 @@ class Atmo_grid:
         self.h = h
         return
 
-    def Get_flux(self, val_temp, val_logg, val_mu, val_area):
+    def Get_flux(self, val_logtemp, val_logg, val_mu, val_area):
         """
         Returns the flux interpolated from the atmosphere grid.
-        val_temp: log of effective temperature
+        val_logtemp: log of effective temperature
         val_logg: log of surface gravity
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
         
-        >>> self.Get_flux(val_temp, val_logg, val_mu, val_area)
+        >>> self.Get_flux(val_logtemp, val_logg, val_mu, val_area)
         flux
         """
         grid = self.grid
         logtemp = self.logtemp
         logg = self.logg
         mu = self.mu
-        w1temp, jtemp = self.Getaxispos(logtemp,val_temp)
+        w1temp, jtemp = self.Getaxispos(logtemp,val_logtemp)
         w1logg, jlogg = self.Getaxispos(logg,val_logg)
         w1mu, jmu = self.Getaxispos(mu,val_mu)
-        flux = Utils.Grid.Inter8_photometry(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu)
+        flux = Utils.Grid.Interp_photometry(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu)
         return flux
 
-    def Get_flux_details(self, val_temp, val_logg, val_mu, val_area, val_v):
+    def Get_flux_details(self, val_logtemp, val_logg, val_mu, val_area, val_v):
         """
         Returns the flux interpolated from the atmosphere grid.
-        val_temp: log of effective temperature
+        val_logtemp: log of effective temperature
         val_logg: log of surface gravity
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
         val_v: velocity of the surface element
         
-        >>> self.Get_flux_details(val_temp, val_logg, val_mu, val_area, val_v)
+        >>> self.Get_flux_details(val_logtemp, val_logg, val_mu, val_area, val_v)
         flux, Keff, temp
         """
         grid = self.grid
         logtemp = self.logtemp
         logg = self.logg
         mu = self.mu
-        w1temp, jtemp = self.Getaxispos(logtemp,val_temp)
+        w1temp, jtemp = self.Getaxispos(logtemp,val_logtemp)
         w1logg, jlogg = self.Getaxispos(logg,val_logg)
         w1mu, jmu = self.Getaxispos(mu,val_mu)
-        flux, Keff, temp = Utils.Grid.Inter8_photometry_details(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu, val_v, val_temp)
+        flux, Keff, temp = Utils.Grid.Interp_photometry_details(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu, val_v, val_logtemp)
         return flux, Keff, temp
 
-    def Get_flux_Keff(self, val_temp, val_logg, val_mu, val_area, val_v):
+    def Get_flux_Keff(self, val_logtemp, val_logg, val_mu, val_area, val_v):
         """
         Returns the flux interpolated from the atmosphere grid.
-        val_temp: log of effective temperature
+        val_logtemp: log of effective temperature
         val_logg: log of surface gravity
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
         val_v: velocity of the surface element
         
-        >>> self.Get_flux_Keff(val_temp, val_logg, val_mu, val_area, val_v)
+        >>> self.Get_flux_Keff(val_logtemp, val_logg, val_mu, val_area, val_v)
         flux, Keff
         """
         grid = self.grid
         logtemp = self.logtemp
         logg = self.logg
         mu = self.mu
-        w1temp, jtemp = self.Getaxispos(logtemp,val_temp)
+        w1temp, jtemp = self.Getaxispos(logtemp,val_logtemp)
         w1logg, jlogg = self.Getaxispos(logg,val_logg)
         w1mu, jmu = self.Getaxispos(mu,val_mu)
-        flux, Keff = Utils.Grid.Inter8_photometry_Keff(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu, val_v)
+        flux, Keff = Utils.Grid.Interp_photometry_Keff(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu, val_v)
         return flux, Keff
 
-    def Get_flux_nosum(self, val_temp, val_logg, val_mu, val_area):
+    def Get_flux_nosum(self, val_logtemp, val_logg, val_mu, val_area):
         """
         Returns the flux interpolated from the atmosphere grid.
-        val_temp: log of effective temperature
+        val_logtemp: log of effective temperature
         val_logg: log of surface gravity
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
         
-        >>> self.Get_flux_nosum(val_temp, val_logg, val_mu, val_area)
+        >>> self.Get_flux_nosum(val_logtemp, val_logg, val_mu, val_area)
         flux
         """
         grid = self.grid
         logtemp = self.logtemp
         logg = self.logg
         mu = self.mu
-        w1temp, jtemp = self.Getaxispos(logtemp,val_temp)
+        w1temp, jtemp = self.Getaxispos(logtemp,val_logtemp)
         w1logg, jlogg = self.Getaxispos(logg,val_logg)
         w1mu, jmu = self.Getaxispos(mu,val_mu)
-        flux = Utils.Grid.Inter8_photometry_nosum(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu)
+        flux = Utils.Grid.Interp_photometry_nosum(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu)
         return flux
 
     def Getaxispos(self, xx, x):
@@ -523,7 +796,7 @@ class Atmo_grid:
         w = (x-xx[j])/(xx[j+1]-xx[j])
         return w,j
 
-    def Inter8_orig(self, val_temp, val_logg, val_mu):
+    def Interp_orig(self, val_logtemp, val_logg, val_mu):
         """
         Obsolete!!!
         """
@@ -531,7 +804,7 @@ class Atmo_grid:
         logtemp = self.logtemp
         logg = self.logg
         mu = self.mu
-        w1temp, jtemp = self.Getaxispos(logtemp,val_temp)
+        w1temp, jtemp = self.Getaxispos(logtemp,val_logtemp)
         w1logg, jlogg = self.Getaxispos(logg,val_logg)
         w1mu, jmu = self.Getaxispos(mu,val_mu)
         w0mu = 1.-w1mu

@@ -58,6 +58,8 @@ cts.pibytwo       = cts.pi / 2
 cts.SECPERDAY   = float('86400.0')
 cts.SECPERJULYR = float('31557600.0')
 
+# import some useful utility functions
+from .Misc import Pprint
 
 
 

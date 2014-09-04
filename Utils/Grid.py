@@ -13,7 +13,57 @@ logger = logging.getLogger(__name__)
 ##----- ----- ----- ----- ----- ----- ----- ----- ----- -----##
 
 
-def Inter8_photometry(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu):
+def Interp_3Dgrid(grid, wx, wy, wz, jx, jy, jz):
+    """
+    """
+    code = """
+    #pragma omp parallel shared(grid,wx,wy,wz,jx,jy,jz,area,val_z,nsurf,interp_val) default(none)
+    {
+    double w1x, w0x, w1y, w0y, w1z, w0z, tmp_interp_val;
+    int j0x, j1x, j0y, j1y, j0z, j1z;
+    #pragma omp for reduction(+:fl)
+    for (int i=0; i<nsurf; i++) {
+        w1x = wx(i);
+        w0x = 1.-w1x;
+        j0x = jx(i);
+        j1x = 1.+j0x;
+        w1y = wy(i);
+        w0y = 1.-w1y;
+        j0y = jy(i);
+        j1y = 1.+j0y;
+        w1z = wz(i);
+        w0z = 1.-w1z;
+        j0z = jz(i);
+        j1z = 1.+j0z;
+        tmp_interp_val = w1z*(w0y*(w0x*grid(j0x,j0y,j1z) + w1x*grid(j1x,j0y,j1z)) \
+                      + w1y*(w0x*grid(j0x,j1y,j1z) + w1x*grid(j1x,j1y,j1z))) \
+                + w0z*(w0y*(w0x*grid(j0x,j0y,j0z) + w1x*grid(j1x,j0y,j0z)) \
+                      + w1y*(w0x*grid(j0x,j1y,j0z) + w1x*grid(j1x,j1y,j0z)));
+        interp_val(i) = tmp_interp_val;
+    }
+    }
+    """
+    grid = np.ascontiguousarray(grid)
+    wx = np.ascontiguousarray(wx)
+    wy = np.ascontiguousarray(wy)
+    wz = np.ascontiguousarray(wz)
+    jx = np.ascontiguousarray(jx)
+    jy = np.ascontiguousarray(jy)
+    jz = np.ascontiguousarray(jz)
+    nsurf = jx.size
+    interp_val = numpy.zeros(nsurf, dtype=float)
+    try:
+        if os.uname()[0] == 'Darwin':
+            extra_compile_args = extra_link_args = ['-O3']
+        else:
+            extra_compile_args = extra_link_args = ['-O3 -fopenmp']
+        get_vals = scipy.weave.inline(code, ['grid', 'wx', 'wy', 'wz', 'jx', 'jy', 'jz', 'nsurf', 'interp_val'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>','<cmath>'], libraries=['m'], verbose=2)
+    except:
+        get_vals = scipy.weave.inline(code, ['grid', 'wx', 'wy', 'wz', 'jx', 'jy', 'jz', 'nsurf', 'interp_val'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], headers=['<cmath>'], libraries=['m'], verbose=2)
+    tmp = get_vals
+    return interp_val
+
+def Interp_photometry(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu):
     """
     """
     code = """
@@ -66,7 +116,124 @@ def Inter8_photometry(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu):
     fl = get_flux
     return fl
 
-def Inter8_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, v, val_teff):
+def Interp_photometry_doppler(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, val_vel, grid_doppler):
+    """
+    """
+    code = """
+    double fl = 0.;
+    #pragma omp parallel shared(grid,wteff,wlogg,wmu,jteff,jlogg,jmu,area,val_mu,nsurf,val_vel,grid_doppler,fl) default(none)
+    {
+    double w1teff, w0teff, w1logg, w0logg, w1mu, w0mu, tmp_fl, tmp_doppler;
+    int j0teff, j1teff, j0logg, j1logg, j0mu, j1mu;
+    #pragma omp for reduction(+:fl)
+    for (int i=0; i<nsurf; i++) {
+        w1teff = wteff(i);
+        w0teff = 1.-w1teff;
+        j0teff = jteff(i);
+        j1teff = 1.+j0teff;
+        w1logg = wlogg(i);
+        w0logg = 1.-w1logg;
+        j0logg = jlogg(i);
+        j1logg = 1.+j0logg;
+        w1mu = wmu(i);
+        w0mu = 1.-w1mu;
+        j0mu = jmu(i);
+        j1mu = 1.+j0mu;
+        tmp_fl = w1mu*(w0logg*(w0teff*grid(j0teff,j0logg,j1mu) + w1teff*grid(j1teff,j0logg,j1mu)) \
+                      + w1logg*(w0teff*grid(j0teff,j1logg,j1mu) + w1teff*grid(j1teff,j1logg,j1mu))) \
+                + w0mu*(w0logg*(w0teff*grid(j0teff,j0logg,j0mu) + w1teff*grid(j1teff,j0logg,j0mu)) \
+                      + w1logg*(w0teff*grid(j0teff,j1logg,j0mu) + w1teff*grid(j1teff,j1logg,j0mu)));
+        tmp_doppler = w1mu*(w0logg*(w0teff*grid_doppler(j0teff,j0logg,j1mu) + w1teff*grid_doppler(j1teff,j0logg,j1mu)) \
+                      + w1logg*(w0teff*grid_doppler(j0teff,j1logg,j1mu) + w1teff*grid_doppler(j1teff,j1logg,j1mu))) \
+                + w0mu*(w0logg*(w0teff*grid_doppler(j0teff,j0logg,j0mu) + w1teff*grid_doppler(j1teff,j0logg,j0mu)) \
+                      + w1logg*(w0teff*grid_doppler(j0teff,j1logg,j0mu) + w1teff*grid_doppler(j1teff,j1logg,j0mu)));
+        fl = fl + exp(tmp_fl) * area(i) * val_mu(i) * (1 + tmp_doppler * val_vel(i));
+    }
+    }
+    return_val = fl;
+    """
+    grid = np.ascontiguousarray(grid)
+    wteff = np.ascontiguousarray(wteff)
+    wlogg = np.ascontiguousarray(wlogg)
+    wmu = np.ascontiguousarray(wmu)
+    jteff = np.ascontiguousarray(jteff)
+    jlogg = np.ascontiguousarray(jlogg)
+    jmu = np.ascontiguousarray(jmu)
+    area = np.ascontiguousarray(area)
+    val_mu = np.ascontiguousarray(val_mu)
+    grid_doppler = np.ascontiguousarray(grid_doppler)
+    val_vel = np.ascontiguousarray(val_vel)
+    nsurf = jteff.size
+    try:
+        if os.uname()[0] == 'Darwin':
+            extra_compile_args = extra_link_args = ['-O3']
+        else:
+            extra_compile_args = extra_link_args = ['-O3 -fopenmp']
+        get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'jteff', 'jlogg', 'jmu', 'area', 'val_mu', 'nsurf', 'val_vel', 'grid_doppler'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>','<cmath>'], libraries=['m'], verbose=2)
+    except:
+        get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'jteff', 'jlogg', 'jmu', 'area', 'val_mu', 'nsurf', 'val_vel', 'grid_doppler'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], headers=['<cmath>'], libraries=['m'], verbose=2)
+    fl = get_flux
+    return fl
+
+def Interp_photometry_doppler_nosum(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, val_vel, grid_doppler):
+    """
+    """
+    code = """
+    #pragma omp parallel shared(grid,wteff,wlogg,wmu,jteff,jlogg,jmu,area,val_mu,nsurf,val_vel,grid_doppler,fl) default(none)
+    {
+    double w1teff, w0teff, w1logg, w0logg, w1mu, w0mu, tmp_fl, tmp_doppler;
+    int j0teff, j1teff, j0logg, j1logg, j0mu, j1mu;
+    #pragma omp for
+    for (int i=0; i<nsurf; i++) {
+        w1teff = wteff(i);
+        w0teff = 1.-w1teff;
+        j0teff = jteff(i);
+        j1teff = 1.+j0teff;
+        w1logg = wlogg(i);
+        w0logg = 1.-w1logg;
+        j0logg = jlogg(i);
+        j1logg = 1.+j0logg;
+        w1mu = wmu(i);
+        w0mu = 1.-w1mu;
+        j0mu = jmu(i);
+        j1mu = 1.+j0mu;
+        tmp_fl = w1mu*(w0logg*(w0teff*grid(j0teff,j0logg,j1mu) + w1teff*grid(j1teff,j0logg,j1mu)) \
+                      + w1logg*(w0teff*grid(j0teff,j1logg,j1mu) + w1teff*grid(j1teff,j1logg,j1mu))) \
+                + w0mu*(w0logg*(w0teff*grid(j0teff,j0logg,j0mu) + w1teff*grid(j1teff,j0logg,j0mu)) \
+                      + w1logg*(w0teff*grid(j0teff,j1logg,j0mu) + w1teff*grid(j1teff,j1logg,j0mu)));
+        tmp_doppler = w1mu*(w0logg*(w0teff*grid_doppler(j0teff,j0logg,j1mu) + w1teff*grid_doppler(j1teff,j0logg,j1mu)) \
+                      + w1logg*(w0teff*grid_doppler(j0teff,j1logg,j1mu) + w1teff*grid_doppler(j1teff,j1logg,j1mu))) \
+                + w0mu*(w0logg*(w0teff*grid_doppler(j0teff,j0logg,j0mu) + w1teff*grid_doppler(j1teff,j0logg,j0mu)) \
+                      + w1logg*(w0teff*grid_doppler(j0teff,j1logg,j0mu) + w1teff*grid_doppler(j1teff,j1logg,j0mu)));
+        fl(i) = exp(tmp_fl) * area(i) * val_mu(i) * (1 + tmp_doppler * val_vel(i));
+    }
+    }
+    """
+    grid = np.ascontiguousarray(grid)
+    wteff = np.ascontiguousarray(wteff)
+    wlogg = np.ascontiguousarray(wlogg)
+    wmu = np.ascontiguousarray(wmu)
+    jteff = np.ascontiguousarray(jteff)
+    jlogg = np.ascontiguousarray(jlogg)
+    jmu = np.ascontiguousarray(jmu)
+    area = np.ascontiguousarray(area)
+    val_mu = np.ascontiguousarray(val_mu)
+    grid_doppler = np.ascontiguousarray(grid_doppler)
+    val_vel = np.ascontiguousarray(val_vel)
+    nsurf = jteff.size
+    fl = numpy.zeros(nsurf, dtype=float)
+    try:
+        if os.uname()[0] == 'Darwin':
+            extra_compile_args = extra_link_args = ['-O3']
+        else:
+            extra_compile_args = extra_link_args = ['-O3 -fopenmp']
+        get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'jteff', 'jlogg', 'jmu', 'area', 'val_mu', 'nsurf', 'val_vel', 'grid_doppler', 'fl'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>','<cmath>'], libraries=['m'], verbose=2)
+    except:
+        get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'jteff', 'jlogg', 'jmu', 'area', 'val_mu', 'nsurf', 'val_vel', 'grid_doppler', 'fl'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], headers=['<cmath>'], libraries=['m'], verbose=2)
+    tmp = get_flux
+    return fl
+
+def Interp_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, v, val_teff):
     """
     """
     code = """
@@ -132,7 +299,7 @@ def Inter8_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, 
     fl, Keff, Teff = results
     return fl, Keff, Teff
 
-def Inter8_photometry_Keff(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, v):
+def Interp_photometry_Keff(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, v):
     """
     """
     code = """
@@ -192,7 +359,7 @@ def Inter8_photometry_Keff(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val
     fl, Keff = results
     return fl, Keff
 
-def Inter8_photometry_nosum(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu):
+def Interp_photometry_nosum(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu):
     """
     """
     code = """
@@ -244,7 +411,7 @@ def Inter8_photometry_nosum(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, va
     tmp = get_flux
     return fl
 
-def Inter8_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area, val_mu):
+def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area, val_mu):
     """
     This grid interpolation is made for a grid which is linear in the velocity
     or redshift space, e.g. log lambda.
@@ -349,7 +516,7 @@ def Inter8_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
     logger.debug("end")
     return fl
 
-def Inter8_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, mu_grid, area, val_mu):
+def Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, mu_grid, area, val_mu):
     """
     This grid interpolation is made for a grid which is linear in the velocity
     or redshift space, e.g. log lambda.
@@ -436,7 +603,7 @@ def Inter8_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, 
     logger.debug("end")
     return fl
 
-def Inter8_doppler_savememory_linear(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, mu_grid, area, val_mu, val_vel, z0):
+def Interp_doppler_savememory_linear(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, mu_grid, area, val_mu, val_vel, z0):
     """
     This grid interpolation is made for a grid which is linear in lambda.
     
@@ -542,7 +709,7 @@ def Inter8_doppler_savememory_linear(grid, wteff, wlogg, wmu, jteff, jlogg, jmu,
     tmp = get_flux
     return fl
 
-def Inter8_doppler_nomu(grid, wteff, wlogg, wwav, jteff, jlogg, jwav, area, val_mu):
+def Interp_doppler_nomu(grid, wteff, wlogg, wwav, jteff, jlogg, jwav, area, val_mu):
     """
     Note: Because of the Doppler shift, the interpolation on the wavelength
         will necessarily go out of bound, on the lower or upper range. We 
@@ -610,7 +777,7 @@ def Inter8_doppler_nomu(grid, wteff, wlogg, wwav, jteff, jlogg, jwav, area, val_
     return fl
 
 def Shift_spectrum(fref, wobs, v, refstart, refstep):
-    """Shift_spectrum(fref, wobs0, v, refstart, refstep)
+    """
     Takes a reference spectrum, Doppler shifts it, and calculate
     the new spectral flux values at the provided observed wavelengths.
     

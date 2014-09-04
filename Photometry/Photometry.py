@@ -316,7 +316,7 @@ class Photometry:
                 flux.append( numpy.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AJ[i] )            
         return flux
 
-    def Get_Keff(self, par, nphases=20, dataset=0, func_par=None, make_surface=False, verbose=False):
+    def Get_Keff(self, par, nphases=20, atmo_grid=0, func_par=None, make_surface=False, verbose=False):
         """
         Returns the effective projected velocity semi-amplitude of the star in m/s.
         The luminosity-weighted average velocity of the star is returned for
@@ -333,8 +333,9 @@ class Photometry:
             [7]: Distance modulus.
             [8]: Absorption A_J.
         nphases (int): Number of phases to evaluate the velocity at.
-        dataset (int): The index of the atmosphere grid to use for the velocity
-            calculation. By default the first one is chosen.
+        atmo_grid (int, AtmoGridPhot): The atmosphere grid to use for the velocity
+            calculation. Can be an integer that represents the index of the atmosphere
+            grid object in self.atmo_grid, and it can be an AtmoGridPhot instance.
         func_par (function): Function that takes the parameter vector and
             returns the parameter vector. This allow for possible constraints
             on the parameters. The vector returned by func_par must have a length
@@ -344,23 +345,19 @@ class Photometry:
             not changed, False is fine.
         verbose (bool): Verbosity. Will plot the velocities and the sin fit.
         """
-        # Apply a function that can modify the value of parameters.
-        if func_par is not None:
-            par = func_par(par)
         # If it is required to recalculate the stellar surface.
         if make_surface:
-            q = par[5] * self.K_to_q
-            tirr = (par[6]**4 - par[3]**4)**0.25
-            self.star.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
+            self.Make_surface(par, func_par=func_par, verbose=verbose)
         # Deciding which atmosphere grid we use to evaluate Keff
-        atmo_grid = self.atmo_grid[dataset]
+        if isinstance(atmo_grid, int):
+            atmo_grid = self.atmo_grid[atmo_grid]
         # Get the Keffs and fluxes
         phases = numpy.arange(nphases)/float(nphases)
         Keffs = numpy.array( [self.star.Keff(phase, atmo_grid=atmo_grid) for phase in phases] )
         tmp = Utils.Misc.Fit_linear(-Keffs, numpy.sin(cts.twopi*(phases)), inline=True)
         if verbose:
-            plotxy(-tmp[1]*numpy.sin(numpy.linspace(0.,1.)*cts.twopi)+tmp[0], numpy.linspace(0.,1.))
-            plotxy(Keffs, phases, line=None, symbol=2)
+            pylab.plot(numpy.linspace(0.,1.), -tmp[1]*numpy.sin(numpy.linspace(0.,1.)*cts.twopi)+tmp[0])
+            pylab.scatter(phases, Keffs)
         Keff = tmp[1]
         return Keff
 
@@ -420,8 +417,8 @@ class Photometry:
         self.star.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
         return
 
-    def Plot(self, par, nphases=51, verbose=True, device='/XWIN', func_par=None, nsamples=None, output=False, usepgplot=False):
-        """Plot(par, nphases=51, verbose=True, device='/XWIN', func_par=None, nsamples=None, output=False, usepgplot=False)
+    def Plot(self, par, nphases=51, verbose=True, func_par=None, nsamples=None, output=False):
+        """
         Plots the observed and predicted values along with the
         light curve.
         
@@ -442,8 +439,6 @@ class Photometry:
         nphases (int): Orbital phase resolution of the model
             light curve.
         verbose (bool): verbosity.
-        device (string): Device driver for Pgplot (can be '/XWIN',
-            'filename.ps/PS', 'filename.ps./CPS', '/AQT' (on mac only)).
         func_par (function): Function that takes the parameter vector and
             returns the parameter vector. This allow for possible constraints
             on the parameters. The vector returned by func_par must have a length
@@ -452,7 +447,6 @@ class Photometry:
             If None, the lightcurve will be sampled at the observed data
             points.
         output (bool): If true, will return the model flux values and the offsets.
-        usepgplot (bool): If true, will use pgplot instead of matplotlib to make the plot.
         
         >>> self.Plot([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
@@ -472,60 +466,32 @@ class Photometry:
         maxmag = tmp.max()
         deltamag = (maxmag - minmag)
         spacing = 0.2
-        
+
         #---------------------------------
-        ##### Using pgplot
-        if usepgplot:
-            # Loop over the data set and plot the flux, theoretical flux and offset theoretical flux
-            for i in numpy.arange(self.ndataset):
-                plotxy(self.data['mag'][i], self.data['phase'][i], erry=self.data['err'][i], line=None, symbol=1, color=1+i, rangey=[maxmag+spacing*deltamag, minmag-spacing*deltamag], rangex=[0.,1.], device=device)
-                plotxy(pred_flux[i], phases[i], color=1+i, line=2)
-                #plotxy(pred_flux[i]+offset[i], phases[i], color=1+i)
-                plotxy(pred_flux[i]+offset[i], phases[i], color=1)
-            plotxy([0],[0], color=1)
-            y0 = (minmag + maxmag)/2
-            dy = (maxmag - minmag + 2*spacing*deltamag)/25
-            # Displaying information about the parameters
-            ppgplot.pgsch(0.7) # Make the font smaller
-            ppgplot.pgtext(0.4, y0+0*dy, 'Incl.: %4.2f deg'%(par[0]*cts.RADTODEG))
-            ppgplot.pgtext(0.4, y0+1*dy, 'Co-rot.: %3.1f'%par[1])
-            ppgplot.pgtext(0.4, y0+2*dy, 'Fill.: %5.3f'%par[2])
-            ppgplot.pgtext(0.4, y0+3*dy, 'Grav.: %4.2f'%par[4])
-            if isinstance(par[3], (list,tuple,numpy.ndarray)):
-                ppgplot.pgtext(0.4, y0+4*dy, 'Temp. back: '+' ,'.join("%7.2f"%s for s in par[3])+' K')
-            else:
-                ppgplot.pgtext(0.4, y0+4*dy, 'Temp. back: %7.2f K'%par[3])
-            ppgplot.pgtext(0.4, y0+5*dy, 'Temp. front: %7.2f K'%par[6])
-            # in the following, we divide the speed by 1000 to convert from m/s to km/s
-            ppgplot.pgtext(0.4, y0+6*dy, 'K: %5.2f km/s'%(par[5]/1000))
-            ppgplot.pgtext(0.4, y0+7*dy, 'D.M.: %4.2f'%par[7])
-            ppgplot.pgtext(0.4, y0+8*dy, 'Aj: %4.2f'%par[8])
-            ppgplot.pgtext(0.4, y0+9.5*dy, 'q: %5.3f'%self.star.q)
-            ppgplot.pgtext(0.4, y0+11*dy, 'Chi2: %7.2f, d.o.f.: %i'%(chi2,self.mag.size-len(par)))
-            ppgplot.pgsch(1.0) # Restore the font size
-        #---------------------------------
-        ##### Using matplotlib
-        else:
-            if len(pylab.get_fignums()) == 0:
-                fig = pylab.figure()
-            else:
-                fig = pylab.gcf()
-            ax = fig.add_subplot(1,1,1)
-            ncolors = self.ndataset - 1
-            if ncolors == 0:
-                ncolors = 1
-            for i in numpy.arange(self.ndataset):
-                color = numpy.ones((self.data['mag'][i].size,1), dtype=float) * matplotlib.cm.jet(float(i)/ncolors)
-                ax.plot(phases[i], pred_flux[i], 'k--')
-                ax.plot(phases[i], pred_flux[i]+offset[i], 'k-')
-                ax.errorbar(self.data['phase'][i], self.data['mag'][i], yerr=self.data['err'][i], fmt=None, ecolor=color[0])
-                ax.scatter(self.data['phase'][i], self.data['mag'][i], edgecolor=color, facecolor=color)
-                ax.text(1.01, pred_flux[i].max(), self.data['id'][i])
-            ax.set_xlim([0,1])
-            ax.set_ylim([maxmag+spacing*deltamag, minmag-spacing*deltamag])
-            ax.set_xlabel( "Orbital Phase" )
-            ax.set_ylabel( "Magnitude" )
-            pylab.draw()
+        ##### Plot using matplotlib
+        try:
+            fig = pylab.gcf()
+            try:
+                ax = pylab.gca()
+            except:
+                ax = fig.add_subplot(1,1,1)
+        except:
+            fig, ax = pylab.subplots(nrows=1, ncols=1)
+        ncolors = self.ndataset - 1
+        if ncolors == 0:
+            ncolors = 1
+        for i in numpy.arange(self.ndataset):
+            color = numpy.ones((self.data['mag'][i].size,1), dtype=float) * matplotlib.cm.jet(float(i)/ncolors)
+            ax.errorbar(self.data['phase'][i], self.data['mag'][i], yerr=self.data['err'][i], fmt=None, ecolor=color[0])
+            ax.scatter(self.data['phase'][i], self.data['mag'][i], edgecolor=color, facecolor=color)
+            ax.plot(phases[i], pred_flux[i], 'k--')
+            ax.plot(phases[i], pred_flux[i]+offset[i], 'k-')
+            ax.text(1.01, pred_flux[i].max(), self.data['id'][i])
+        ax.set_xlim([0,1])
+        ax.set_ylim([maxmag+spacing*deltamag, minmag-spacing*deltamag])
+        ax.set_xlabel( "Orbital Phase" )
+        ax.set_ylabel( "Magnitude" )
+        pylab.draw()
         
         if output:
             return pred_flux, offset

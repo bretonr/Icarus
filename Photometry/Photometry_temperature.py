@@ -4,7 +4,7 @@ __all__ = ["Photometry_temperature"]
 
 from ..Utils.import_modules import *
 from .. import Core
-from Photometry import Photometry
+from .Photometry import Photometry
 
 
 ######################## class Photometry_temperature ########################
@@ -74,8 +74,8 @@ class Photometry_temperature(Photometry):
         self.star = Core.Star_temperature(ndiv)
         return
 
-    def _Make_surface(self, par, func_par=None, verbose=False):
-        """_Make_surface(par, func_par=None, verbose=False)
+    def Make_surface(self, par, func_par=None, verbose=False):
+        """Make_surface(par, func_par=None, verbose=False)
         This function gets the parameters to construct to companion
         surface model and calls the Make_surface function from the
         Lightcurve object.
@@ -109,7 +109,7 @@ class Photometry_temperature(Photometry):
         set tempgrav = 0., which disables the gravity darkening, and
         also set tirr = 0., which disables the irradiation.
         
-        >>> _Make_surface(par)
+        >>> Make_surface(par)
         """
         # Apply a function that can modify the value of parameters.
         if func_par is not None:

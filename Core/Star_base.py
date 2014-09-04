@@ -280,15 +280,15 @@ class Star_base(object):
         radius = self.Radius()
         return radius/radius_RL
 
-    def Flux(self, phase, gravscale=None, atmo_grid=None, nosum=False, details=False, mu=None, inds=None, doppler=0.):
-        """Flux(phase, gravscale=None, atmo_grid=None, nosum=False, details=False, mu=None, inds=None, doppler=0.)
+    def Flux(self, phase, atmo_grid=None, gravscale=None, nosum=False, details=False, mu=None, inds=None):
+        """Flux(phase, gravscale=None, atmo_grid=None, nosum=False, details=False, mu=None, inds=None)
         Return the flux interpolated from the atmosphere grid.
         
         phase: orbital phase (in orbital fraction; 0: companion 
             in front, 0.5: companion behind).
-        gravscale (optional): gravitational scaling parameter.
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
+        gravscale (optional): gravitational scaling parameter.
         nosum (False): if true, will no sum across the surface.
         details (False): if true, will return (flux, Keff, Teff).
         mu (None): if provided, the vector of mu angles (angle between
@@ -296,9 +296,6 @@ class Star_base(object):
         inds (None): if provided, the list of indices to use for
             the flux calculation. Can be handy to approximate
             eclipses.
-        doppler (0.): coefficient for the Doppler boosting. If 0., no
-            Doppler boosting is performed. If None, will use the value
-            returned but self.Doppler_boosting().
         
         >>> self.Flux(phase)
         flux
@@ -310,69 +307,48 @@ class Star_base(object):
         if mu is None:
             mu = self._Mu(phase)
         if inds is None:
-            #inds = (mu > 0).nonzero()[0]
             inds = mu > 0
-#        fsum = 0.
-#        for i in inds:
-#            fsum = fsum + self.area[i] * atmo_grid.Get_flux(self.logteff[i],self.logg[i]+gravscale,mu[i])
-#        if fsum.ndim == 2:
-#            fsum = self.area[inds].reshape((inds.size,1)) * fsum
-#        else:
-#            fsum = self.area[inds] * fsum
-#        fsum = fsum.sum(axis=0)
         
         logteff = self.logteff[inds]
         logg = self.logg[inds]+gravscale
         mu = mu[inds]
         area = self.area[inds]
-        
+    
         if details:
             v = self._Velocity_surface(phase)[inds]
             fsum, Keff, Teff = atmo_grid.Get_flux_details(logteff, logg, mu, area, v)
-            if doppler is None:
-                fsum *= 1 + (self.Doppler_boosting(logteff, logg) * v).mean()
-            elif doppler != 0.:
-                fsum *= 1 - doppler * self.k1/cts.c * numpy.sin(phase*cts.twopi)
             return fsum, Keff*cts.c, Teff
         
         if nosum:
             fsum = atmo_grid.Get_flux_nosum(logteff, logg, mu, area)
-            if doppler is None:
-                fsum *= 1 + self.Doppler_boosting(logteff, logg) * self._Velocity_surface(phase)[inds]
-            elif doppler != 0.:
-                fsum *= 1 - doppler * self._Velocity_surface(phase)[inds]
             return fsum
-        
-        else:
-            ##### temporary hack
-            if 0:
-                area = area*mu
-                mu = numpy.ones_like(mu)
-                mean_logg = logg.mean()
-                mean_logg = 4.0
-                logg = numpy.ones_like(logg) * mean_logg
-            ##### temporary hack
-            fsum = atmo_grid.Get_flux(logteff, logg, mu, area)
-            if doppler is None:
-                fsum *= 1 + (self.Doppler_boosting(logteff, logg) * self._Velocity_surface(phase)[inds]).mean()
-            elif doppler != 0.:
-                fsum *= 1 - doppler * self.k1/cts.c * numpy.sin(phase*cts.twopi)
-            return fsum
-        
+    
+        fsum = atmo_grid.Get_flux(logteff, logg, mu, area)
+    
         return fsum
 
-    def Flux_doppler(self, phase, gravscale=None, atmo_grid=None, velocity=0.):
-        """Flux_doppler(phase, gravscale=None, atmo_grid=None, velocity=0.)
+    def Flux_doppler(self, phase, atmo_grid=None, gravscale=None, nosum=False, mu=None, inds=None, velocity=0., atmo_doppler=None):
+        """
         Return the flux interpolated from the atmosphere grid.
         Takes into account the Doppler shift of the different surface
         elements due to the orbital velocity.
         
         phase: orbital phase (in orbital fraction; 0: companion 
             in front, 0.5: companion behind).
-        gravscale (optional): gravitational scaling parameter.
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
+        gravscale (optional): gravitational scaling parameter.
+        nosum (False): if true, will no sum across the surface.
+        mu (None): if provided, the vector of mu angles (angle between
+            line of sight and surface normal).
+        inds (None): if provided, the list of indices to use for
+            the flux calculation. Can be handy to approximate
+            eclipses.
         velocity (optional): extra velocity in m/s to be added.
+        atmo_doppler (optional): AtmoGridDoppler instance containing a grid of Doppler
+            boosting factors. Must be the same dimensions as the atmosphere grid.
+            This is needed for the photometry atmosphere grid, but not for the
+            spectroscopy.
         
         >>> self.Flux_doppler(phase)
         flux
@@ -382,10 +358,21 @@ class Star_base(object):
             atmo_grid = self.atmo_grid
         if gravscale is None:
             gravscale = self._Gravscale()
-        mu = self._Mu(phase)
-        inds = mu > 0
-        v = self._Velocity_surface(phase)
-        fsum = atmo_grid.Get_flux_doppler(self.logteff[inds],self.logg[inds]+gravscale,mu[inds],v[inds]+velocity/cts.c, self.area[inds])
+        if mu is None:
+            mu = self._Mu(phase)
+        if inds is None:
+            inds = mu > 0
+        v = self._Velocity_surface(phase, velocity=velocity)
+        if atmo_doppler is not None:
+            if nosum:
+                fsum = atmo_grid.Get_flux_doppler_nosum(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds], atmo_doppler)
+            else:
+                fsum = atmo_grid.Get_flux_doppler(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds], atmo_doppler)
+        else:
+            if nosum:
+                fsum = atmo_grid.Get_flux_doppler_nosum(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds])
+            else:
+                fsum = atmo_grid.Get_flux_doppler(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds])
         logger.debug("stop")
         return fsum
 
@@ -521,8 +508,8 @@ class Star_base(object):
             gravscale = self._Gravscale()
         return -2.5*numpy.log10(self.Flux(phase, gravscale=gravscale, atmo_grid=atmo_grid)*proj) + atmo_grid.meta['zp']
 
-    def Mag_flux_doppler(self, phase, gravscale=None, a=None, atmo_grid=None, velocity=0.):
-        """Mag_flux_doppler(phase, gravscale=None, a=None, atmo_grid=None, velocity=0.)
+    def Mag_flux_doppler(self, phase, gravscale=None, a=None, atmo_grid=None, velocity=0., atmo_doppler=None):
+        """
         Returns the magnitude interpolated from the atmosphere grid.
         Takes into account the Doppler shift of the different surface
         elements due to the orbital velocity.
@@ -536,6 +523,10 @@ class Star_base(object):
         atmo_grid (optional): atmosphere grid instance to work from to 
             calculate the flux.
         velocity (optional): extra velocity in m/s to be added.
+        atmo_doppler (optional): AtmoGridDoppler instance containing a grid of Doppler
+            boosting factors. Must be the same dimensions as the atmosphere grid.
+            This is needed for the photometry atmosphere grid, but not for the
+            spectroscopy.
         
         >>> self.Mag_flux_doppler(phase)
         mag_flux_doppler
@@ -548,7 +539,7 @@ class Star_base(object):
             proj = self._Proj(self.separation)
         if gravscale is None:
             gravscale = self._Gravscale()
-        return -2.5*numpy.log10(self.Flux_doppler(phase, gravscale=gravscale, atmo_grid=atmo_grid, velocity=velocity)*proj) + atmo_grid.meta['zp']
+        return -2.5*numpy.log10(self.Flux_doppler(phase, gravscale=gravscale, atmo_grid=atmo_grid, velocity=velocity, atmo_doppler=atmo_doppler)*proj) + atmo_grid.meta['zp']
 
     def Make_surface(self, q=None, omega=None, filling=None, temp=None, tempgrav=None, tirr=None, porb=None, k1=None, incl=None):
         """Make_surface(q=None, omega=None, filling=None, temp=None, tempgrav=None, tirr=None, porb=None, k1=None, incl=None)
@@ -958,8 +949,8 @@ class Star_base(object):
         logger.debug("end")
         return
 
-    def _Velocity_surface(self, phase):
-        """_Velocity_surface(phase)
+    def _Velocity_surface(self, phase, velocity=0.):
+        """_Velocity_surface(phase, velocity=0.)
         Returns the velocity (in v/c) of each surface element
         of the star.
         
@@ -968,6 +959,7 @@ class Star_base(object):
 
         phase: orbital phase (in orbital fraction; 0: companion 
             in front, 0.5: companion behind).
+        velocity: systematic velocity offset to be added (in m/s).
         
         >>> self._Velocity_surface(phase)
         """
@@ -983,7 +975,7 @@ class Star_base(object):
 #        Kbary = -self.k1 / cts.c
 #        Vx = Kbary * (self.rc*self.cosy*numpy.cos(phi) + (Rbary - self.rc*self.cosx)*numpy.sin(phi))
 #        #print( Vx.min()*cts.c, Vx.max()*cts.c, Vx.mean()*cts.c, (Vx-Vx.mean()).min()*cts.c, (Vx-Vx.mean()).max()*cts.c )
-        Vx = -self.k1/cts.c * ( self.omega*self.rc*(1+self.q)/self.q * (-numpy.cos(phi)*self.cosy + numpy.sin(phi)*self.cosx) - numpy.sin(phi) )
+        Vx = (-self.k1+velocity)/cts.c * ( self.omega*self.rc*(1+self.q)/self.q * (-numpy.cos(phi)*self.cosy + numpy.sin(phi)*self.cosx) - numpy.sin(phi) )
         return Vx
 
 ######################## class Star_base ########################

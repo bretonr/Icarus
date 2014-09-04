@@ -1,5 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
+from astropy.table import Table, Column
+
 from .import_modules import *
 
 
@@ -61,6 +63,18 @@ def Fit_linear(y, x=None, err=1.0, m=None, b=None, output=None, inline=False):
         return numpy.hstack((sol, res, rank, s))
     else:
         return (sol, res, rank, s)
+
+def Pprint(arr, show_index=False):
+    arr = np.atleast_2d(arr)
+    if show_index:
+        cols = np.arange(arr.shape[1]).astype(str)
+        #rows = np.arange(arr.shape[0]).astype(str)
+        rows = np.array([r+' |' for r in np.arange(arr.shape[0]).astype(str)])
+        t = Table(data=arr, names=cols, copy=True)
+        t.add_column(Column(data=rows, name=' '), index=0)
+    else:
+        t = Table(data=arr, copy=True)
+    t.pprint(show_name=show_index)
 
 def Sort_list(lst, cols):
     """Sort_list(lst, cols)

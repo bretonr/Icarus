@@ -1,11 +1,12 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
-__all__ = ["Atmo_BTSettl7_spectro","Read_BTSettl7"]
+__all__ = ["Atmo_BTSettl7_spectro", "Read_BTSettl7"]
+
+from astropy.io import fits
 
 from ..Utils.import_modules import *
 from .. import Utils
-from .Atmo_grid import Atmo_grid
-from astropy.io import fits
+from .Atmo import Atmo_grid
 
 logger = logging.getLogger(__name__)
 

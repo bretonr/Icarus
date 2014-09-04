@@ -4,7 +4,7 @@ __all__ = ["Atmo_grid_BTSettl7"]
 
 from ..Utils.import_modules import *
 from .. import Utils
-from .Atmo_grid import Atmo_grid
+from .Atmo import Atmo_grid
 
 
 ######################## class Atmo_grid_BTSettl7 ########################

@@ -10,7 +10,7 @@ from . import Grid, Misc, Series
 ##----- ----- ----- ----- ----- ----- ----- ----- ----- -----##
 
 
-def Band_integration(band_func, w, f, nu=False, AB=True):
+def Band_integration(band_func, w, f, input_nu=False, AB=True):
     """
     Integrate a spectrum over a filter response curve.
     
@@ -22,7 +22,7 @@ def Band_integration(band_func, w, f, nu=False, AB=True):
         wavelengths must be in angstrom.
         wavelengths must be in Hz.
     f: flux density in erg/s/cm^2/A or erg/s/cm^2/Hz.
-    nu: Whether the input band_func, w and f are in the frequency or
+    input_nu: Whether the input band_func, w and f are in the frequency or
         wavelength domain.
     AB: Whether the integration should be performed in the STMAG system
         or the ABMAG system.
@@ -32,25 +32,26 @@ def Band_integration(band_func, w, f, nu=False, AB=True):
     See also The Mauna Kea Observatories Near-Infrared Filter Set. III. Isophotal Wavelengths and Absolute Calibration (doi:10.1086/429382).
     """
     f_band = band_func(w)
-    if nu:
-        nu, f_nu = w, f
-    else:
-        ## Make units m instead of A to simplify calculations
-        wav, f_wav = w*1e-10, f*1e10
+    #if input_nu:
+    #    nu, f_nu = w, f
+    #else:
+    #    ## Make units m instead of A to simplify calculations
+    #    wav, f_wav = w*1e-10, f*1e10
     ## Check if we work in the AB system (F_nu)
     if AB:
         ## The following equation is from Bessell & Murphy 2012 (eq. A12a)
         ## <f_nu> from f_nu, S_nu and nu
-        if nu:
+        if input_nu:
             f_int = scipy.integrate.simps(f*f_band/w, w) / scipy.integrate.simps(f_band/w, w)
         ## The following equation is from Bessell & Murphy 2012 (eq. A12b)
         ## <f_nu> from f_lambda, S_lambda and lambda
+        ## Note that in order to balance, we must use the speed of light in A/s
         else:
-            f_int = scipy.integrate.simps(f*f_band*w, w) / scipy.integrate.simps(f_band*cts.c/w, w)
+            f_int = scipy.integrate.simps(f*f_band*w, w) / scipy.integrate.simps(f_band*(cts.c*1e10)/w, w)
     ## If not we work in the ST system (F_lambda)
     else:
         ## The following has not been implemented
-        if nu:
+        if input_nu:
         ## The following equation is inferred from Bessell & Murphy 2012 (eq. A11)
         ## <f_lambda> from f_nu, S_nu and nu
             f_int = scipy.integrate.simps(f*f_band/w, w) / scipy.integrate.simps(f_band*cts.c/w**3, w)
@@ -59,38 +60,46 @@ def Band_integration(band_func, w, f, nu=False, AB=True):
         else:
             f_int = scipy.integrate.simps(f*f_band*w, w) / scipy.integrate.simps(f_band*w, w)
         ## For the ST system (F_lambda), we convert back from m to A
-        f_int = f_int * 1e-10
+        #f_int = f_int * 1e-10
     return f_int
 
-def Doppler_boosting_factor(spectrum, bandpass, wavelengths, maxv=500e3, deltav=1e3, verbose=False):
+def Doppler_boosting_factor(band_func, w, f, velocities, input_nu=False, AB=True):
     """
     This function calculates the Doppler boosting factor of a spectrum
-    given a certain bandpass. Both spectrum and banpass must be sampled
-    at the provided wavelengths values.
+    given a certain bandpass at the provided velocities.
 
-    spectrum (array): spectrum
-    bandpass (array): bandpass of the filter
-    wavelengths (array): wavelengths of the spectrum and bandpass
-    maxv (float): maximum value for the Doppler shift to be sampled in m/s
-    deltav (float): Doppler shift sampling in m/s
-    verbose (bool): If true, will display the a plot of the fit for the Doppler boosting.
+    band_func: function that interpolates the filter response at a given
+        set of wavelengths/frequencies. Takes one parameter, which is the
+        same units as w.
+    w: wavelengths or frequencies of the source to be integrated in wavelength
+        or frequency space.
+        wavelengths must be in angstrom.
+        wavelengths must be in Hz.
+    f: flux density in erg/s/cm^2/A or erg/s/cm^2/Hz.
+    velocities: velocities at which the Doppler boosting should be calculated.
+        Positive -> moving away from observer.
+        Negative -> moving towards observer.
+    input_nu: Whether the input band_func, w and f are in the frequency or
+        wavelength domain.
+    AB: Whether the integration should be performed in the STMAG system
+        or the ABMAG system.
+        (see equation 5,6 from Linnell, DeStefano & Hubeny, ApJ, 146, 68)
+
+    See The Alhambra Photometric System (doi:10.1088/0004-6256/139/3/1242) for more details.
+    See also The Mauna Kea Observatories Near-Infrared Filter Set. III. Isophotal Wavelengths and Absolute Calibration (doi:10.1086/429382).
     """
-    vels = np.arange(-maxv, maxv+deltav, deltav)
-    wav0 = wavelengths[0]
-    deltawav0 = wavelengths[1] - wavelengths[0]
-    intflux = []
-    for v in vels:
-        spectrum_shifted = Grid.Shift_spectrum(spectrum, wavelengths, v, wav0, deltawav0)
-        #intflux.append( np.sum(spectrum_shifted*bandpass*wavelengths*np.sqrt( (1-v/299792458.0)/(1+v/299792458.0) )**5) )
-        intflux.append( np.sum(spectrum_shifted*bandpass*wavelengths / (1-v/cts.c)**5) )
-    if verbose:
-        plotxy(spectrum/spectrum.max(), wavelengths, rangey=[0,1.05])
-        plotxy(bandpass/bandpass.max(), wavelengths, color=2)
-        nextplotpage()
-    intflux = np.array(intflux)
-    intflux /= intflux[intflux.size/2]
-    tmp = Misc.Fit_linear(intflux, x=vels/cts.c, b=1., output=verbose, inline=True)
-    boost = tmp[1]
+    velocities = np.atleast_1d(velocities)
+    f0 = Band_integration(band_func, w, f, input_nu=input_nu, AB=AB)
+    boost = np.empty((velocities.size, f0.size), dtype=float)
+    for i, vel in enumerate(velocities):
+        if input_nu:
+            w_shifted = w * numpy.sqrt( (1.-vel/cts.c)/(1.+vel/cts.c) )
+        else:
+            w_shifted = w * numpy.sqrt( (1.+vel/cts.c)/(1.-vel/cts.c) )
+        if vel == 0.:
+            boost[i] = 1.
+        else:
+            boost[i] = Band_integration(band_func, w_shifted, f, input_nu=input_nu, AB=AB) / (1+vel/cts.c)**5 / f0
     return boost
 
 def Load_filter(band_fln, conv=1.):

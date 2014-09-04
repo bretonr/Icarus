@@ -38,7 +38,7 @@ print('Flux (step by step, 1): {}'.format(flux1))
 w1temp, jtemp = atmo.Getaxispos('logtemp', logteff)
 w1logg, jlogg = atmo.Getaxispos('logg', logg)
 w1mu, jmu = atmo.Getaxispos('mu', mu)
-flux2 = Icarus.Utils.Grid.Inter8_photometry(atmo.data, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, area, mu)
+flux2 = Icarus.Utils.Grid.Interp_photometry(atmo.data, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, area, mu)
 
 print('Flux (step by step, 2): {}'.format(flux2))
 

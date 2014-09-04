@@ -4,7 +4,7 @@ __all__ = ["Atmo_grid_spectro"]
 
 from ..Utils.import_modules import *
 from .. import Utils
-from .Atmo_grid import Atmo_grid
+from .Atmo import Atmo_grid
 
 
 ######################## class Atmo_grid_spectro ########################
@@ -121,7 +121,7 @@ class Atmo_grid_spectro(Atmo_grid):
             grid = grid.take(inds, axis=-1)*(1-ws) + grid.take(inds+1, axis=-1)*ws
         return grid, mu, wav
 
-    def Inter8_orig(self, val_temp, val_logg, val_mu):
+    def Interp_orig(self, val_temp, val_logg, val_mu):
         """
         Obsolete!!!
         """
