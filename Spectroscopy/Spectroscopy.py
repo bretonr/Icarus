@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
-__all__ = ["Spectroscopy", "Doppler_shift", "Normalize_spectrum", "Rebin", "Process_flux", "Process_flux1",]
+__all__ = ["Spectroscopy", "Doppler_shift", "Normalize_spectrum", "Rebin", "Process_flux", "Process_flux1"]
 
 from ..Utils.import_modules import *
 from .. import Utils

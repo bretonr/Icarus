@@ -6,6 +6,7 @@ from ..Utils.import_modules import *
 from .. import Utils
 from .. import Core
 from .. import Atmosphere
+from .Photometry import Photometry
 
 
 ######################## class Photometry ########################
