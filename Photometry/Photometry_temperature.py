@@ -32,7 +32,7 @@ class Photometry_temperature(Photometry):
         
         atmo_fln (str): A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
-                band_name, band_filename, doppler_filename
+                band_name, band_filename
         data_fln (str): A file containing the information for each data set.
             The format of the file is as follows:
                 band_name, column_phase, column_flux, column_error_flux,
