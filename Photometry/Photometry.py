@@ -353,9 +353,9 @@ class Photometry:
         # Get the Keffs and fluxes
         phases = numpy.arange(nphases)/float(nphases)
         Keffs = numpy.array( [self.star.Keff(phase, atmo_grid=atmo_grid) for phase in phases] )
-        tmp = Utils.Misc.Fit_linear(-Keffs, numpy.sin(cts.twopi*(phases)), inline=True)
+        tmp = Utils.Misc.Fit_linear(Keffs, numpy.sin(cts.twopi*(phases)), inline=True)
         if verbose:
-            pylab.plot(numpy.linspace(0.,1.), -tmp[1]*numpy.sin(numpy.linspace(0.,1.)*cts.twopi)+tmp[0])
+            pylab.plot(numpy.linspace(0.,1.), tmp[1]*numpy.sin(numpy.linspace(0.,1.)*cts.twopi)+tmp[0])
             pylab.scatter(phases, Keffs)
         Keff = tmp[1]
         return Keff
