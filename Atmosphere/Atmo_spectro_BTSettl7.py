@@ -2,6 +2,8 @@
 
 __all__ = ["Atmo_BTSettl7_spectro", "Read_BTSettl7"]
 
+import sys
+
 from ..Utils.import_modules import *
 from .. import Utils
 from .Atmo import Atmo_grid
@@ -102,7 +104,7 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
             a_4 = a_40 + a_45/wav5
             a_5 = a_50 + a_55/wav5
             return a_0, a_1, a_2, a_3, a_4, a_5
-        self.limb = numpy.empty((6,wav.shape[0]))
+        self.limb = np.empty((6,wav.shape[0]))
         inds = wav<0.37298
         self.limb[:,inds] = L_300_372(wav[inds])
         inds = (wav<0.42257)*(wav>0.37298)
@@ -145,7 +147,7 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
         """
         ## Reading the parameter information about the spectra
         lst = []
-        for i in numpy.arange(len(flns)):
+        for i in np.arange(len(flns)):
             ## Get the logg and teff value from the filename
             tmp = flns[i].split('lte')[1]
             temp = float(tmp[:3])*100
@@ -156,15 +158,15 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
 
         ## Sorting the grid by temperature and then logg
         Utils.Misc.Sort_list(lst, [2,1])
-        lst = numpy.array(lst)
+        lst = np.array(lst)
 
         ## Extracting the temperature values
-        self.logtemp = numpy.log(numpy.unique(lst[:,2]))
+        self.logtemp = np.log(np.unique(lst[:,2]))
         self.logtemp.sort()
         n_teff = self.logtemp.size
 
         ## Extracting the logg values
-        self.logg = numpy.unique(lst[:,1])
+        self.logg = np.unique(lst[:,1])
         self.logg.sort()
         n_logg = self.logg.shape[0]
 
@@ -177,10 +179,10 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
                 for logg in self.logg:
                     missing = True
                     for l in lst:
-                        if numpy.log(l[2]) == teff and l[1] == logg:
+                        if np.log(l[2]) == teff and l[1] == logg:
                             missing = False
                     if missing:
-                        print("Missing -> logg: {:3.1f}, temp: {:5.0f}".format(logg,numpy.exp(teff)))
+                        print("Missing -> logg: {:3.1f}, temp: {:5.0f}".format(logg,np.exp(teff)))
             raise Exception( "There is a mismatch in the number of log(g) and teff grid points!" )
             return
 
@@ -197,7 +199,7 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
             logger.log(8, "Number of wavelength points: {}, range: [{}, {}]".format(tmp[1].size, tmp[1][0], tmp[1][-1]) )
         if verbose: print( "\nFinished reading atmosphere grid files" )
         try:
-            wav = numpy.array(wav)
+            wav = np.array(wav)
             if wav.std(0).max() > 1.e-6:
                 raise Exception( "The wavelength grid is not uniform!" )
                 return
@@ -207,7 +209,7 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
             raise Exception( "The wavelength grid has an inconsistent number of elements!" )
             return
         if verbose: print( "Transforming grid data to array" )
-        grid = numpy.asarray(grid)
+        grid = np.asarray(grid)
         if verbose: print( "Addressing the grid data shape" )
         grid.shape = n_teff, n_logg, wav.size
         self.wav = wav
@@ -238,8 +240,8 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
         logg = self.logg
         mu = self.mu
         logger.log(9, "Getting temp indices")
-        logger.log(5, "logtemp.min() {}, logtemp.max() {}".format(numpy.min(logtemp),numpy.max(logtemp)) )
-        logger.log(5, "val_logtemp.min() {}, val_logtemp.max() {}".format(numpy.min(val_logtemp),numpy.max(val_logtemp)) )
+        logger.log(5, "logtemp.min() {}, logtemp.max() {}".format(np.min(logtemp),np.max(logtemp)) )
+        logger.log(5, "val_logtemp.min() {}, val_logtemp.max() {}".format(np.min(val_logtemp),np.max(val_logtemp)) )
         wtemp, jtemp = self.Getaxispos(logtemp,val_logtemp)
         logger.log(9, "Getting logg indices")
         wlogg, jlogg = self.Getaxispos(logg,val_logg)
@@ -249,8 +251,8 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
             grid_mu = self.grid_mu
             if self.z0:
                 val_vel = val_vel/(-self.z0)
-                wwav = numpy.remainder(val_vel, 1)
-                jwav = numpy.floor(val_vel).astype(int)
+                wwav = np.remainder(val_vel, 1)
+                jwav = np.floor(val_vel).astype(int)
                 flux = Utils.Grid.Interp_doppler_savememory(grid, wtemp, wlogg, wmu, wwav, jtemp, jlogg, jmu, jwav, grid_mu, val_area, val_mu)
             else:
                 print( 'Hey! Wake up! The grid is linear in lambda and should have been transformed to linear in log(lambda)!' )
@@ -269,7 +271,7 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
         Note: Only valid for 0.42257 < wav < 1.100 micrometer.
         From Neckel 2005.
         """
-        return numpy.round(self.limb[0] + (self.limb[1] + (self.limb[2] + (self.limb[3] + (self.limb[4] + self.limb[5]*mu )*mu )*mu )*mu )*mu, decimals=10)
+        return np.round(self.limb[0] + (self.limb[1] + (self.limb[2] + (self.limb[3] + (self.limb[4] + self.limb[5]*mu )*mu )*mu )*mu )*mu, decimals=10)
 
     def Make_limb_grid(self, verbose=False, savememory=True):
         """
@@ -284,15 +286,15 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
         """
         self.savememory = savememory
         if verbose: print( "Calculating the limb darkening grid" )
-        self.mu = numpy.arange(0.,1.05,0.05)
+        self.mu = np.arange(0.,1.05,0.05)
         grid_mu = self.mu.copy()
         grid_mu.shape = grid_mu.size,1
         grid_mu = self.Limb_darkening(grid_mu)
         if self.savememory:
             self.grid_mu = grid_mu
         else:
-            g = numpy.array([self.grid * m for m in mu])
-            self.grid = numpy.ascontiguousarray(g.swapaxes(0,1).swapaxes(1,2))
+            g = np.array([self.grid * m for m in mu])
+            self.grid = np.ascontiguousarray(g.swapaxes(0,1).swapaxes(1,2))
 
     def Resample_loglin(self, flux):
         """
@@ -329,11 +331,11 @@ def Read_BTSettl7(fln, oversample=None, sigma=None, tophat=None, thin=None, wave
     >>> grid, wav, z = Read_BTSettl7(fln, thin=20)
     """
     ## The wavelength is contained in the first column and the flux in the second.
-    wav, grid = numpy.loadtxt(fln, usecols=(0,1), unpack=True)
+    wav, grid = np.loadtxt(fln, usecols=(0,1), unpack=True)
 
     ## Grid values are log10(F_lambda) [cgs]
     #grid = 10**grid * 4/cts.pi**2 # Conversion to flux units (make sure that in the Get_flux routine does not re-correct again!)
-    grid = (2 / PI / numpy.sqrt(3)) * 10**grid
+    grid = (2 / PI / np.sqrt(3)) * 10**grid
 
     ## Wavelengths are often not ordered so we re-order them
     inds = wav.argsort()
@@ -349,9 +351,9 @@ def Read_BTSettl7(fln, oversample=None, sigma=None, tophat=None, thin=None, wave
     ## Oversample the spectrum if requested
     if oversample is not None and oversample != 1:
         #grid = scipy.ndimage.zoom(grid, oversample, order=1, mode='reflect')
-        #wav = numpy.linspace(wav[0], wav[-1], wav.size*oversample)
+        #wav = np.linspace(wav[0], wav[-1], wav.size*oversample)
         interp = scipy.interpolate.UnivariateSpline(wav, grid, k=1, s=0)
-        wav = numpy.linspace(wav[0], wav[-1], wav.size*oversample+1)
+        wav = np.linspace(wav[0], wav[-1], wav.size*oversample+1)
         grid = interp(wav)
 
     ## Smooth the spectrum if requested
@@ -386,7 +388,7 @@ def Read_BTSettl7(fln, oversample=None, sigma=None, tophat=None, thin=None, wave
         z = None
     if convert is not None:
         print( "Saving the data into "+fln+convert )
-        numpy.savetxt(fln+convert,numpy.vstack((wav,numpy.log10(grid))).T)
+        np.savetxt(fln+convert,np.vstack((wav,np.log10(grid))).T)
     return grid, wav, z
 
 

@@ -1,5 +1,9 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
+import os
+
+import scipy.weave
+
 from .import_modules import *
 
 logger = logging.getLogger(__name__)
@@ -51,7 +55,7 @@ def Interp_3Dgrid(grid, wx, wy, wz, jx, jy, jz):
     jy = np.ascontiguousarray(jy)
     jz = np.ascontiguousarray(jz)
     nsurf = jx.size
-    interp_val = numpy.zeros(nsurf, dtype=float)
+    interp_val = np.zeros(nsurf, dtype=float)
     try:
         if os.uname()[0] == 'Darwin':
             extra_compile_args = extra_link_args = ['-O3']
@@ -221,7 +225,7 @@ def Interp_photometry_doppler_nosum(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, 
     grid_doppler = np.ascontiguousarray(grid_doppler)
     val_vel = np.ascontiguousarray(val_vel)
     nsurf = jteff.size
-    fl = numpy.zeros(nsurf, dtype=float)
+    fl = np.zeros(nsurf, dtype=float)
     try:
         if os.uname()[0] == 'Darwin':
             extra_compile_args = extra_link_args = ['-O3']
@@ -286,7 +290,7 @@ def Interp_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, 
     v = np.ascontiguousarray(v)
     val_teff = np.ascontiguousarray(val_teff)
     nsurf = jteff.size
-    results = numpy.zeros(3, dtype=float)
+    results = np.zeros(3, dtype=float)
     try:
         if os.uname()[0] == 'Darwin':
             extra_compile_args = extra_link_args = ['-O3']
@@ -346,7 +350,7 @@ def Interp_photometry_Keff(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val
     val_mu = np.ascontiguousarray(val_mu)
     v = np.ascontiguousarray(v)
     nsurf = jteff.size
-    results = numpy.zeros(2, dtype=float)
+    results = np.zeros(2, dtype=float)
     try:
         if os.uname()[0] == 'Darwin':
             extra_compile_args = extra_link_args = ['-O3']
@@ -399,7 +403,7 @@ def Interp_photometry_nosum(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, va
     area = np.ascontiguousarray(area)
     val_mu = np.ascontiguousarray(val_mu)
     nsurf = jteff.size
-    fl = numpy.zeros(nsurf, dtype=float)
+    fl = np.zeros(nsurf, dtype=float)
     try:
         if os.uname()[0] == 'Darwin':
             extra_compile_args = extra_link_args = ['-O3']
@@ -492,20 +496,20 @@ def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
     }
     }
     """
-    grid = numpy.ascontiguousarray(grid)
-    wteff = numpy.ascontiguousarray(wteff)
-    wlogg = numpy.ascontiguousarray(wlogg)
-    wmu = numpy.ascontiguousarray(wmu)
-    wwav = numpy.ascontiguousarray(wwav)
-    jteff = numpy.ascontiguousarray(jteff)
-    jlogg = numpy.ascontiguousarray(jlogg)
-    jmu = numpy.ascontiguousarray(jmu)
-    jwav = numpy.ascontiguousarray(jwav)
-    area = numpy.ascontiguousarray(area)
-    val_mu = numpy.ascontiguousarray(val_mu)
+    grid = np.ascontiguousarray(grid)
+    wteff = np.ascontiguousarray(wteff)
+    wlogg = np.ascontiguousarray(wlogg)
+    wmu = np.ascontiguousarray(wmu)
+    wwav = np.ascontiguousarray(wwav)
+    jteff = np.ascontiguousarray(jteff)
+    jlogg = np.ascontiguousarray(jlogg)
+    jmu = np.ascontiguousarray(jmu)
+    jwav = np.ascontiguousarray(jwav)
+    area = np.ascontiguousarray(area)
+    val_mu = np.ascontiguousarray(val_mu)
     nsurf = jteff.size
     nwav = grid.shape[-1]
-    fl = numpy.ones(nwav, dtype=float)
+    fl = np.ones(nwav, dtype=float)
     if os.uname()[0] == 'Darwin':
         #extra_compile_args = extra_link_args = ['-O3']
         extra_compile_args = extra_link_args = ['-Ofast']
@@ -577,21 +581,21 @@ def Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, 
     }
     }
     """
-    grid = numpy.ascontiguousarray(grid)
-    wteff = numpy.ascontiguousarray(wteff)
-    wlogg = numpy.ascontiguousarray(wlogg)
-    wmu = numpy.ascontiguousarray(wmu)
-    wwav = numpy.ascontiguousarray(wwav)
-    jteff = numpy.ascontiguousarray(jteff)
-    jlogg = numpy.ascontiguousarray(jlogg)
-    jmu = numpy.ascontiguousarray(jmu)
-    jwav = numpy.ascontiguousarray(jwav)
-    mu_grid = numpy.ascontiguousarray(mu_grid)
-    area = numpy.ascontiguousarray(area)
-    val_mu = numpy.ascontiguousarray(val_mu)
+    grid = np.ascontiguousarray(grid)
+    wteff = np.ascontiguousarray(wteff)
+    wlogg = np.ascontiguousarray(wlogg)
+    wmu = np.ascontiguousarray(wmu)
+    wwav = np.ascontiguousarray(wwav)
+    jteff = np.ascontiguousarray(jteff)
+    jlogg = np.ascontiguousarray(jlogg)
+    jmu = np.ascontiguousarray(jmu)
+    jwav = np.ascontiguousarray(jwav)
+    mu_grid = np.ascontiguousarray(mu_grid)
+    area = np.ascontiguousarray(area)
+    val_mu = np.ascontiguousarray(val_mu)
     nsurf = jteff.size
     nwav = grid.shape[-1]
-    fl = numpy.zeros(nwav, dtype=float)
+    fl = np.zeros(nwav, dtype=float)
     if os.uname()[0] == 'Darwin':
         extra_compile_args = extra_link_args = ['-O3']
         headers = ['<cmath>']
@@ -687,20 +691,20 @@ def Interp_doppler_savememory_linear(grid, wteff, wlogg, wmu, jteff, jlogg, jmu,
     }
     }
     """
-    grid = numpy.ascontiguousarray(grid)
-    wteff = numpy.ascontiguousarray(wteff)
-    wlogg = numpy.ascontiguousarray(wlogg)
-    wmu = numpy.ascontiguousarray(wmu)
-    wwav = numpy.ascontiguousarray(wwav)
-    jteff = numpy.ascontiguousarray(jteff)
-    jlogg = numpy.ascontiguousarray(jlogg)
-    jmu = numpy.ascontiguousarray(jmu)
-    jwav = numpy.ascontiguousarray(jwav)
-    area = numpy.ascontiguousarray(area)
-    val_mu = numpy.ascontiguousarray(val_mu)
+    grid = np.ascontiguousarray(grid)
+    wteff = np.ascontiguousarray(wteff)
+    wlogg = np.ascontiguousarray(wlogg)
+    wmu = np.ascontiguousarray(wmu)
+    wwav = np.ascontiguousarray(wwav)
+    jteff = np.ascontiguousarray(jteff)
+    jlogg = np.ascontiguousarray(jlogg)
+    jmu = np.ascontiguousarray(jmu)
+    jwav = np.ascontiguousarray(jwav)
+    area = np.ascontiguousarray(area)
+    val_mu = np.ascontiguousarray(val_mu)
     nsurf = jteff.size
     nwav = grid.shape[-1]
-    fl = numpy.ones(nwav, dtype=float)
+    fl = np.ones(nwav, dtype=float)
     if os.uname()[0] == 'Darwin':
         extra_compile_args = extra_link_args = ['-O3']
     else:
@@ -756,18 +760,18 @@ def Interp_doppler_nomu(grid, wteff, wlogg, wwav, jteff, jlogg, jwav, area, val_
     }
     }
     """
-    grid = numpy.ascontiguousarray(grid)
-    wteff = numpy.ascontiguousarray(wteff)
-    wlogg = numpy.ascontiguousarray(wlogg)
-    wwav = numpy.ascontiguousarray(wwav)
-    jteff = numpy.ascontiguousarray(jteff)
-    jlogg = numpy.ascontiguousarray(jlogg)
-    jwav = numpy.ascontiguousarray(jwav)
-    area = numpy.ascontiguousarray(area)
-    val_mu = numpy.ascontiguousarray(val_mu)
+    grid = np.ascontiguousarray(grid)
+    wteff = np.ascontiguousarray(wteff)
+    wlogg = np.ascontiguousarray(wlogg)
+    wwav = np.ascontiguousarray(wwav)
+    jteff = np.ascontiguousarray(jteff)
+    jlogg = np.ascontiguousarray(jlogg)
+    jwav = np.ascontiguousarray(jwav)
+    area = np.ascontiguousarray(area)
+    val_mu = np.ascontiguousarray(val_mu)
     nsurf = jteff.size
     nwav = grid.shape[-1]
-    fl = numpy.ones(nwav, dtype=float)
+    fl = np.ones(nwav, dtype=float)
     if os.uname()[0] == 'Darwin':
         extra_compile_args = extra_link_args = ['-O3']
     else:
@@ -796,9 +800,9 @@ def Shift_spectrum(fref, wobs, v, refstart, refstep):
     """
     nobs = int(wobs.size)
     nref = int(fref.size)
-    fbin = numpy.zeros(nobs, dtype=float)
-    fref = numpy.ascontiguousarray(fref, dtype=float)
-    wobs = numpy.ascontiguousarray(wobs, dtype=float)
+    fbin = np.zeros(nobs, dtype=float)
+    fref = np.ascontiguousarray(fref, dtype=float)
+    wobs = np.ascontiguousarray(wobs, dtype=float)
     v = float(v)
     refstart = float(refstart)
     refstep = float(refstep)

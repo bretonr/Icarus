@@ -79,13 +79,13 @@ class StarBinary:
                 print( " ...calculating the surface subsampling" )
                 if read:
                     self.primary_hd = Core.Star(self.ndiv1_hd, atmo_grid=atmo_grid, read=read)
-                    #self.ind_subsampling1 = numpy.loadtxt('geodesic/ind_subsampling_n%i_n%i.txt'%(self.ndiv1, self.ndiv1_hd), dtype='int')
-                    self.ind_subsampling1 = numpy.loadtxt(Utils.__path__[0][:-5]+'geodesic/ind_subsampling_n%i_n%i.txt'%(self.ndiv1, self.ndiv1_hd), dtype='int')
+                    #self.ind_subsampling1 = np.loadtxt('geodesic/ind_subsampling_n%i_n%i.txt'%(self.ndiv1, self.ndiv1_hd), dtype='int')
+                    self.ind_subsampling1 = np.loadtxt(Utils.__path__[0][:-5]+'geodesic/ind_subsampling_n%i_n%i.txt'%(self.ndiv1, self.ndiv1_hd), dtype='int')
                 else:
                     triangle_assoc = []
                     x, y, z = self.primary.cosx, self.primary.cosy, self.primary.cosz
                     # For each extra subdivision, we calculate the surface and determine the association between the triangle of this refinement level and the one just before
-                    for i in numpy.arange(self.ndiv1,self.ndiv1_hd)+1:
+                    for i in np.arange(self.ndiv1,self.ndiv1_hd)+1:
                         print( " ...subsampling from %s to %s" %(i-1,i) )
                         self.primary_hd = Core.Star(i, atmo_grid=atmo_grid, read=read)
                         x_high, y_high, z_high = self.primary_hd.cosx, self.primary_hd.cosy, self.primary_hd.cosz
@@ -124,13 +124,13 @@ class StarBinary:
                 print( " ...calculating the surface subsampling" )
                 if read:
                     self.secondary_hd = Core.Star(self.ndiv2_hd, atmo_grid=atmo_grid, read=read)
-                    #self.ind_subsampling2 = numpy.loadtxt('geodesic/ind_subsampling_n%i_n%i.txt'%(self.ndiv2, self.ndiv2_hd), dtype='int')
-                    self.ind_subsampling2 = numpy.loadtxt(Utils.__path__[0][:-5]+'geodesic/ind_subsampling_n%i_n%i.txt'%(self.ndiv2, self.ndiv2_hd), dtype='int')
+                    #self.ind_subsampling2 = np.loadtxt('geodesic/ind_subsampling_n%i_n%i.txt'%(self.ndiv2, self.ndiv2_hd), dtype='int')
+                    self.ind_subsampling2 = np.loadtxt(Utils.__path__[0][:-5]+'geodesic/ind_subsampling_n%i_n%i.txt'%(self.ndiv2, self.ndiv2_hd), dtype='int')
                 else:
                     triangle_assoc = []
                     x, y, z = self.secondary.cosx, self.secondary.cosy, self.secondary.cosz
                     # For each extra subdivision, we calculate the surface and determine the association between the triangle of this refinement level and the one just before
-                    for i in numpy.arange(self.ndiv2,self.ndiv2_hd)+1:
+                    for i in np.arange(self.ndiv2,self.ndiv2_hd)+1:
                         print( " ...subsampling from %s to %s" %(i-1,i) )
                         self.secondary_hd = Core.Star(i, atmo_grid=atmo_grid, read=read)
                         x_high, y_high, z_high = self.secondary_hd.cosx, self.secondary_hd.cosy, self.secondary_hd.cosz
@@ -513,35 +513,35 @@ class StarBinary:
         self.r1min = self.primary.rc.min()
         self.r2min = self.secondary.rc.min()
         # Determining if the two stars will ever overlap in the sky plane
-        self.overlap = (abs(numpy.cos(incl)) - self.r1max - self.r2max) < 0
+        self.overlap = (abs(np.cos(incl)) - self.r1max - self.r2max) < 0
         # If an overlap is possible, we calculate the orbital phase around which this should happened
         if self.overlap:
-            #self.overlap_phs = numpy.arcsin(self.r1max + self.r2max)/cts.twopi
-            cosi2 = numpy.cos(incl)**2
-            sini2 = numpy.sin(incl)**2
+            #self.overlap_phs = np.arcsin(self.r1max + self.r2max)/cts.twopi
+            cosi2 = np.cos(incl)**2
+            sini2 = np.sin(incl)**2
             ## From Phoebe Science guide
-            #self.overlap_phs = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2*numpy.cos(phs)**2+numpy.sin(phs)**2) - self.r1max - self.r2max, 0.05*cts.twopi) / cts.twopi
+            #self.overlap_phs = scipy.optimize.newton(lambda phs: np.sqrt(cosi2*np.cos(phs)**2+np.sin(phs)**2) - self.r1max - self.r2max, 0.05*cts.twopi) / cts.twopi
             ## From Kallrath and Milone
             #print( "incl: {}, r1max: {}, r2max: {}, r1min: {}, r2min: {}".format(incl, self.r1max, self.r2max, self.r1min, self.r2min) )
-            self.overlap_phs = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2+sini2*numpy.sin(phs)**2) - self.r1max - self.r2max, 0.05*cts.twopi) / cts.twopi
+            self.overlap_phs = scipy.optimize.newton(lambda phs: np.sqrt(cosi2+sini2*np.sin(phs)**2) - self.r1max - self.r2max, 0.05*cts.twopi) / cts.twopi
             # Determining if a total eclipse will ever happen
             if self.r1min < self.r2min:
-                self.full_eclipse1 = (numpy.cos(incl) + self.r1max - self.r2min) < 0
+                self.full_eclipse1 = (np.cos(incl) + self.r1max - self.r2min) < 0
                 self.full_eclipse2 = False
                 if self.full_eclipse1:
                     ## From Phoebe Science guide
-                    #self.full_eclipse_phs1 = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2*numpy.cos(phs)**2+numpy.sin(phs)**2) + self.r1max - self.r2max, self.overlap_phs) / cts.twopi
+                    #self.full_eclipse_phs1 = scipy.optimize.newton(lambda phs: np.sqrt(cosi2*np.cos(phs)**2+np.sin(phs)**2) + self.r1max - self.r2max, self.overlap_phs) / cts.twopi
                     ## From Kallrath and Milone
-                    self.full_eclipse_phs1 = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2+sini2*numpy.sin(phs)**2) + self.r1max - self.r2min, self.overlap_phs) / cts.twopi
+                    self.full_eclipse_phs1 = scipy.optimize.newton(lambda phs: np.sqrt(cosi2+sini2*np.sin(phs)**2) + self.r1max - self.r2min, self.overlap_phs) / cts.twopi
                 self.full_eclipse_phs2 = None
             else:
-                self.full_eclipse2 = (numpy.cos(incl) + self.r2max - self.r1min) < 0
+                self.full_eclipse2 = (np.cos(incl) + self.r2max - self.r1min) < 0
                 self.full_eclipse1 = False
                 if self.full_eclipse2:
                     ## From Phoebe Science guide
-                    #self.full_eclipse_phs2 = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2*numpy.cos(phs)**2+numpy.sin(phs)**2) + self.r2max - self.r1max, self.overlap_phs) / cts.twopi
+                    #self.full_eclipse_phs2 = scipy.optimize.newton(lambda phs: np.sqrt(cosi2*np.cos(phs)**2+np.sin(phs)**2) + self.r2max - self.r1max, self.overlap_phs) / cts.twopi
                     ## From Kallrath and Milone
-                    self.full_eclipse_phs2 = scipy.optimize.newton(lambda phs: numpy.sqrt(cosi2+sini2*numpy.sin(phs)**2) + self.r2max - self.r1min, self.overlap_phs) / cts.twopi
+                    self.full_eclipse_phs2 = scipy.optimize.newton(lambda phs: np.sqrt(cosi2+sini2*np.sin(phs)**2) + self.r2max - self.r1min, self.overlap_phs) / cts.twopi
                 self.full_eclipse_phs1 = None
         else:
             self.overlap_phs = None

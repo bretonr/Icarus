@@ -1,5 +1,10 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
+import sys
+import os
+
+import scipy.weave
+
 try:
     from numba import autojit
 except:
@@ -33,17 +38,17 @@ def Convolve_gaussian_tophat(arr, sigma=1., top=1):
     ## We define the gaussian kernel
     m_gauss = int(4*sigma+0.5)
     w_gauss = 2*m_gauss+1
-    k_gauss = numpy.exp(-0.5*(numpy.arange(w_gauss)-m_gauss)**2/sigma**2)
+    k_gauss = np.exp(-0.5*(np.arange(w_gauss)-m_gauss)**2/sigma**2)
     ## We define the tophat kernel
     w_top = int(top)
     ## If the tophat's width is even, we need to center it so the width is odd in order to preserve the phase in the convolution
     if w_top%2 == 0:
         w_top += 1
-        k_top = numpy.ones(w_top)
+        k_top = np.ones(w_top)
         k_top[0] = 0.5
         k_top[-1] = 0.5
     else:
-        k_top = numpy.ones(w_top)
+        k_top = np.ones(w_top)
     ## Calculating the full kernel
     if w_gauss > w_top:
         kernel = scipy.ndimage.convolve1d(k_gauss, k_top, mode='constant', cval=0.0)
@@ -88,7 +93,7 @@ def Getaxispos_scalar(xold, xnew):
     results[1] = jl;
     return_val = results;
     """
-    xold = numpy.asarray(xold)
+    xold = np.asarray(xold)
     xnew = float(xnew)
     get_axispos = scipy.weave.inline(code, ['xold', 'xnew', 'n'], type_converters=scipy.weave.converters.blitz, compiler='gcc', verbose=2)
     w,j = get_axispos
@@ -106,12 +111,12 @@ def Getaxispos_vector(xold, xnew):
     weights,indices = Getaxispos_scalar(xold, xnew)
     """
     logger.debug("start")
-    xold = numpy.ascontiguousarray(xold)
-    xnew = numpy.ascontiguousarray(xnew)
+    xold = np.ascontiguousarray(xold)
+    xnew = np.ascontiguousarray(xnew)
     n = xold.shape[0]
     m = xnew.shape[0]
-    j = numpy.empty(m, dtype=int)
-    w = numpy.empty(m, dtype=float)
+    j = np.empty(m, dtype=int)
+    w = np.empty(m, dtype=float)
     code = """
     #pragma omp parallel shared(xold,xnew,n,m,j,w) default(none)
     {
@@ -179,19 +184,19 @@ def GPolynomial_fit(y, x=None, err=None, coeff=1, Xfnct=None, Xfnct_offset=False
     """
     n = y.size
     if x is None:
-        x = numpy.arange(n, dtype=float)
+        x = np.arange(n, dtype=float)
     if err is None:
-        err = numpy.ones(n, dtype=float)
-    elif numpy.size(err) == 1:
-        err = numpy.ones(n, dtype=float)*err
+        err = np.ones(n, dtype=float)
+    elif np.size(err) == 1:
+        err = np.ones(n, dtype=float)*err
     if Xfnct is None:
-        Xfnct = numpy.ones(n, dtype=float)
+        Xfnct = np.ones(n, dtype=float)
     if Xfnct_offset:
         Xfnct_offset = 1
     else:
         Xfnct_offset = 0
-    a = numpy.empty((n,coeff), dtype=float)
-    b = numpy.empty(n, dtype=float)
+    a = np.empty((n,coeff), dtype=float)
+    b = np.empty(n, dtype=float)
     code = """
     if (Xfnct_offset == 1) {
         for (int i=0; i<n; ++i) {
@@ -221,7 +226,7 @@ def GPolynomial_fit(y, x=None, err=None, coeff=1, Xfnct=None, Xfnct_offset=False
     """
     prep_lstsq = scipy.weave.inline(code, ['y', 'x', 'err', 'Xfnct', 'Xfnct_offset', 'a', 'b', 'n', 'coeff'], type_converters=scipy.weave.converters.blitz, compiler='gcc')
     tmp = prep_lstsq
-    tmp = numpy.linalg.lstsq(a, b)
+    tmp = np.linalg.lstsq(a, b)
     if chi2:
         return tmp[0], tmp[1][0]
     return tmp[0]
@@ -261,17 +266,17 @@ def Interp_linear(y, weights, inds):
     }
     }
     """
-    y = numpy.asarray(y)
-    weights = numpy.asarray(weights)
-    inds = numpy.asarray(inds, dtype=int)
+    y = np.asarray(y)
+    weights = np.asarray(weights)
+    inds = np.asarray(inds, dtype=int)
     nynew = weights.size
     if y.ndim == 1:
-        ynew = numpy.empty(nynew, dtype=float)
+        ynew = np.empty(nynew, dtype=float)
         code = code1d
         args = ['y', 'ynew', 'weights', 'inds', 'nynew']
     elif y.ndim == 2:
         n = y.shape[0]
-        ynew = numpy.empty((n,nynew), dtype=float)
+        ynew = np.empty((n,nynew), dtype=float)
         code = code2d
         args = ['y', 'ynew', 'weights', 'inds', 'nynew', 'n']
     else:
@@ -294,12 +299,12 @@ def Interp_integrate(y, x, xnew):
     old time series using the Euler method. Here we assume
     that the new time series is undersampling the old one.
 
-    >>> x = numpy.arange(100.)
-    >>> y = y = numpy.sin(x/10)
-    >>> xnew = numpy.arange(20.)*5+0.3
+    >>> x = np.arange(100.)
+    >>> y = y = np.sin(x/10)
+    >>> xnew = np.arange(20.)*5+0.3
     >>> ynew = Utils.Interp_integrate(y, x, xnew)
     """
-    ynew = numpy.zeros_like(xnew)
+    ynew = np.zeros_like(xnew)
     i = 0
     ii = 0
     while ii < xnew.size:
@@ -374,9 +379,9 @@ def Resample_linlog(xold):
     """
     z = xold[-2] / xold[-1] - 1
     ## The number of data points to cover the spectal range is
-    n = numpy.ceil( numpy.log(xold[0]/xold[-1]) / numpy.log(1+z) ) + 1
-    xnew = xold[-1] * (1+z)**numpy.arange(n)[::-1]
-    return xnew, numpy.abs(z)
+    n = np.ceil( np.log(xold[0]/xold[-1]) / np.log(1+z) ) + 1
+    xnew = xold[-1] * (1+z)**np.arange(n)[::-1]
+    return xnew, np.abs(z)
 
 def Resample_loglin(xold):
     """Resample_loglin(xold)
@@ -388,7 +393,7 @@ def Resample_loglin(xold):
     >>> xnew = Resample_loglin(xold)
     """
     step = xold[1] - xold[0]
-    xnew = numpy.arange(xold[0], xold[-1]+step, step)
+    xnew = np.arange(xold[0], xold[-1]+step, step)
     return xnew
 
 

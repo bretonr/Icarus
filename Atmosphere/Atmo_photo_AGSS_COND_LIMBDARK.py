@@ -2,6 +2,8 @@
 
 __all__ = ["Atmo_BTSettl7_spectro", "Read_BTSettl7"]
 
+import sys
+
 from astropy.io import fits
 
 from ..Utils.import_modules import *
@@ -34,7 +36,7 @@ class Atmo_photo_AGSS_COND_LIMBDARK(Atmo_grid):
         """
         ## Reading the parameter information about the spectra
         lst = []
-        for i in numpy.arange(len(flns)):
+        for i in np.arange(len(flns)):
             ## Get the logg and teff value from the filename
             tmp = flns[i].split('lte')[1]
             temp = float(tmp[:3])*100
@@ -45,15 +47,15 @@ class Atmo_photo_AGSS_COND_LIMBDARK(Atmo_grid):
 
         ## Sorting the grid by temperature and then logg
         Utils.Misc.Sort_list(lst, [2,1])
-        lst = numpy.array(lst)
+        lst = np.array(lst)
 
         ## Extracting the temperature values
-        self.logtemp = numpy.log(numpy.unique(lst[:,2]))
+        self.logtemp = np.log(np.unique(lst[:,2]))
         self.logtemp.sort()
         n_teff = self.logtemp.size
 
         ## Extracting the logg values
-        self.logg = numpy.unique(lst[:,1])
+        self.logg = np.unique(lst[:,1])
         self.logg.sort()
         n_logg = self.logg.shape[0]
 
@@ -66,10 +68,10 @@ class Atmo_photo_AGSS_COND_LIMBDARK(Atmo_grid):
                 for logg in self.logg:
                     missing = True
                     for l in lst:
-                        if numpy.log(l[2]) == teff and l[1] == logg:
+                        if np.log(l[2]) == teff and l[1] == logg:
                             missing = False
                     if missing:
-                        print("Missing -> logg: {:3.1f}, temp: {:5.0f}".format(logg,numpy.exp(teff)))
+                        print("Missing -> logg: {:3.1f}, temp: {:5.0f}".format(logg,np.exp(teff)))
             raise Exception( "There is a mismatch in the number of log(g) and teff grid points!" )
             return
 
@@ -86,7 +88,7 @@ class Atmo_photo_AGSS_COND_LIMBDARK(Atmo_grid):
             logger.log(8, "Number of wavelength points: {}, range: [{}, {}]".format(tmp[1].size, tmp[1][0], tmp[1][-1]) )
         if verbose: print( "\nFinished reading atmosphere grid files" )
         try:
-            wav = numpy.array(wav)
+            wav = np.array(wav)
             if wav.std(0).max() > 1.e-6:
                 raise Exception( "The wavelength grid is not uniform!" )
                 return
@@ -96,7 +98,7 @@ class Atmo_photo_AGSS_COND_LIMBDARK(Atmo_grid):
             raise Exception( "The wavelength grid has an inconsistent number of elements!" )
             return
         if verbose: print( "Transforming grid data to array" )
-        grid = numpy.asarray(grid)
+        grid = np.asarray(grid)
         if verbose: print( "Addressing the grid data shape" )
         grid.shape = n_teff, n_logg, wav.size
         self.wav = wav
@@ -153,7 +155,7 @@ def Read_multiple(flns, temp_cut=None, logg_cut=None, verbose=False):
     
     ## Reading the parameter information about the spectra
     lst = []
-    for i in numpy.arange(len(flns)):
+    for i in np.arange(len(flns)):
         ## Read the data
         temp_i, logg_i, mu_i, grid_i = Read(fln)
         if temp_cut is None or (temp_i >= temp_cut[0] and temp_i <= temp_cut[1]):

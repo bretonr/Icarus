@@ -3,12 +3,6 @@
 import Icarus
 from Icarus.Utils.import_modules import *
 
-try:
-    import pylab
-except:
-    print( "Cannot import Matplotlib. No plot will be made." )
-
-
 
 ##### Welcome message
 print( "Analysing some mock data. It is recommended to run it within the `ipython --pylab' environment.\n" )
@@ -35,21 +29,21 @@ K = 300e3
 Tday = 5000.
 DM = 10.0
 AJ = 0.02
-par0 = numpy.r_[incl, corotation, filling, Tnight, gravdark, K, Tday, DM, AJ]
+par0 = np.r_[incl, corotation, filling, Tnight, gravdark, K, Tday, DM, AJ]
 
 
 ##### Fitting the data using a simple fmin algorithm from scipy
 ##### Here we make use of the Calc_chi2 function with offset_free = 1 in order to allow for a possible band calibration error, which we assume is 0.3 mag (see column 5 in data.txt).
 ##### We will also assume that corotation = 1, gravdark = 0.08 and K=300e3.
 ## Defining the func_par
-func_par = lambda p: numpy.r_[p[0], 1., p[1], p[2], 0.08, 300e3, p[3], p[4], p[5]]
+func_par = lambda p: np.r_[p[0], 1., p[1], p[2], 0.08, 300e3, p[3], p[4], p[5]]
 ## Wrapper function for the figure of merit to optimize
 def FoM(p):
-    p = numpy.asarray(p)
+    p = np.asarray(p)
     ## Return large value if parameters are out of bound
-    if (p < numpy.r_[0.1, 0.1, 1500., p[2], 8., 0.]).any() or (p > numpy.r_[numpy.pi/2, 1.0, 8000., 8000., 12., 0.1]).any():
+    if (p < np.r_[0.1, 0.1, 1500., p[2], 8., 0.]).any() or (p > np.r_[np.pi/2, 1.0, 8000., 8000., 12., 0.1]).any():
         #print( "out-of-bound" )
-        return numpy.ones_like(fit.mag)*1e5
+        return np.ones_like(fit.mag)*1e5
     else:
         chi2, extras = fit.Calc_chi2(p, offset_free=0, func_par=func_par, full_output=True, verbose=False)
         return extras['res']
@@ -63,7 +57,7 @@ print( "Beware that the fitting may not converge to the best-fit solution due to
 print( "Also, do not expect the best-fit parameter to converge at the actual solution. The reason being that noise is added to the theoretical data when generating the mock data. Hence it might be that by sheer luck the mock data mimic a slightly different set of parameters. If one was to regenerate the mock data several times and rerun the fit, it would on average converge at the actual solution.\n" )
 sol = scipy.optimize.leastsq(FoM, par_guess, full_output=True)
 par = sol[0]
-err = numpy.sqrt( sol[1].diagonal() )
+err = np.sqrt( sol[1].diagonal() )
 
 
 ##### Printing the results
@@ -83,9 +77,9 @@ if pylab:
     print( "Plotting the data. If nothing shows up, try pylab.show()." )
     fig = pylab.figure()
     ax = fig.add_subplot(111)
-    pl1 = ax.errorbar(numpy.r_[fit.data['phase'][0],fit.data['phase'][0]+1.], numpy.r_[fit.data['mag'][0],fit.data['mag'][0]], yerr=numpy.r_[fit.data['err'][0],fit.data['err'][0]], marker='s', mfc='red', mec='red', ms=3, ecolor='red', fmt='.')
-    pl2 = ax.errorbar(numpy.r_[fit.data['phase'][1],fit.data['phase'][1]+1.], numpy.r_[fit.data['mag'][1],fit.data['mag'][1]], yerr=numpy.r_[fit.data['err'][1],fit.data['err'][1]], marker='s', mfc='blue', mec='blue', ms=3, ecolor='blue', fmt='.')
-    phs = numpy.linspace(0, 2, 101)
+    pl1 = ax.errorbar(np.r_[fit.data['phase'][0],fit.data['phase'][0]+1.], np.r_[fit.data['mag'][0],fit.data['mag'][0]], yerr=np.r_[fit.data['err'][0],fit.data['err'][0]], marker='s', mfc='red', mec='red', ms=3, ecolor='red', fmt='.')
+    pl2 = ax.errorbar(np.r_[fit.data['phase'][1],fit.data['phase'][1]+1.], np.r_[fit.data['mag'][1],fit.data['mag'][1]], yerr=np.r_[fit.data['err'][1],fit.data['err'][1]], marker='s', mfc='blue', mec='blue', ms=3, ecolor='blue', fmt='.')
+    phs = np.linspace(0, 2, 101)
     flux = fit.Get_flux_theoretical(par, [phs,phs], func_par=func_par)
     pl3 = ax.plot(phs, flux[0], 'r-')
     pl4 = ax.plot(phs, flux[1], 'b-')
@@ -96,7 +90,7 @@ if pylab:
     ax.set_xlabel("Orbital Phase")
     ax.set_ylabel("Magnitude")
     ax.set_xlim([0.,2.])
-    vals = numpy.r_[fit.data['mag'][0], fit.data['mag'][1]]
+    vals = np.r_[fit.data['mag'][0], fit.data['mag'][1]]
     ax.set_ylim([vals.max()+(vals.max()-vals.min())*0.1, vals.min()-(vals.max()-vals.min())*0.1])
     pylab.show()
 

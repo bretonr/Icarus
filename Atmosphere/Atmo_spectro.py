@@ -35,15 +35,15 @@ class Atmo_grid_spectro(Atmo_grid):
         >>> self.Flux_init()
         """
         lst = []
-        for i in numpy.arange(len(flns)):
+        for i in np.arange(len(flns)):
             # Get the log(g) and temp value from the filename
             lst.append( [i, float(flns[i].split('-')[1]), float(flns[i].split('lte')[1].split('-')[0])*100.] )
         Utils.Misc.List_sort(lst, [2,1])
-        lst = numpy.array(lst)
-        self.logtemp = numpy.log(list(set(lst[:,2])))
+        lst = np.array(lst)
+        self.logtemp = np.log(list(set(lst[:,2])))
         self.logtemp.sort()
         n_temp = self.logtemp.shape[0]
-        self.logg = numpy.array(list(set(lst[:,1])))
+        self.logg = np.array(list(set(lst[:,1])))
         self.logg.sort()
         n_logg = self.logg.shape[0]
         if n_temp*n_logg != lst.shape[0]:
@@ -58,8 +58,8 @@ class Atmo_grid_spectro(Atmo_grid):
             mu.append(tmp[1])
             wav.append(tmp[2])
         try:
-            mu = numpy.array(mu)
-            wav = numpy.array(wav)
+            mu = np.array(mu)
+            wav = np.array(wav)
             if mu.std(0).sum() > 1.e-6:
                 print 'mu has different values'
                 return
@@ -73,7 +73,7 @@ class Atmo_grid_spectro(Atmo_grid):
         except:
             print 'mu or wav has inconsistent number of elements'
             return
-        grid = numpy.array(grid)
+        grid = np.array(grid)
         grid.shape = n_temp, n_logg, self.mu.shape[0], self.wav.shape[0]
         self.grid = grid
         return
@@ -92,7 +92,7 @@ class Atmo_grid_spectro(Atmo_grid):
         lines = lines.replace('D-','E-')
         lines = lines.splitlines()
         # Read the mu values
-        mu = numpy.array(lines[3].split()+lines[4].split()+lines[5].split()+lines[6].split(),dtype=float)
+        mu = np.array(lines[3].split()+lines[4].split()+lines[5].split()+lines[6].split(),dtype=float)
         # Read the info line for each grid point
         hdr = []
         grid = []
@@ -100,13 +100,13 @@ class Atmo_grid_spectro(Atmo_grid):
         hdr.append(lines[1].split())
         grid.append(lines[8].split()+lines[9].split()+lines[10].split()+lines[11].split())
         # Now the other lines
-        for i in numpy.arange(12,len(lines),6):
+        for i in np.arange(12,len(lines),6):
             hdr.append(lines[i].split())
             grid.append(lines[i+2].split()+lines[i+3].split()+lines[i+4].split()+lines[i+5].split())
-        hdr = numpy.array(hdr,dtype=float)
+        hdr = np.array(hdr,dtype=float)
         # The wavelength is contained in the first column of the grid element headers.
         wav = hdr[:,0]
-        grid = numpy.log(numpy.array(grid,dtype=float).T/(C*100)*wav**2)
+        grid = np.log(np.array(grid,dtype=float).T/(C*100)*wav**2)
         # There is no point in keeping grid values for mu < 0. We discard them.
         grid = grid[mu > 0.]
         mu = mu[mu > 0.]
@@ -147,7 +147,7 @@ class Atmo_grid_spectro(Atmo_grid):
                     +w1temp*(w0mu*grid[jtemp+1,jlogg+1,jmu] \
                             +w1mu*grid[jtemp+1,jlogg+1,jmu+1]))
         val_mu = val_mu.reshape((val_mu.size,1))
-        flux = numpy.exp(fl) * val_mu * self.Limb_darkening(val_mu, self.wav)
+        flux = np.exp(fl) * val_mu * self.Limb_darkening(val_mu, self.wav)
         return flux
 
     def Limb_darkening(self, mu, wav):

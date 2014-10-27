@@ -1,5 +1,9 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
+import os
+
+import scipy.weave
+
 from .import_modules import *
 
 # Try to import the Shapely package
@@ -37,7 +41,7 @@ def Hsr(y1, z1, y2, z2, faces):
     # and determine whether it lies within a surface element of the secondary.
     # The index of the occulted vertices are stored in an array.
     inds = []
-    for i in numpy.arange(y1.size):
+    for i in np.arange(y1.size):
         dy = (y1[i]-y2)
         dz = (z1[i]-z2)
         dr2 = (dy**2+dz**2)
@@ -253,7 +257,7 @@ def Hsr_c(faces_b, vertices_b, r_vertices_b, assoc_b, faces_f, vertices_f, r_ver
     n_vertices_b = vertices_b.shape[0]
     n_vertices_f = vertices_f.shape[0]
     n_faces_b = faces_b.shape[0]
-    weight = numpy.zeros(n_faces_b, dtype=numpy.float)
+    weight = np.zeros(n_faces_b, dtype=np.float)
     #extra_compile_args = extra_link_args = ['-O3 -fopenmp']
     extra_compile_args = extra_link_args = ['']
     tmp = scipy.weave.inline(code, ['vertices_b', 'r_vertices_b', 'assoc_b', 'faces_f', 'vertices_f', 'r_vertices_f', 'assoc_f', 'n_vertices_b', 'n_vertices_f', 'n_faces_b', 'incl', 'orbph', 'q', 'rmax_f', 'rmin_f', 'weight'], type_converters=scipy.weave.converters.blitz, compiler='gcc', support_code=support_code, extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<cstdio>', '<cmath>', '<omp.h>'], verbose=1)
@@ -349,9 +353,9 @@ def Occultation_approx(vertices, r_vertices, assoc, n_faces, incl, orbph, q, nth
     }
     }
     """
-    q = numpy.float(q)
+    q = np.float(q)
     n_vertices = vertices.shape[0]
-    weight = numpy.zeros(n_faces, dtype=numpy.float)
+    weight = np.zeros(n_faces, dtype=np.float)
     try:
         if os.uname()[0] == 'Darwin':
             extra_compile_args = extra_link_args = ['-O3']
@@ -386,11 +390,11 @@ def Occultation_shapely(vertices, faces_ind, incl, orbph, q, ntheta, radii):
     T.append(time.time())
     
     # Defining the front star polygon
-    theta = numpy.arange(ntheta, dtype=float)/ntheta * cts.twopi
+    theta = np.arange(ntheta, dtype=float)/ntheta * cts.twopi
     xoff, yoff = Observer_2Dprojection(1./(1+q), 0., 0., incl, orbph+0.5)
-    x_front = radii * numpy.cos(theta) + xoff
-    y_front = radii * numpy.sin(theta) + yoff
-    star_front = shapely.geometry.Polygon(numpy.c_[x_front, y_front].copy())
+    x_front = radii * np.cos(theta) + xoff
+    y_front = radii * np.sin(theta) + yoff
+    star_front = shapely.geometry.Polygon(np.c_[x_front, y_front].copy())
     prepared_star_front = shapely.prepared.prep(star_front)
     T.append(time.time())
     #print( "T{}: {} ({})".format(len(T), T[-1]-T[0], T[-1]-T[-2]) )
@@ -399,35 +403,35 @@ def Occultation_shapely(vertices, faces_ind, incl, orbph, q, ntheta, radii):
     x_back, y_back = Observer_2Dprojection(vertices[0], vertices[1], vertices[2], incl, orbph, xoffset=q/(1.+q))
     x_back = x_back[faces_ind]
     y_back = y_back[faces_ind]
-    faces = numpy.array([shapely.geometry.Polygon(zip(*xy)) for xy in zip(x_back,y_back)])
+    faces = np.array([shapely.geometry.Polygon(zip(*xy)) for xy in zip(x_back,y_back)])
     T.append(time.time())
     #print( "T{}: {} ({})".format(len(T), T[-1]-T[0], T[-1]-T[-2]) )
 
     # Calculating the indices of overlapping, partially hidden and fully hidden faces
-    overlap = numpy.array([prepared_star_front.intersects(f) for f in faces])
+    overlap = np.array([prepared_star_front.intersects(f) for f in faces])
     partial = overlap.copy()
     if overlap.any():
-        hidden = numpy.array([prepared_star_front.contains(f) for f in faces[overlap]])
+        hidden = np.array([prepared_star_front.contains(f) for f in faces[overlap]])
         if hidden.any():
             partial[overlap] = ~hidden
             hidden = overlap - partial
         else:
-            hidden = numpy.zeros_like(overlap)
+            hidden = np.zeros_like(overlap)
     T.append(time.time())
     #print( "T{}: {} ({})".format(len(T), T[-1]-T[0], T[-1]-T[-2]) )
 
     # Calculating the weights (fractional hidden area
-    weights = numpy.ones_like(overlap, dtype=float)
+    weights = np.ones_like(overlap, dtype=float)
     weights[overlap] = 0.
     if partial.any():
-        partial_weight = 1 - numpy.array( [ star_front.intersection(face).area/face.area for face in faces[partial] ] )
+        partial_weight = 1 - np.array( [ star_front.intersection(face).area/face.area for face in faces[partial] ] )
         weights[partial] = partial_weight
     T.append(time.time())
     #print( "T{}: {} ({})".format(len(T), T[-1]-T[0], T[-1]-T[-2]) )
 
     # Calculating the total area in two different ways
-    area_geo = numpy.array([face.area for face in faces])
-    #area_ica = numpy.abs(star2.area * star2.cosx)
+    area_geo = np.array([face.area for face in faces])
+    #area_ica = np.abs(star2.area * star2.cosx)
 
     # Printing useful information
     #print( "area_geo.sum() {}".format(area_geo.sum()) )
@@ -459,10 +463,10 @@ def Observer_2Dprojection(x, y, z, incl, orbph, xoffset=None):
     >>> new_y,new_z = Observer_2Dprojection(x, y, z, incl, orbph, xoffset=None)
     """
     orbph = orbph%1
-    cos_incl = numpy.cos(incl)
-    sin_incl = numpy.sin(incl)
-    cos_phs = numpy.cos(orbph*cts.twopi)
-    sin_phs = numpy.sin(orbph*cts.twopi)
+    cos_incl = np.cos(incl)
+    sin_incl = np.sin(incl)
+    cos_phs = np.cos(orbph*cts.twopi)
+    sin_phs = np.sin(orbph*cts.twopi)
     xnew = x*cos_phs + y*sin_phs
     ynew = -x*sin_phs + y*cos_phs
     znew = z*sin_incl + xnew*cos_incl
@@ -485,10 +489,10 @@ def Observer_3Dprojection(x, y, z, incl, orbph, xoffset=None):
     >>> new_x,new_y,new_z = Observer_3Dprojection(x, y, z, incl, orbph, xoffset=None)
     """
     orbph = orbph%1
-    cos_incl = numpy.cos(incl)
-    sin_incl = numpy.sin(incl)
-    cos_phs = numpy.cos(orbph*cts.twopi)
-    sin_phs = numpy.sin(orbph*cts.twopi)
+    cos_incl = np.cos(incl)
+    sin_incl = np.sin(incl)
+    cos_phs = np.cos(orbph*cts.twopi)
+    sin_phs = np.sin(orbph*cts.twopi)
     xnew = x*cos_phs + y*sin_phs
     ynew = -x*sin_phs + y*cos_phs
     znew = z
@@ -523,8 +527,8 @@ def Overlap(y1, z1, y2, z2):
     zcenter2 = (z2min+z2max)*0.5
     # Determining which points of star 1 and 2 are potentially overlapping
     # We approximate that the stars are confined within circles
-    inds1 = numpy.sqrt((y1 - ycenter2)**2 + (z1 - zcenter2)**2) < r2
-    inds2 = numpy.sqrt((y2 - ycenter1)**2 + (z2 - zcenter1)**2) < r1
+    inds1 = np.sqrt((y1 - ycenter2)**2 + (z1 - zcenter2)**2) < r2
+    inds2 = np.sqrt((y2 - ycenter1)**2 + (z2 - zcenter1)**2) < r1
     return inds1, inds2
 
 def System_2Dprojection(x1, y1, z1, x2, y2, z2, incl, orbph, q):
@@ -557,7 +561,7 @@ def Weights_transit(inds_highres, weight_highres, n_lowres):
     """
     
     n_highres = inds_highres.shape[0]
-    weight_lowres = numpy.zeros(n_lowres, dtype='float')
+    weight_lowres = np.zeros(n_lowres, dtype='float')
     try:
         if os.uname()[0] == 'Darwin':
             extra_compile_args = extra_link_args = ['-O3']

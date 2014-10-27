@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
-#import os
+import os
 import logging
 
 ## Possible levels are 'INFO', 'DEBUG', a numeral between 5-9.

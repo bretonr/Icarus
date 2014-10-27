@@ -43,14 +43,14 @@ class Atmo_phot_BTSettl7(Atmo_grid):
         >>> self.Flux_init(logg_lims=[3.,5.])
         """
         # Load the data
-        temp,logg,flux = numpy.loadtxt(self.fln, unpack=True)
+        temp,logg,flux = np.loadtxt(self.fln, unpack=True)
         # Extract the unique values of logg
-        grid_logg = numpy.unique(logg)
+        grid_logg = np.unique(logg)
         grid_logg = grid_logg[(grid_logg>=logg_lims[0])*(grid_logg<=logg_lims[1])]
         n_logg = grid_logg.size
         
         # Trim the atmosphere grid to keep only the elements within the logg subset
-        inds = numpy.zeros(temp.size, dtype=bool)
+        inds = np.zeros(temp.size, dtype=bool)
         for i in xrange(grid_logg.size):
             inds += logg == grid_logg[i]
         
@@ -59,14 +59,14 @@ class Atmo_phot_BTSettl7(Atmo_grid):
         flux = flux[inds]
         
         # Trim the atmosphere grid to keep only the elements within the temp subset
-        inds = numpy.zeros(temp.size, dtype=bool)
+        inds = np.zeros(temp.size, dtype=bool)
         grid_temp = []
-        for t in numpy.unique(temp):
+        for t in np.unique(temp):
             if (temp == t).sum() == n_logg:
                 grid_temp.append( t )
                 inds += temp == t
         
-        grid_temp = numpy.array(grid_temp)
+        grid_temp = np.array(grid_temp)
         n_temp = grid_temp.size
         temp = temp[inds]
         logg = logg[inds]
@@ -76,7 +76,7 @@ class Atmo_phot_BTSettl7(Atmo_grid):
             print( "The number of entries does not constitute a proper grid! (n_total, n_temp, n_logg)", temp.size, n_temp, n_logg )
         
         # Sorting the grid
-        inds = numpy.lexsort((logg,temp))
+        inds = np.lexsort((logg,temp))
         
         temp.shape = n_temp, n_logg
         logg.shape = n_temp, n_logg
@@ -84,10 +84,10 @@ class Atmo_phot_BTSettl7(Atmo_grid):
         
         # Creating the mu values
         n_mu = 16
-        grid_mu = numpy.linspace(0., 1., 16)
+        grid_mu = np.linspace(0., 1., 16)
         
         # Making class variables
-        self.logtemp = numpy.log(grid_temp)
+        self.logtemp = np.log(grid_temp)
         self.logg = grid_logg.copy()
         self.mu = grid_mu.copy()
         
@@ -101,20 +101,20 @@ class Atmo_phot_BTSettl7(Atmo_grid):
                 print( "Problem calculating the limb darkening from Claret & Bloemen 2011. Using fallback formula." )
                 mu = grid_mu.copy()
                 mu.shape = n_mu,1
-                mu_factor = Utils.Flux.Limb_darkening(numpy.r_[self.wav]*1e4, mu)[:,0]
-                #mu_factor = numpy.ones_like(mu_factor)
+                mu_factor = Utils.Flux.Limb_darkening(np.r_[self.wav]*1e4, mu)[:,0]
+                #mu_factor = np.ones_like(mu_factor)
         else:
             mu = grid_mu.copy()
             mu.shape = n_mu,1
-            mu_factor = Utils.Flux.Limb_darkening(numpy.r_[self.wav]*1e4, mu)[:,0]
+            mu_factor = Utils.Flux.Limb_darkening(np.r_[self.wav]*1e4, mu)[:,0]
         
         # Applying the limb darkening
-        grid = numpy.resize(flux, (n_mu, n_temp, n_logg))
+        grid = np.resize(flux, (n_mu, n_temp, n_logg))
         grid = grid.swapaxes(0, 1).swapaxes(1, 2) * mu_factor
         if AB:
-            grid = numpy.log(grid*4/cts.pi**2)
+            grid = np.log(grid*4/cts.pi**2)
         else:
-            grid = numpy.log(grid*4/cts.pi**2 / (cts.c*1e10) * (self.wav*1e8)**2)
+            grid = np.log(grid*4/cts.pi**2 / (cts.c*1e10) * (self.wav*1e8)**2)
         
         # Making class variables
         self.grid = grid.copy()
@@ -131,21 +131,21 @@ class Atmo_phot_BTSettl7(Atmo_grid):
         # Making the filename to extract the limb darkening coefficients
         fln = self.fln.replace('BT-Settl.7', 'claret_2011/PHOENIX/ldc')
         # Reading the file. Format: 0: logg, 1: temp, 2,3,4,5: coefficients
-        d = numpy.loadtxt(fln, usecols=(0,1,4,5,6,7), unpack=True)
+        d = np.loadtxt(fln, usecols=(0,1,4,5,6,7), unpack=True)
         
         # Determining the range of logg and temperature, making sure everything is fine.
-        logg = numpy.unique(d[0])
+        logg = np.unique(d[0])
         if d[0].size%logg.size != 0:
             raise RuntimeError( "The number of logg values is odd and does not match the total number of entries." )
-        temp = numpy.unique(d[1])
+        temp = np.unique(d[1])
         if d[1].size%temp.size != 0:
             raise RuntimeError( "The number of temp values is odd and does not match the total number of entries." )
         if d[0].size != logg.size*temp.size:
             raise RuntimeError( "The total number of entries should equal the number of logg times the number of temp." )
         if logg.min() > self.logg.min() or logg.max() < self.logg.max():
             raise RuntimeError( "Careful! The min/max of the limb darkening are {}/{}, versus those of the atmosphere grid {}/{}".format(logg.min(), logg.max(), self.logg.min(), self.logg.max()) )
-        if temp.min() > numpy.exp(self.logtemp.min()) or temp.max() < numpy.exp(self.logtemp.max()):
-            raise RuntimeError( "Careful! The min/max of the limb darkening are {}/{}, versus those of the atmosphere grid {}/{}".format(temp.min(), temp.max(), numpy.exp(self.logtemp.min()), numpy.exp(self.logtemp.max())) )
+        if temp.min() > np.exp(self.logtemp.min()) or temp.max() < np.exp(self.logtemp.max()):
+            raise RuntimeError( "Careful! The min/max of the limb darkening are {}/{}, versus those of the atmosphere grid {}/{}".format(temp.min(), temp.max(), np.exp(self.logtemp.min()), np.exp(self.logtemp.max())) )
         
         # Formatting the coefficient arrays for the limb darkening calculation
         a1 = d[2]
@@ -158,11 +158,11 @@ class Atmo_phot_BTSettl7(Atmo_grid):
         a4.shape = temp.size, logg.size
         
         # Calculating the indices for the interpolation
-        w_temp, ind_temp = Utils.Getaxispos_vector(temp, numpy.exp(self.logtemp))
+        w_temp, ind_temp = Utils.Getaxispos_vector(temp, np.exp(self.logtemp))
         w_logg, ind_logg = Utils.Getaxispos_vector(logg, self.logg)
         mu = self.mu
-        ind_temp, ind_logg, temp = numpy.ix_(ind_temp, ind_logg, mu)
-        w_temp, w_logg, temp = numpy.ix_(w_temp, w_logg, mu)
+        ind_temp, ind_logg, temp = np.ix_(ind_temp, ind_logg, mu)
+        w_temp, w_logg, temp = np.ix_(w_temp, w_logg, mu)
         
         # Interpolating the values
         a1 = (a1[ind_temp,ind_logg]*(1-w_temp) + a1[ind_temp+1,ind_logg]*w_temp)*(1-w_logg) + (a1[ind_temp,ind_logg+1]*(1-w_temp) + a1[ind_temp+1,ind_logg+1]*w_temp)*w_logg
@@ -174,7 +174,7 @@ class Atmo_phot_BTSettl7(Atmo_grid):
         if (ldc < 0.).any():
             print( "Careful! There are negative limb darkening coefficients! Replacing values by 0. Below is the list (temp, logg, mu)." )
             inds_temp, inds_logg, inds_mu = (ldc < 0.).nonzero()
-            print( numpy.exp(self.logtemp[inds_temp]) )
+            print( np.exp(self.logtemp[inds_temp]) )
             print( self.logg[inds_logg] )
             print( self.mu[inds_mu] )
             ldc[inds_temp, inds_logg, inds_mu] = 0.

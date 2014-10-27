@@ -93,9 +93,9 @@ def Doppler_boosting_factor(band_func, w, f, velocities, input_nu=False, AB=True
     boost = np.empty((velocities.size, f0.size), dtype=float)
     for i, vel in enumerate(velocities):
         if input_nu:
-            w_shifted = w * numpy.sqrt( (1.-vel/cts.c)/(1.+vel/cts.c) )
+            w_shifted = w * np.sqrt( (1.-vel/cts.c)/(1.+vel/cts.c) )
         else:
-            w_shifted = w * numpy.sqrt( (1.+vel/cts.c)/(1.-vel/cts.c) )
+            w_shifted = w * np.sqrt( (1.+vel/cts.c)/(1.-vel/cts.c) )
         if vel == 0.:
             boost[i] = 1.
         else:
@@ -114,8 +114,13 @@ def Load_filter(band_fln, conv=1.):
             frequency in Hz, response
     conv: the conversion factor to multiply the first column to get A or Hz.
     """
-    # Load the pass band data, first column is wavelength in A, second column is transmission
+    ## Load the pass band data, first column is wavelength in A, second column is transmission
     w, t  = np.loadtxt(band_fln, unpack=True)[:2]
+    ## We reorder the filter data to make sure that it is an increasing function of the wavelength
+    inds = w.argsort()
+    w = w[inds]
+    t = t[inds]
+    ## We multiply the wavelength by the conversion factor to ensure that it is in A
     band_func = scipy.interpolate.interp1d(w*conv, t, kind='quadratic', bounds_error=False, fill_value=0.)
     return band_func
 

@@ -59,7 +59,7 @@ def Composition(alm,phi,theta):
     else:
         alm = list(alm[::-1]) # making the alm a list will be easier and reversing so that the first element pops first
     n = len(alm)
-    lmax = numpy.sqrt(n).astype(int) - 1 # n = (lmax+1)**2
+    lmax = np.sqrt(n).astype(int) - 1 # n = (lmax+1)**2
     f = 0.
     for l in xrange(lmax+1):
         for m in xrange(-l,l+1):
@@ -77,7 +77,7 @@ def Decomposition(lmax,phi,theta,f,ndigit=None,norm=False):
     theta: co-latitude in the range [0,PI].
     f: pixelized function f (f.size = phi.size = theta.size)
     ndigit (None): if not None, will round off the results at
-        ndigit (as per the numpy.round function).
+        ndigit (as per the np.round function).
     norm (False): if true, will normalize so that the sum of
         the square of the coefficients is unity.
     
@@ -89,11 +89,11 @@ def Decomposition(lmax,phi,theta,f,ndigit=None,norm=False):
     for l in xrange(lmax+1):
         for m in xrange(-l,l+1):
             alm.append(Almr(l,m,phi,theta,f))
-    alm = numpy.array(alm)
+    alm = np.array(alm)
     if ndigit is not None:
-        alm = numpy.round(alm, ndigit)
+        alm = np.round(alm, ndigit)
     if norm:
-        alm /= numpy.sqrt((alm**2).sum())
+        alm /= np.sqrt((alm**2).sum())
     return alm
 
 def Legendre_assoc(l,m,x):
@@ -106,19 +106,19 @@ def Legendre_assoc(l,m,x):
     """
     l,m = int(l),int(m)
     assert 0<=m<=l and np.all(abs(x)<=1.)
-    if Norm_type == 0: norm = numpy.sqrt(2*l+1) / numpy.sqrt(4*cts.pi)
+    if Norm_type == 0: norm = np.sqrt(2*l+1) / np.sqrt(4*cts.pi)
     elif Norm_type == 1: norm = 1.
     if m == 0:
-        pmm = norm * numpy.ones_like(x)
+        pmm = norm * np.ones_like(x)
     else:
         pmm = (-1)**m * norm * Xfact(m) * (1-x**2)**(m/2.)
     if l == m:
         return pmm
-    pmmp1 = x*pmm*numpy.sqrt(2*m+1)
+    pmmp1 = x*pmm*np.sqrt(2*m+1)
     if l == m+1:
         return pmmp1
     for ll in xrange(m+2,l+1):
-        pll = (x*(2*ll-1)*pmmp1 - numpy.sqrt((ll-1)**2 - m**2)*pmm)/numpy.sqrt(ll**2-m**2)
+        pll = (x*(2*ll-1)*pmmp1 - np.sqrt((ll-1)**2 - m**2)*pmm)/np.sqrt(ll**2-m**2)
         pmm = pmmp1
         pmmp1 = pll
     return pll
@@ -156,7 +156,7 @@ def Pretty_print_alm(alm, format=2):
         is l,1; second off-diagonal is l,2; etc.).
     """
     n = len(alm)
-    lmax = numpy.sqrt(n).astype(int) - 1 # n = (lmax+1)**2
+    lmax = np.sqrt(n).astype(int) - 1 # n = (lmax+1)**2
     f = ''
     if format == 1:
         alm = list(alm[::-1]) # making the alm a list will be easier and reversing so that the first element pops first
@@ -167,7 +167,7 @@ def Pretty_print_alm(alm, format=2):
         print(f)
     elif format == 2:
         alm = list(alm[::-1]) # making the alm a list will be easier and reversing so that the first element pops first
-        data = numpy.empty((lmax+1,lmax+1), dtype=float)
+        data = np.empty((lmax+1,lmax+1), dtype=float)
         for l in xrange(lmax+1):
             for m in xrange(-l,l+1):
                 if m < 0:
@@ -190,7 +190,7 @@ def Xfact(m):
     res = 1.
     for i in xrange(1,2*m+1):
         if i % 2: res *= i # (2m-1)!!
-        res /= numpy.sqrt(i) # sqrt((2m)!)
+        res /= np.sqrt(i) # sqrt((2m)!)
     return res
 
 def Ylm(l,m,phi,theta):
@@ -205,11 +205,11 @@ def Ylm(l,m,phi,theta):
     l,m = int(l),int(m)
     assert 0 <= abs(m) <=l
     if m > 0:
-        return Legendre_assoc(l,m,numpy.cos(theta))*numpy.exp(1J*m*phi)
+        return Legendre_assoc(l,m,np.cos(theta))*np.exp(1J*m*phi)
     elif m < 0:
-        #return (-1)**m*Legendre_assoc(l,-m,numpy.cos(theta))*numpy.exp(1J*m*phi)
-        return (-1)**m*Legendre_assoc(l,-m,numpy.cos(theta))*numpy.exp(1J*m*phi)
-    return Legendre_assoc(l,m,numpy.cos(theta))*numpy.ones_like(phi)
+        #return (-1)**m*Legendre_assoc(l,-m,np.cos(theta))*np.exp(1J*m*phi)
+        return (-1)**m*Legendre_assoc(l,-m,np.cos(theta))*np.exp(1J*m*phi)
+    return Legendre_assoc(l,m,np.cos(theta))*np.ones_like(phi)
 
 def Ylmr(l,m,phi,theta):
     """Ylmr(l,m,phi,theta)
@@ -223,11 +223,11 @@ def Ylmr(l,m,phi,theta):
     l,m = int(l),int(m)
     assert 0 <= abs(m) <=l
     if m > 0:
-        return Legendre_assoc(l,m,numpy.cos(theta))*numpy.cos(m*phi)*numpy.sqrt(2)
+        return Legendre_assoc(l,m,np.cos(theta))*np.cos(m*phi)*np.sqrt(2)
     elif m < 0:
-        #return (-1)**m*Legendre_assoc(l,-m,numpy.cos(theta))*numpy.sin(-m*phi)*numpy.sqrt(2)
-        return Legendre_assoc(l,-m,numpy.cos(theta))*numpy.sin(m*phi)*numpy.sqrt(2)
-    return Legendre_assoc(l,m,numpy.cos(theta))*numpy.ones_like(phi)
+        #return (-1)**m*Legendre_assoc(l,-m,np.cos(theta))*np.sin(-m*phi)*np.sqrt(2)
+        return Legendre_assoc(l,-m,np.cos(theta))*np.sin(m*phi)*np.sqrt(2)
+    return Legendre_assoc(l,m,np.cos(theta))*np.ones_like(phi)
 
 
 

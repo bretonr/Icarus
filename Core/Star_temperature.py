@@ -22,8 +22,8 @@ class Star_temperature(Star):
     def __init__(self, *args, **kwargs):
         Star.__init__(self, *args, **kwargs)
         # We need the theta and phi in order to evaluate the spherical harmonics
-        self.theta = numpy.arccos(self.cosz)
-        self.phi = numpy.arctan2(self.cosy,self.cosx)
+        self.theta = np.arccos(self.cosz)
+        self.phi = np.arctan2(self.cosy,self.cosx)
 
     def _Calc_teff(self, temp=None, tirr=None):
         """_Calc_teff(temp=None, tirr=None)
@@ -78,7 +78,7 @@ class Star_temperature(Star):
             inds = self.coschi > 0
             if inds.any():
                 teff[inds] = (teff[inds]**4+self.coschi[inds]*self.tirr**4/self.rx[inds]**2)**0.25
-        self.logteff = numpy.log(teff)
+        self.logteff = np.log(teff)
         return
 
     def Spherical_coefficients(self, lmax, ndigit=None, verbose=True):
@@ -88,12 +88,12 @@ class Star_temperature(Star):
         
         lmax: Maximum l number of coefficients.
         ndigit (None): if not None, will round off the results at
-            ndigit (as per the numpy.round function).
+            ndigit (as per the np.round function).
         verbose (True): Prints the resulting coefficients.
         
         >>> alm = self.Spherical_coefficients(lmax)
         """
-        alm = Spherical_harmonics.Decomposition(lmax, self.phi, self.theta, numpy.exp(self.logteff), ndigit=ndigit)
+        alm = Spherical_harmonics.Decomposition(lmax, self.phi, self.theta, np.exp(self.logteff), ndigit=ndigit)
         if verbose:
             Spherical_harmonics.Pretty_print_alm(alm)
         return alm

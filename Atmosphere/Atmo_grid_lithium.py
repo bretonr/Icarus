@@ -100,7 +100,7 @@ class Atmo_grid_lithium(Atmo_grid):
             a_4 = a_40 + a_45/wav5
             a_5 = a_50 + a_55/wav5
             return a_0, a_1, a_2, a_3, a_4, a_5
-        self.limb = numpy.empty((6,wav.shape[0]))
+        self.limb = np.empty((6,wav.shape[0]))
         inds = wav<0.37298
         self.limb[:,inds] = L_300_372(wav[inds])
         inds = (wav<0.42257)*(wav>0.37298)
@@ -137,15 +137,15 @@ class Atmo_grid_lithium(Atmo_grid):
         >>> self.Flux_init(flns)
         """
         lst = []
-        for i in numpy.arange(len(flns)):
+        for i in np.arange(len(flns)):
             # Get the log(g) and temp value from the filename
             lst.append( [i, float(flns[i].split('-')[1]), float(flns[i].split('lte')[1].split('-')[0])*100.] )
         Utils.Misc.List_sort(lst, [2,1])
-        lst = numpy.array(lst)
-        self.logtemp = numpy.log(list(set(lst[:,2])))
+        lst = np.array(lst)
+        self.logtemp = np.log(list(set(lst[:,2])))
         self.logtemp.sort()
         n_temp = self.logtemp.shape[0]
-        self.logg = numpy.array(list(set(lst[:,1])))
+        self.logg = np.array(list(set(lst[:,1])))
         self.logg.sort()
         n_logg = self.logg.shape[0]
         if n_temp*n_logg != lst.shape[0]:
@@ -161,7 +161,7 @@ class Atmo_grid_lithium(Atmo_grid):
                 wav.append(tmp[1])
             if verbose: print( 'Finished reading files' )
             try:
-                wav = numpy.array(wav)
+                wav = np.array(wav)
                 if wav.std(0).max() > 1.e-6:
                     print 'wav has different values'
                     return
@@ -171,7 +171,7 @@ class Atmo_grid_lithium(Atmo_grid):
                 print 'wav has inconsistent number of elements'
                 return
             if verbose: print( 'Transforming grid data to array' )
-            grid = numpy.asarray(grid)
+            grid = np.asarray(grid)
             if verbose: print( 'Addressing the grid data shape' )
             grid.shape = n_temp, n_logg, wav.shape[0]
             self.wav = wav
@@ -199,11 +199,11 @@ class Atmo_grid_lithium(Atmo_grid):
         >>> grid, wav = self.Flux_init_singlefile(fln, thin=20)
         """
         # The wavelength is contained in the first column and the flux in the second.
-        wav, grid = numpy.loadtxt(fln, usecols=(0,1), unpack=True)
+        wav, grid = np.loadtxt(fln, usecols=(0,1), unpack=True)
         # Grid values are log10(F_wavbda) [cgs]
         grid = 10**grid # Conversion to flux units (make sure that in the Get_flux routine does not re-correct again!)
-#        grid = numpy.log(grid)
-#        grid = numpy.log(grid/2.99792458e10*wav**2)
+#        grid = np.log(grid)
+#        grid = np.log(grid/2.99792458e10*wav**2)
         # wavelengths are often not ordered so we re-order them
         inds = wav.argsort()
         wav = wav[inds]
@@ -215,7 +215,7 @@ class Atmo_grid_lithium(Atmo_grid):
         if oversample is not None:
             #interp = scipy.interpolate.interp1d(wav, grid, kind='cubic')
             interp = scipy.interpolate.UnivariateSpline(wav, grid, s=0)
-            wav = numpy.linspace(wav[0], wav[-1], wav.size*oversample)
+            wav = np.linspace(wav[0], wav[-1], wav.size*oversample)
             grid = interp(wav)
         if smooth is not None:
             grid = scipy.ndimage.gaussian_filter1d(grid, smooth)
@@ -228,10 +228,10 @@ class Atmo_grid_lithium(Atmo_grid):
             wav = new_wav
             grid = grid.take(inds, axis=-1)*(1-ws) + grid.take(inds+1, axis=-1)*ws
         else:
-            self.z0 = numpy.float(wav[1]/wav[0] - 1)
+            self.z0 = np.float(wav[1]/wav[0] - 1)
         if convert is not None:
             print 'Saving the data into '+fln+convert
-            numpy.savetxt(fln+convert,numpy.vstack((wav,numpy.log10(grid))).T)
+            np.savetxt(fln+convert,np.vstack((wav,np.log10(grid))).T)
         return grid, wav
 
     def Interp_orig(self, val_temp, val_logg, val_mu):
@@ -309,15 +309,15 @@ class Atmo_grid_lithium(Atmo_grid):
         """
         self.savememory = savememory
         if verbose: print( 'Calculating the limb darkening grid' )
-        self.mu = numpy.arange(0.,1.05,0.05)
+        self.mu = np.arange(0.,1.05,0.05)
         grid_mu = self.mu.copy()
         grid_mu.shape = grid_mu.size,1
         grid_mu = self.Limb_darkening(grid_mu)
         if self.savememory:
             self.grid_mu = grid_mu
         else:
-            g = numpy.array([self.grid * m for m in mu])
-            self.grid = numpy.ascontiguousarray(g.swapaxes(0,1).swapaxes(1,2))
+            g = np.array([self.grid * m for m in mu])
+            self.grid = np.ascontiguousarray(g.swapaxes(0,1).swapaxes(1,2))
 
 ######################## class Atmo_grid_lithium ########################
 

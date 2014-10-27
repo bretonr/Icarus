@@ -1,35 +1,28 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
-# import general modules
-import struct, getopt, sys
-import os
-from os import popen4, system, path
-import glob
-import types
-import datetime
-import operator
-import string
+## import general modules
+#import struct, getopt, sys, types, datetime, operator, string, warnings
+#import os
+#import glob
 import logging
-import warnings
 
-# import numpy and scipy modules
+## import numpy and scipy modules
+import numpy as np
 import scipy
-import scipy.weave
-import scipy.ndimage
 import scipy.optimize
 import scipy.interpolate
-import scipy.io
 import scipy.constants
 import scipy.stats
-import numpy
-import numpy as np
+#import scipy.weave
+#import scipy.ndimage
+#import scipy.io
 
 try:
     import matplotlib, pylab
 except:
     print( "Cannot import matplotlib/pylab. This is not a critical error, but some of the plotting functionalities might be impossible." )
 
-# define some useful constants
+## define some useful constants
 cts = scipy.constants
 cts.Msun = 1.9891e30 # kg
 cts.Mjup = 1.8987e27 # kg
@@ -38,11 +31,11 @@ cts.Rsun = 695510000.0 # m
 cts.Rjup = 71492000.0 # m
 cts.Rearth = 6378000.0 # m
 cts.g_earth = 9.80665 # m/s^2
-cts.logg_earth = numpy.log10(cts.g_earth*100) # cgs
+cts.logg_earth = np.log10(cts.g_earth*100) # cgs
 cts.g_sun = 27.94 * cts.g_earth # m/s^2
-cts.logg_sun = numpy.log10(cts.g_sun*100) # cgs
+cts.logg_sun = np.log10(cts.g_sun*100) # cgs
 
-# define more constants
+## define more constants
 cts.ARCSECTORAD = float('4.8481368110953599358991410235794797595635330237270e-6')
 cts.RADTOARCSEC = float('206264.80624709635515647335733077861319665970087963')
 cts.SECTORAD    = float('7.2722052166430399038487115353692196393452995355905e-5')
@@ -59,7 +52,7 @@ cts.pibytwo       = cts.pi / 2
 cts.SECPERDAY   = float('86400.0')
 cts.SECPERJULYR = float('31557600.0')
 
-# import some useful utility functions
+## import some useful utility functions
 from .Misc import Pprint
 
 

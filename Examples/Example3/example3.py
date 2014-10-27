@@ -2,7 +2,7 @@
 
 import Icarus
 from Icarus.Utils.import_modules import *
-import pylab
+
 
 ##### This creates a star and calculates the flux at a given orbital phase.
 ##### The result from a calculation done step by step is compared to the Flux function.

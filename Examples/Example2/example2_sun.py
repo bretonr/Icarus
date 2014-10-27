@@ -3,12 +3,6 @@
 import Icarus
 from Icarus.Utils.import_modules import *
 
-try:
-    import pylab
-except:
-    print( "Cannot import Matplotlib. No plot will be made." )
-
-
 
 ##### Welcome message
 print( "##### example2.py Re-creating the Sun #####" )
@@ -84,10 +78,10 @@ z = 4.52
 
 ## Determining the conversion factor between the apparent and absolute magnitude of the Sun
 parsec = 3.085678e18 # parsec in cm
-apparent_to_absolute = -2.5 * numpy.log10(((cts.astronomical_unit*100)/10./parsec)**2)
+apparent_to_absolute = -2.5 * np.log10(((cts.astronomical_unit*100)/10./parsec)**2)
 
 def Calc_mag(atmo_grid):
-    mag = -2.5 * numpy.log10(star.Flux(0.0, atmo_grid=atmo_grid)/atmo_grid.flux0)
+    mag = -2.5 * np.log10(star.Flux(0.0, atmo_grid=atmo_grid)/atmo_grid.flux0)
     return mag
 
 sun_U = Calc_mag(atmo_grid_U) + apparent_to_absolute

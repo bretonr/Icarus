@@ -46,9 +46,9 @@ class Atmo_grid_lithium_doppler(Atmo_grid_lithium):
         # Here we convert val_vel to be the number of bins which
         # corresponds to the Doppler shift. That is z_obs / z_gridsampling.
         # This is more precise than just v_obs / v_gridsampling.
-        #val_vel = (numpy.sqrt((1+val_vel)/(1-val_vel)) - 1) / self.z
+        #val_vel = (np.sqrt((1+val_vel)/(1-val_vel)) - 1) / self.z
         #val_vel /= self.v
-        #jwav = numpy.floor(val_vel).astype('i')
+        #jwav = np.floor(val_vel).astype('i')
         #wwav = val_vel - jwav
         if self.savememory:
             grid_mu = self.grid_mu
@@ -79,9 +79,9 @@ class Atmo_grid_lithium_doppler(Atmo_grid_lithium):
         # Here we convert val_vel to be the number of bins which
         # corresponds to the Doppler shift. That is z_obs / z_gridsampling.
         # This is more precise than just v_obs / v_gridsampling.
-        val_vel = (numpy.sqrt((1+val_vel)/(1-val_vel)) - 1) / self.z
+        val_vel = (np.sqrt((1+val_vel)/(1-val_vel)) - 1) / self.z
         #val_vel /= self.v
-        jwav = numpy.floor(val_vel).astype('i')
+        jwav = np.floor(val_vel).astype('i')
         wwav = val_vel - jwav
         flux = Utils.Grid.Interp_doppler_nomu(grid, wtemp, wlogg, wwav, jtemp, jlogg, jwav, val_area, val_mu*self.Limb_darkening(val_mu))
         return flux

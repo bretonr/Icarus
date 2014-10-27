@@ -1,5 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
+import scipy.weave
+
 from .import_modules import *
 
 
@@ -263,10 +265,10 @@ def Make_geodesic(n):
     free_memory();
     """
     n_faces = 20 * 4**n
-    myfaces = numpy.empty((n_faces,3), dtype=numpy.int)
+    myfaces = np.empty((n_faces,3), dtype=np.int)
     n_vertices = 2 + 10 * 4**n
-    myvertices = numpy.empty((n_vertices,3), dtype=numpy.float)
-    myassoc = numpy.empty((n_vertices,6), dtype=numpy.int)
+    myvertices = np.empty((n_vertices,3), dtype=np.float)
+    myassoc = np.empty((n_vertices,6), dtype=np.int)
     get_axispos = scipy.weave.inline(code, ['n','myfaces','myvertices','myassoc'], type_converters=scipy.weave.converters.blitz, compiler='gcc', libraries=['m'], verbose=2, support_code=support_code, force=0)
     return n_faces, n_vertices, myfaces, myvertices, myassoc
 
@@ -294,7 +296,7 @@ def Match_assoc(faces, n_vertices):
     }
     """
     n_faces = faces.shape[0]
-    assoc = -99 * numpy.ones((n_vertices,6), dtype=numpy.int)
+    assoc = -99 * np.ones((n_vertices,6), dtype=np.int)
     get_assoc = scipy.weave.inline(code, ['n_faces','faces','assoc'], type_converters=scipy.weave.converters.blitz, compiler='gcc', libraries=['m'], verbose=2, force=0)
     return assoc
 
@@ -330,7 +332,7 @@ def Match_triangles(high_x, high_y, high_z, low_x, low_y, low_z):
     """
     n_highres = high_x.size
     n_lowres = low_x.size
-    ind = numpy.zeros(n_highres, dtype='int')
+    ind = np.zeros(n_highres, dtype='int')
     get_assoc = scipy.weave.inline(code, ['n_highres','n_lowres','ind', 'high_x', 'low_x', 'high_y', 'low_y', 'high_z', 'low_z'], type_converters=scipy.weave.converters.blitz, compiler='gcc', libraries=['m'], verbose=2, force=0)
     return ind
 
@@ -354,7 +356,7 @@ def Match_subtriangles(inds_highres, inds_lowres):
     """
     n_highres = inds_highres.size
     n_lowres = inds_lowres.size
-    ind = numpy.zeros(n_highres, dtype='int')
+    ind = np.zeros(n_highres, dtype='int')
     get_assoc = scipy.weave.inline(code, ['n_highres','n_lowres','ind', 'inds_highres', 'inds_lowres'], type_converters=scipy.weave.converters.blitz, compiler='gcc', libraries=['m'], verbose=2, force=0)
     return ind
 

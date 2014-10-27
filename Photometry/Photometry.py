@@ -145,7 +145,7 @@ class Photometry:
             ((par[7],par[8]), chi2_data, rank, s) = Utils.Misc.Fit_linear(self.mag-pred_flux, x=self.ext, err=self.err, b=par[7], m=par[8])
             if full_output:
                 residuals = ( (self.mag-pred_flux) - (self.ext*par[8] + par[7]) ) / self.err
-                offset = numpy.zeros(self.ndataset)
+                offset = np.zeros(self.ndataset)
             chi2_band = 0.
             chi2 = chi2_data + chi2_band
         else:
@@ -153,16 +153,16 @@ class Photometry:
             pred_flux = self.Get_flux(par, flat=False, nsamples=nsamples, verbose=verbose)
             # Calculate the residuals between observed and theoretical flux
             if influx: # Calculate the residuals in the flux domain
-                res1 = numpy.array([ Utils.Misc.Fit_linear(self.data['flux'][i], x=Utils.Flux.Mag_to_flux(pred_flux[i], flux0=self.atmo_grid[i].flux0), err=self.data['flux_err'][i], b=0., inline=True) for i in numpy.arange(self.ndataset) ])
-                offset = -2.5*numpy.log10(res1[:,1])
+                res1 = np.array([ Utils.Misc.Fit_linear(self.data['flux'][i], x=Utils.Flux.Mag_to_flux(pred_flux[i], flux0=self.atmo_grid[i].flux0), err=self.data['flux_err'][i], b=0., inline=True) for i in np.arange(self.ndataset) ])
+                offset = -2.5*np.log10(res1[:,1])
                 if full_output:
                     print( "Impossible to return proper residuals" )
                     residuals = None
             else: # Calculate the residuals in the magnitude domain
-                res1 = numpy.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in numpy.arange(self.ndataset) ])
+                res1 = np.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in np.arange(self.ndataset) ])
                 offset = res1[:,0]
                 if full_output:
-                    residuals = [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in numpy.arange(self.ndataset) ]
+                    residuals = [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in np.arange(self.ndataset) ]
             chi2_data = res1[:,2].sum()
             # Fit for the best offset between the observed and theoretical flux given the DM and A_J
             res2 = Utils.Misc.Fit_linear(offset, x=self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
@@ -231,7 +231,7 @@ class Photometry:
             phases = self.data['phase']
         # If nsamples is set, we evaluate the lightcurve at nsamples
         else:
-            phases = (numpy.arange(nsamples, dtype=float)/nsamples).repeat(self.ndataset).reshape((nsamples,self.ndataset)).T
+            phases = (np.arange(nsamples, dtype=float)/nsamples).repeat(self.ndataset).reshape((nsamples,self.ndataset)).T
         
         # If DM_AJ, we take into account the DM and AJ into the flux here.
         if DM_AJ:
@@ -241,23 +241,23 @@ class Photometry:
         
         # Calculate the actual lightcurves
         flux = []
-        for i in numpy.arange(self.ndataset):
+        for i in np.arange(self.ndataset):
                 # If we use the interpolation method and if the filter is the same as a previously
                 # calculated one, we do not recalculate the fluxes and simply copy them.
                 if nsamples is not None and self.grouping[i] < i:
                     flux.append(flux[self.grouping[i]])
                 else:
-                    flux.append( numpy.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AJ[i] )
+                    flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AJ[i] )
         
         # If nsamples is set, we interpolate the lightcurve at nsamples.
         if nsamples is not None:
-            for i in numpy.arange(self.ndataset):
+            for i in np.arange(self.ndataset):
                 ws, inds = Utils.Series.Getaxispos_vector(phases[i], self.data['phase'][i])
                 flux[i] = flux[i][inds]*(1-ws) + flux[i][inds+1]*ws
         
         # We can flatten the flux array to simplify some of the calculations in the Calc_chi2 function
         if flat:
-            return numpy.hstack(flux)
+            return np.hstack(flux)
         else:
             return flux
 
@@ -306,13 +306,13 @@ class Photometry:
         DM_AJ = self.data['ext']*par[8] + par[7]
         
         flux = []
-        for i in numpy.arange(self.ndataset):
+        for i in np.arange(self.ndataset):
             # If the filter is the same as a previously calculated one
             # we do not recalculate the fluxes and simply copy them.
             if self.grouping[i] < i:
                 flux.append( flux[self.grouping[i]] )
             else:
-                flux.append( numpy.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AJ[i] )            
+                flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AJ[i] )            
         return flux
 
     def Get_Keff(self, par, nphases=20, atmo_grid=0, func_par=None, make_surface=False, verbose=False):
@@ -351,11 +351,11 @@ class Photometry:
         if isinstance(atmo_grid, int):
             atmo_grid = self.atmo_grid[atmo_grid]
         # Get the Keffs and fluxes
-        phases = numpy.arange(nphases)/float(nphases)
-        Keffs = numpy.array( [self.star.Keff(phase, atmo_grid=atmo_grid) for phase in phases] )
-        tmp = Utils.Misc.Fit_linear(Keffs, numpy.sin(cts.twopi*(phases)), inline=True)
+        phases = np.arange(nphases)/float(nphases)
+        Keffs = np.array( [self.star.Keff(phase, atmo_grid=atmo_grid) for phase in phases] )
+        tmp = Utils.Misc.Fit_linear(Keffs, np.sin(cts.twopi*(phases)), inline=True)
         if verbose:
-            pylab.plot(numpy.linspace(0.,1.), tmp[1]*numpy.sin(numpy.linspace(0.,1.)*cts.twopi)+tmp[0])
+            pylab.plot(np.linspace(0.,1.), tmp[1]*np.sin(np.linspace(0.,1.)*cts.twopi)+tmp[0])
             pylab.scatter(phases, Keffs)
         Keff = tmp[1]
         return Keff
@@ -450,7 +450,7 @@ class Photometry:
         >>> self.Plot([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
         # Calculate the orbital phases at which the flux will be evaluated
-        phases = numpy.resize(numpy.linspace(0.,1.,nphases), (self.ndataset, nphases))
+        phases = np.resize(np.linspace(0.,1.,nphases), (self.ndataset, nphases))
         # Fit the data in order to get the offset
         chi2, extras = self.Calc_chi2(par, offset_free=1, verbose=verbose, func_par=func_par, nsamples=nsamples, full_output=True)
         offset = extras['offset']
@@ -459,8 +459,8 @@ class Photometry:
         pred_flux = self.Get_flux_theoretical(par, phases)
         # Calculating the min and the max
         tmp = []
-        for i in numpy.arange(self.ndataset):
-            tmp = numpy.r_[tmp, pred_flux[i]+offset[i]]
+        for i in np.arange(self.ndataset):
+            tmp = np.r_[tmp, pred_flux[i]+offset[i]]
         minmag = tmp.min()
         maxmag = tmp.max()
         deltamag = (maxmag - minmag)
@@ -479,8 +479,8 @@ class Photometry:
         ncolors = self.ndataset - 1
         if ncolors == 0:
             ncolors = 1
-        for i in numpy.arange(self.ndataset):
-            color = numpy.ones((self.data['mag'][i].size,1), dtype=float) * matplotlib.cm.jet(float(i)/ncolors)
+        for i in np.arange(self.ndataset):
+            color = np.ones((self.data['mag'][i].size,1), dtype=float) * matplotlib.cm.jet(float(i)/ncolors)
             ax.errorbar(self.data['phase'][i], self.data['mag'][i], yerr=self.data['err'][i], fmt=None, ecolor=color[0])
             ax.scatter(self.data['phase'][i], self.data['mag'][i], edgecolor=color, facecolor=color)
             ax.plot(phases[i], pred_flux[i], 'k--')
@@ -527,12 +527,12 @@ class Photometry:
         >>> self.Plot_theoretical([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
         # Calculate the orbital phases at which the flux will be evaluated
-        phases = numpy.resize(numpy.linspace(0.,1.,nphases), (self.ndataset, nphases))
+        phases = np.resize(np.linspace(0.,1.,nphases), (self.ndataset, nphases))
         # Calculate the theoretical flux at the orbital phases.
         pred_flux = self.Get_flux_theoretical(par, phases, func_par=func_par, verbose=verbose)
         # Loop over the data set and plot the flux, theoretical flux and offset theoretical flux
-        for i in numpy.arange(self.ndataset):
-            plotxy(pred_flux[i], phases[i], color=1+i, line=1, rangey=[numpy.max(pred_flux)+0.5,numpy.min(pred_flux)-0.5], rangex=[0.,1.], device=device)
+        for i in np.arange(self.ndataset):
+            plotxy(pred_flux[i], phases[i], color=1+i, line=1, rangey=[np.max(pred_flux)+0.5,np.min(pred_flux)-0.5], rangex=[0.,1.], device=device)
         if output:
             return pred_flux
         return
@@ -607,7 +607,7 @@ class Photometry:
             print( "Irradiation efficiency: %6.4f" %eff )
             print( "Irration luminosity: %5.4e Lsun" %Lirr )
             print( "Backside temperature: %7.2f K" %temp_back )
-            print( "Frontside temperature: %7.2f (tabul.), %7.2f (approx.) K" %(numpy.exp(self.star.logteff.max()),temp_front) )
+            print( "Frontside temperature: %7.2f (tabul.), %7.2f (approx.) K" %(np.exp(self.star.logteff.max()),temp_front) )
             print( "" )
             print( "Distance Modulus: %6.3f" %DM )
             print( "Absorption (J band): %6.3f" %A_J )
@@ -618,7 +618,7 @@ class Photometry:
             print( "Mass ratio: %6.3f" %q )
             print( "Mass NS: %5.3f Msun" %Mns )
             print( "Mass Comp: %5.3f Msun" %Mwd )
-        return numpy.r_[corot,gdark,fill,separation,roche,eff,tirr,temp_back,numpy.exp(self.star.logteff.max()),temp_front,DM,A_J,incl,incl*cts.RADTODEG,K,q,Mns,Mwd]
+        return np.r_[corot,gdark,fill,separation,roche,eff,tirr,temp_back,np.exp(self.star.logteff.max()),temp_front,DM,A_J,incl,incl*cts.RADTODEG,K,q,Mns,Mwd]
 
     def _Read_atmo(self, atmo_fln):
         """_Read_atmo(atmo_fln)
@@ -662,15 +662,15 @@ class Photometry:
         for line in lines:
             if (line[0] != '#') and (line[0] != '\n'):
                 tmp = line.split()
-                d = numpy.loadtxt(tmp[-1], usecols=[int(tmp[1]),int(tmp[2]),int(tmp[3])], unpack=True)
+                d = np.loadtxt(tmp[-1], usecols=[int(tmp[1]),int(tmp[2]),int(tmp[3])], unpack=True)
                 # With the flag '_' in the observation id, we do not take %1 so that
                 # we preserve the long-term phase coherence.
                 if tmp[0].find('_') != -1:
-                    self.data['phase'].append( numpy.atleast_1d(d[0] - float(tmp[4])) )
+                    self.data['phase'].append( np.atleast_1d(d[0] - float(tmp[4])) )
                 else:
-                    self.data['phase'].append( numpy.atleast_1d((d[0] - float(tmp[4]))%1.) )
-                self.data['mag'].append( numpy.atleast_1d(d[1]) )
-                self.data['err'].append( numpy.atleast_1d(d[2]) )
+                    self.data['phase'].append( np.atleast_1d((d[0] - float(tmp[4]))%1.) )
+                self.data['mag'].append( np.atleast_1d(d[1]) )
+                self.data['err'].append( np.atleast_1d(d[2]) )
                 self.data['calib'].append( float(tmp[5]) )
                 self.data['fln'].append( tmp[-1] )
                 self.data['id'].append( tmp[0] )
@@ -698,8 +698,8 @@ class Photometry:
         self.data['flux'] = []
         self.data['flux_err'] = []
         # The grouping will define datasets that are in the same band and can be evaluated only once in order to save on computation.
-        grouping = numpy.arange(self.ndataset)
-        for i in numpy.arange(self.ndataset):
+        grouping = np.arange(self.ndataset)
+        for i in np.arange(self.ndataset):
             ext.extend(self.data['phase'][i]*0.+self.atmo_grid[i].meta['ext'])
             self.data['ext'].append(self.atmo_grid[i].meta['ext'])
             if self.data['softening'][i] == 0:
@@ -708,19 +708,19 @@ class Photometry:
                 flux,flux_err = Utils.Flux.Asinh_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].meta['zp'], softening=self.data['softening'][i])
             self.data['flux'].append( flux )
             self.data['flux_err'].append( flux_err )
-            for j in numpy.arange(i+1):
+            for j in np.arange(i+1):
                 if self.data['id'][i] == self.data['id'][j]:
                     grouping[i] = j
                     break
-        self.ext = numpy.asarray(ext)
-        self.grouping = numpy.asarray(grouping)
-        self.data['ext'] = numpy.asarray(self.data['ext'])
-        self.data['calib'] = numpy.asarray(self.data['calib'])
-        self.mag = numpy.hstack(self.data['mag'])
-        self.err = numpy.hstack(self.data['err'])
-        self.phase = numpy.hstack(self.data['phase'])
-        self.flux = numpy.hstack(self.data['flux'])
-        self.flux_err = numpy.hstack(self.data['flux_err'])
+        self.ext = np.asarray(ext)
+        self.grouping = np.asarray(grouping)
+        self.data['ext'] = np.asarray(self.data['ext'])
+        self.data['calib'] = np.asarray(self.data['calib'])
+        self.mag = np.hstack(self.data['mag'])
+        self.err = np.hstack(self.data['err'])
+        self.phase = np.hstack(self.data['phase'])
+        self.flux = np.hstack(self.data['flux'])
+        self.flux_err = np.hstack(self.data['flux_err'])
         self.ndata = self.flux.size
         return
 

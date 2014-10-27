@@ -32,15 +32,15 @@ def Asinh_to_flux(mag, mag_err=None, zeropoint=0., flux0=1., softening=1.):
     >>> flux = Asinh_to_flux(10., softening=1)
     """
     # Defining the Pogson's constant
-    pogson = 2.5*numpy.log10(numpy.e)
+    pogson = 2.5*np.log10(np.e)
     # Calculate the fluxes
-    zeropoint = zeropoint + 2.5*numpy.log10(flux0)
-    flux = 2*softening * numpy.sinh( ((zeropoint - 2.5*numpy.log10(softening)) - mag)/pogson )
+    zeropoint = zeropoint + 2.5*np.log10(flux0)
+    flux = 2*softening * np.sinh( ((zeropoint - 2.5*np.log10(softening)) - mag)/pogson )
     if mag_err is None:
         return flux
     else:
         # Calculate the flux errors
-        flux_err = mag_err * 2*softening/pogson * numpy.sqrt( 1 + (flux/(2*softening))**2 )
+        flux_err = mag_err * 2*softening/pogson * np.sqrt( 1 + (flux/(2*softening))**2 )
         return flux, flux_err
 
 def Extinction(w, Rv=3.1, cardelli=False):
@@ -63,11 +63,11 @@ def Extinction(w, Rv=3.1, cardelli=False):
     Note: 1/w values between 1.1 micron^-1 < x < 3.3 microns^-1 (near-IR, optical)
     
     """
-    x = numpy.atleast_1d(1/w)
-    ext = numpy.zeros_like(x)
+    x = np.atleast_1d(1/w)
+    ext = np.zeros_like(x)
     #
     inds = x < 0.3
-    ext[inds] = numpy.nan
+    ext[inds] = np.nan
     #
     inds = (x >= 0.3) * (x < 1.1)
     if inds.any():
@@ -81,12 +81,12 @@ def Extinction(w, Rv=3.1, cardelli=False):
         y = x[inds]-1.82
         ##### Using Cardelli, Clayton and Mathis (1989)
         if cardelli:
-            p_a = numpy.poly1d([0.32999, -0.77530, 0.01979, 0.72085, -0.02427, -0.50447, 0.17699, 1.])(y)
-            p_b = numpy.poly1d([-2.09002, 5.30260, -0.62251, -5.38434, 1.07233, 2.28305, 1.41338, 0.])(y)
+            p_a = np.poly1d([0.32999, -0.77530, 0.01979, 0.72085, -0.02427, -0.50447, 0.17699, 1.])(y)
+            p_b = np.poly1d([-2.09002, 5.30260, -0.62251, -5.38434, 1.07233, 2.28305, 1.41338, 0.])(y)
         ##### Using O'Donnell (1994)
         else:
-            p_a = numpy.poly1d([-0.505, 1.647, -0.827, -1.718, 1.137, 0.701, -0.609, 0.104, 1.])(y)
-            p_b = numpy.poly1d([3.347, -10.805, 5.491, 11.102, -7.985, -3.989, 2.908, 1.952, 0.])(y)
+            p_a = np.poly1d([-0.505, 1.647, -0.827, -1.718, 1.137, 0.701, -0.609, 0.104, 1.])(y)
+            p_b = np.poly1d([3.347, -10.805, 5.491, 11.102, -7.985, -3.989, 2.908, 1.952, 0.])(y)
         ext[inds] = p_a + p_b/Rv
     #
     inds = (x >= 3.3) * (x < 5.9)
@@ -113,7 +113,7 @@ def Extinction(w, Rv=3.1, cardelli=False):
         ext[inds] = p_a + p_b/Rv
     #
     inds = x > 10.0
-    ext[inds] = numpy.nan
+    ext[inds] = np.nan
     
     ##### Return scalar if possible
     if ext.shape == (1,):
@@ -143,21 +143,21 @@ def Flux_to_asinh(flux, flux_err=None, zeropoint=0., flux0=1., softening=None):
     >>> mag = Flux_to_asinh(10., softening=1)
     """
     # Defining the Pogson's constant
-    pogson = 2.5*numpy.log10(numpy.e)
+    pogson = 2.5*np.log10(np.e)
     # Making sure that we can define the softening parameter
     if flux_err is None and softening is None:
         raise RuntimeError("Either flux_err or softening must be provided!")
     # Automatically infer the softening parameter if needed
     if softening is None:
-        softening = flux_err * numpy.sqrt(pogson)
+        softening = flux_err * np.sqrt(pogson)
     # Calculate the magnitudes
-    zeropoint = zeropoint + 2.5*numpy.log10(flux0)
-    mag = (zeropoint - 2.5*numpy.log10(softening)) - pogson * numpy.arcsinh(flux/(2*softening))
+    zeropoint = zeropoint + 2.5*np.log10(flux0)
+    mag = (zeropoint - 2.5*np.log10(softening)) - pogson * np.arcsinh(flux/(2*softening))
     if flux_err is None:
         return mag
     else:
         # Calculate the magnitude errors
-        mag_err = pogson / (2 * softening) * flux_err / numpy.sqrt( 1 + (flux/(2*softening))**2 )
+        mag_err = pogson / (2 * softening) * flux_err / np.sqrt( 1 + (flux/(2*softening))**2 )
         return mag, mag_err
 
 def Flux_to_mag(flux, flux_err=None, zeropoint=0., flux0=1.):
@@ -176,9 +176,9 @@ def Flux_to_mag(flux, flux_err=None, zeropoint=0., flux0=1.):
     >>> mag,mag_err = Flux_to_mag(10., 1., 0.)
     >>> mag = Flux_to_mag(10.)
     """
-    mag = -2.5 * numpy.log10(flux/flux0) + zeropoint
+    mag = -2.5 * np.log10(flux/flux0) + zeropoint
     if flux_err is not None:
-        mag_err = 2.5 * numpy.log10(numpy.e) * flux_err / flux
+        mag_err = 2.5 * np.log10(np.e) * flux_err / flux
         return mag, mag_err
     else:
         return mag
@@ -261,7 +261,7 @@ def Limb_darkening(lam, mu):
         a_4 = a_40 + a_45/lam5
         a_5 = a_50 + a_55/lam5
         return a_0 + (a_1 + (a_2 + (a_3 + (a_4 + a_5*mu )*mu )*mu )*mu )*mu
-    limb = numpy.empty((mu.shape[0],lam.shape[0]))
+    limb = np.empty((mu.shape[0],lam.shape[0]))
     inds = lam<0.37298
     if inds.any():
         limb[:,inds] = L_300_372(lam[inds],mu)
@@ -292,7 +292,7 @@ def Mag_to_flux(mag, mag_err=None, zeropoint=0., flux0=1.):
     """
     flux = 10**(-(mag-zeropoint)/2.5) * flux0
     if mag_err is not None:
-        flux_err = mag_err*flux/(2.5*numpy.log10(numpy.e))
+        flux_err = mag_err*flux/(2.5*np.log10(np.e))
         return flux, flux_err
     else:
         return flux

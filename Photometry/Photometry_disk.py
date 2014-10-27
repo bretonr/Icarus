@@ -166,7 +166,7 @@ class Photometry_disk:
             ((par[7],par[8]), chi2_data, rank, s) = Utils.Misc.Fit_linear(self.mag-pred_flux, x=self.ext, err=self.err, b=par[7], m=par[8])
             if full_output:
                 residuals = ( (self.mag-pred_flux) - (self.ext*par[8] + par[7]) ) / self.err
-                offset = numpy.zeros(self.ndataset)
+                offset = np.zeros(self.ndataset)
             chi2_band = 0.
             chi2 = chi2_data + chi2_band
         else:
@@ -175,16 +175,16 @@ class Photometry_disk:
             pred_flux = self.Get_flux(par, flat=False, verbose=verbose)
             # Calculate the residuals between observed and theoretical flux
             if influx: # Calculate the residuals in the flux domain
-                res1 = numpy.array([ Utils.Misc.Fit_linear(self.data['flux'][i], x=Utils.Flux.Mag_to_flux(pred_flux[i], flux0=self.atmo_grid[i].flux0), err=self.data['flux_err'][i], b=0., inline=True) for i in numpy.arange(self.ndataset) ])
-                offset = -2.5*numpy.log10(res1[:,1])
+                res1 = np.array([ Utils.Misc.Fit_linear(self.data['flux'][i], x=Utils.Flux.Mag_to_flux(pred_flux[i], flux0=self.atmo_grid[i].flux0), err=self.data['flux_err'][i], b=0., inline=True) for i in np.arange(self.ndataset) ])
+                offset = -2.5*np.log10(res1[:,1])
                 if full_output:
                     print( "Impossible to return proper residuals" )
                     residuals = None
             else: # Calculate the residuals in the magnitude domain
-                res1 = numpy.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in numpy.arange(self.ndataset) ])
+                res1 = np.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in np.arange(self.ndataset) ])
                 offset = res1[:,0]
                 if full_output:
-                    residuals = numpy.r_[ [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in numpy.arange(self.ndataset) ] ]
+                    residuals = np.r_[ [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in np.arange(self.ndataset) ] ]
             chi2_data = res1[:,2].sum()
             # Fit for the best offset between the observed and theoretical flux given the DM and A_J
             res2 = Utils.Misc.Fit_linear(offset, x=self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
@@ -254,28 +254,28 @@ class Photometry_disk:
         if verbose:
             print( "#####\n" + str(par[0]) + ", " + str(par[1]) + ", " + str(par[2]) + ", " + str(par[3]) + ", " + str(par[4]) + ", " + str(par[5]) + ", " + str(par[6]) + ", " + str(par[7]) + ", " + str(par[8]) + ", " + str(par[9]) + "\n" + "q: " + str(q) + ", tirr: " + str(tirr)  )
         self.star.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
-        pred_flux = [numpy.array([self.star.Flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=0.) for phase in self.data['phase'][i]]) for i in numpy.arange(self.ndataset)]
+        pred_flux = [np.array([self.star.Flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=0.) for phase in self.data['phase'][i]]) for i in np.arange(self.ndataset)]
         
         # We fit the best fit for the disk contribution to the data
         def residuals(res_disk, i): # Add a constant disk contribution
-            mag = -2.5*numpy.log10((pred_flux[i]+res_disk) * self.star._Proj(self.star.separation) / self.atmo_grid[i].flux0)
+            mag = -2.5*np.log10((pred_flux[i]+res_disk) * self.star._Proj(self.star.separation) / self.atmo_grid[i].flux0)
             return ((mag + self.atmo_grid[i].ext*par[8] + par[7]) - self.data['mag'][i]) / self.data['err'][i]
         
         def residuals_special(res_disk, i): # Add a constant disk contribution that varies linearly as a function of orbital phase
-            mag = -2.5*numpy.log10((pred_flux[i]+res_disk[0]+res_disk[1]*self.data['phase'][i]) * self.star._Proj(self.star.separation) / self.atmo_grid[i].flux0)
+            mag = -2.5*np.log10((pred_flux[i]+res_disk[0]+res_disk[1]*self.data['phase'][i]) * self.star._Proj(self.star.separation) / self.atmo_grid[i].flux0)
             return ((mag + self.atmo_grid[i].ext*par[8] + par[7]) - self.data['mag'][i]) / self.data['err'][i]
         
         if len(par) > 10:
-            disk = numpy.array(par[9:])
-            disk_slope = numpy.zeros_like(disk)
+            disk = np.array(par[9:])
+            disk_slope = np.zeros_like(disk)
         else:
-            disk = numpy.ones(self.ndataset) * par[9]
-            disk_slope = numpy.zeros_like(disk)
-        chi2 = numpy.empty(self.ndataset)
+            disk = np.ones(self.ndataset) * par[9]
+            disk_slope = np.zeros_like(disk)
+        chi2 = np.empty(self.ndataset)
         
         # In the case of disk offset fitting
         if offset_free:
-            for i in numpy.arange(self.ndataset):
+            for i in np.arange(self.ndataset):
                 # The following is a hack that allows to fit the disk flux with a linear increase
                 # as a function of orbital phase. Especially handy for Aug 7 data.
                 # The flag for that special fit is the data id containing "_".
@@ -285,11 +285,11 @@ class Photometry_disk:
                     disk_slope[i] = tmp[1]
                 else:
                     tmp, cov, infodict, mesg, ier = scipy.optimize.leastsq(residuals, (disk[i],), args=(i,), full_output=1)
-                    disk[i] = numpy.atleast_1d(tmp)[0]
+                    disk[i] = np.atleast_1d(tmp)[0]
                 chi2[i] = (infodict['fvec']**2).sum()
                 par[9+i] = disk[i]
         else:
-            for i in numpy.arange(self.ndataset):
+            for i in np.arange(self.ndataset):
                 chi2[i] = (residuals(disk[i], i)**2).sum()
         
         if doKeff:
@@ -312,7 +312,7 @@ class Photometry_disk:
             print( "chi2: " + str(chi2.sum()) + ", chi2DM: " + str(chi2DM) + ", chi2AJ: " + str(chi2AJ) + ", chi2Keff: " + str(chi2Keff) + "\n    Keff: " + str(pred_Keff) + ", disk: " + disk_str )
         
         if return_residuals:
-            return numpy.sqrt(numpy.r_[chi2, chi2DM, chi2AJ, chi2Keff])
+            return np.sqrt(np.r_[chi2, chi2DM, chi2AJ, chi2Keff])
         else:
             if return_disk is True:
                 return chi2.sum() + chi2DM + chi2AJ + chi2Keff, disk, disk_slope
@@ -362,19 +362,19 @@ class Photometry_disk:
         self.star.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
         flux = []
         if len(par) > 10: # in that situation, individual disk flux values are provided
-            for i in numpy.arange(self.ndataset):
+            for i in np.arange(self.ndataset):
                 #print 'Dataset '+str(i)
-                flux.append(numpy.array([self.star.Mag_flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=par[9+i]) for phase in self.data['phase'][i]]))
+                flux.append(np.array([self.star.Mag_flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=par[9+i]) for phase in self.data['phase'][i]]))
         elif len(par) == 10: # in that situation, only one disk flux value is provided
-            for i in numpy.arange(self.ndataset):
+            for i in np.arange(self.ndataset):
                 #print 'Dataset '+str(i)
-                flux.append(numpy.array([self.star.Mag_flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=par[9]) for phase in self.data['phase'][i]]))
+                flux.append(np.array([self.star.Mag_flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=par[9]) for phase in self.data['phase'][i]]))
         else: # otherwise there is no disk
-            for i in numpy.arange(self.ndataset):
+            for i in np.arange(self.ndataset):
                 #print 'Dataset '+str(i)
-                flux.append(numpy.array([self.star.Mag_flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=0.) for phase in self.data['phase'][i]]))
+                flux.append(np.array([self.star.Mag_flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=0.) for phase in self.data['phase'][i]]))
         if flat:
-            return numpy.hstack(flux)
+            return np.hstack(flux)
         else:
             return flux
 
@@ -422,19 +422,19 @@ class Photometry_disk:
             self.star.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
         flux = []
         if len(par) > 10: # in that situation, individual disk flux values are provided
-            for i in numpy.arange(self.ndataset):
+            for i in np.arange(self.ndataset):
                 if disk_slope is not None:
                     disk = par[9+i] + disk_slope[i]*phases[i]
                 else:
-                    disk = numpy.ones(len(phases[i]))*par[9+i]
-                flux.append(numpy.array([self.star.Mag_flux_disk(phases[i][n], atmo_grid=self.atmo_grid[i], disk=disk[n]) for n in xrange(len(phases[i]))]) + self.atmo_grid[i].ext*par[8] + par[7])
+                    disk = np.ones(len(phases[i]))*par[9+i]
+                flux.append(np.array([self.star.Mag_flux_disk(phases[i][n], atmo_grid=self.atmo_grid[i], disk=disk[n]) for n in xrange(len(phases[i]))]) + self.atmo_grid[i].ext*par[8] + par[7])
         else:
-            for i in numpy.arange(self.ndataset):
+            for i in np.arange(self.ndataset):
                 if disk_slope is not None:
                     disk = par[9] + disk_slope*phases[i]
                 else:
-                    disk = numpy.ones(len(phases[i]))*par[9]
-                flux.append(numpy.array([self.star.Mag_flux_disk(phases[i][n], atmo_grid=self.atmo_grid[i], disk=disk[n]) for n in xrange(len(phases[i]))]) + self.atmo_grid[i].ext*par[8] + par[7])
+                    disk = np.ones(len(phases[i]))*par[9]
+                flux.append(np.array([self.star.Mag_flux_disk(phases[i][n], atmo_grid=self.atmo_grid[i], disk=disk[n]) for n in xrange(len(phases[i]))]) + self.atmo_grid[i].ext*par[8] + par[7])
         return flux
 
     def Get_Keff(self, par, nphases=20, dataset=0, func_par=None, make_surface=False, verbose=False):
@@ -479,11 +479,11 @@ class Photometry_disk:
         # Deciding which atmosphere grid we use to evaluate Keff
         atmo_grid = self.atmo_grid[dataset]
         # Get the Keffs and fluxes
-        phases = numpy.arange(nphases)/float(nphases)
-        Keffs = numpy.array( [self.star.Flux_disk_Keff(phase, atmo_grid=atmo_grid, disk=0.) for phase in phases] )[:,1]
-        tmp = Utils.Misc.Fit_linear(-Keffs, numpy.sin(cts.twopi*(phases)), inline=True)
+        phases = np.arange(nphases)/float(nphases)
+        Keffs = np.array( [self.star.Flux_disk_Keff(phase, atmo_grid=atmo_grid, disk=0.) for phase in phases] )[:,1]
+        tmp = Utils.Misc.Fit_linear(-Keffs, np.sin(cts.twopi*(phases)), inline=True)
         if verbose:
-            plotxy(-tmp[1]*numpy.sin(numpy.linspace(0.,1.)*cts.twopi)+tmp[0], numpy.linspace(0.,1.))
+            plotxy(-tmp[1]*np.sin(np.linspace(0.,1.)*cts.twopi)+tmp[0], np.linspace(0.,1.))
             plotxy(Keffs, phases, line=None, symbol=2)
         Keff = tmp[1]
         return Keff
@@ -521,9 +521,9 @@ class Photometry_disk:
         """
         if func_par is not None:
             par = func_par(par)
-        par = numpy.asarray(par)
+        par = np.asarray(par)
         # Calculate the orbital phases at which the flux will be evaluated
-        phases = numpy.resize(numpy.linspace(0.,1.,nphases), (self.ndataset, nphases))
+        phases = np.resize(np.linspace(0.,1.,nphases), (self.ndataset, nphases))
         # Fit the data in order to get the offset
         if return_disk:
             chi2, disk, disk_slope = self.Calc_chi2_disk(par, offset_free=1, verbose=verbose, return_disk=return_disk)
@@ -534,7 +534,7 @@ class Photometry_disk:
         pred_flux = self.Get_flux_theoretical(par, phases, disk_slope=disk_slope)
         # Loop over the data set and plot the flux, theoretical flux and offset theoretical flux
         rangey = [self.mag.max()+0.3*(self.mag.max()-self.mag.min()), self.mag.min()-0.3*(self.mag.max()-self.mag.min())]
-        for i in numpy.arange(self.ndataset):
+        for i in np.arange(self.ndataset):
             plotxy(self.data['mag'][i], self.data['phase'][i], erry=self.data['err'][i], line=None, symbol=i+2, color=1+i, rangey=rangey, rangex=[0.,1.], labx='Orbital Phase', laby='Magnitude', device=device)
             plotxy(pred_flux[i], phases[i], color=1+i, line=1)
         plotxy([0],[0], color=1)
@@ -553,7 +553,7 @@ class Photometry_disk:
         ppgplot.pgtext(0.4, y0+7*dy, 'D.M.: %4.2f'%par[7])
         ppgplot.pgtext(0.4, y0+8*dy, 'Aj: %4.2f'%par[8])
         ndisk = len(par)-9
-        for i in numpy.arange(0,ndisk):
+        for i in np.arange(0,ndisk):
             ppgplot.pgtext(0.4, y0+(9+i)*dy, 'Disk %d: %5.3e'%(i+1,par[9+i]))
         ppgplot.pgtext(0.4, y0+(9.5+ndisk)*dy, 'q: %5.3f'%self.star.q)
         ppgplot.pgtext(0.4, y0+(11+ndisk)*dy, 'Chi2: %7.2f, d.o.f.: %i'%(chi2,self.mag.size-len(par)))
@@ -584,7 +584,7 @@ class Photometry_disk:
         >>> phases, fluxes = Prep_plot(par, nphases)
         phases, fluxes (array): shape (ndataset, nphases)
         """
-        phs = numpy.tile(numpy.linspace(0, 1, nphases), (self.ndataset,1))
+        phs = np.tile(np.linspace(0, 1, nphases), (self.ndataset,1))
         fluxes = self.Get_flux_theoretical(par, phs, return_disk=return_disk)
         return phs, fluxes
 
@@ -655,12 +655,12 @@ class Photometry_disk:
             print( "Irradiation luminosity (at the pulsar): %5.4e Lsun" %Lirr )
             print( "Irradiation luminosity (at the companion's surface): %5.4e erg/s" %Lirr_comp )
             print( "Backside temperature: %7.2f K" %temp_back )
-            print( "Frontside temperature: %7.2f (tabul.), %7.2f (approx.) K" %(numpy.exp(self.star.logteff.max()),temp_front) )
+            print( "Frontside temperature: %7.2f (tabul.), %7.2f (approx.) K" %(np.exp(self.star.logteff.max()),temp_front) )
             print( "" )
             print( "Distance Modulus: %6.3f" %DM )
             print( "Absorption (J band): %6.3f" %A_J )
             print( "" )
-            for i in numpy.arange(0,ndisk):
+            for i in np.arange(0,ndisk):
                 print( "Disk flux %d: %6.4e" %(i+1,par[9+i]) )
             print( "" )
             print( "Inclination: %5.3f rad (%6.2f deg)" %(incl,incl*cts.RADTODEG) )
@@ -669,7 +669,7 @@ class Photometry_disk:
             print( "Mass ratio: %6.3f" %q )
             print( "Mass NS: %5.3f Msun" %Mns )
             print( "Mass Comp: %5.3f Msun" %Mwd )
-        return numpy.r_[corot,gdark,fill,separation,roche,eff,tirr,temp_back,numpy.exp(self.star.logteff.max()),temp_front,DM,A_J,incl,incl*cts.RADTODEG,K,q,Mns,Mwd]
+        return np.r_[corot,gdark,fill,separation,roche,eff,tirr,temp_back,np.exp(self.star.logteff.max()),temp_front,DM,A_J,incl,incl*cts.RADTODEG,K,q,Mns,Mwd]
 
     def __Read_atmo(self, atmo_fln):
         """__Read_atmo(atmo_fln)
@@ -715,7 +715,7 @@ class Photometry_disk:
         for line in lines:
             if (line[0] != '#') and (line[0] != '\n'):
                 tmp = line.split()
-                d = numpy.loadtxt(tmp[6], usecols=[int(tmp[1]),int(tmp[2]),int(tmp[3])], unpack=True)
+                d = np.loadtxt(tmp[6], usecols=[int(tmp[1]),int(tmp[2]),int(tmp[3])], unpack=True)
                 # With the flag '_' in the observation id, we do not take %1 so that
                 # we preserve the long-term phase coherence.
                 if tmp[0].find('_') != -1:
@@ -741,15 +741,15 @@ class Photometry_disk:
         # Storing values in 1D arrays.
         ext = []
         self.data['ext'] = []
-        for i in numpy.arange(self.ndataset):
+        for i in np.arange(self.ndataset):
             ext.extend(self.data['phase'][i]*0.+self.atmo_grid[i].ext)
             self.data['ext'].append(self.atmo_grid[i].ext)
-        self.ext = numpy.asarray(ext)
-        self.data['ext'] = numpy.asarray(self.data['ext'])
-        self.data['calib'] = numpy.asarray(self.data['calib'])
-        self.mag = numpy.hstack(self.data['mag'])
-        self.phase = numpy.hstack(self.data['phase'])
-        self.err = numpy.hstack(self.data['err'])
+        self.ext = np.asarray(ext)
+        self.data['ext'] = np.asarray(self.data['ext'])
+        self.data['calib'] = np.asarray(self.data['calib'])
+        self.mag = np.hstack(self.data['mag'])
+        self.phase = np.hstack(self.data['phase'])
+        self.err = np.hstack(self.data['err'])
         return
 
 ######################## class Photometry_disk ########################

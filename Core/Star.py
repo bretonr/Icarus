@@ -54,8 +54,8 @@ class Star(Star_base):
         # Generate the geodesic primitives
         s = gts.sphere(self.ndiv)
         x,y,z,t = gts.get_coords_and_face_indices(s,True)
-        self.vertices = numpy.c_[x,y,z]
-        self.faces = numpy.array(t)
+        self.vertices = np.c_[x,y,z]
+        self.faces = np.array(t)
         self.n_vertices = self.vertices.shape[0]
         self.n_faces = self.faces.shape[0]
         print( "Calculatating the associations" )
@@ -66,7 +66,7 @@ class Star(Star_base):
         print( "meshing the surface" )
         mesh = self.vertices[self.faces]
         print( "calculating the area" )
-        self.pre_area = 0.5 *numpy.sqrt( ((mesh[:,0,0]*mesh[:,1,1]+mesh[:,1,0]*mesh[:,2,1]+mesh[:,2,0]*mesh[:,0,1]) - (mesh[:,0,1]*mesh[:,1,0]+mesh[:,1,1]*mesh[:,2,0]+mesh[:,2,1]*mesh[:,0,0]))**2 + ((mesh[:,0,1]*mesh[:,1,2]+mesh[:,1,1]*mesh[:,2,2]+mesh[:,2,1]*mesh[:,0,2]) - (mesh[:,0,2]*mesh[:,1,1]+mesh[:,1,2]*mesh[:,2,1]+mesh[:,2,2]*mesh[:,0,1]))**2 + ((mesh[:,0,2]*mesh[:,1,0]+mesh[:,1,2]*mesh[:,2,0]+mesh[:,2,2]*mesh[:,0,0]) - (mesh[:,0,0]*mesh[:,1,2]+mesh[:,1,0]*mesh[:,2,2]+mesh[:,2,0]*mesh[:,0,2]))**2 )
+        self.pre_area = 0.5 *np.sqrt( ((mesh[:,0,0]*mesh[:,1,1]+mesh[:,1,0]*mesh[:,2,1]+mesh[:,2,0]*mesh[:,0,1]) - (mesh[:,0,1]*mesh[:,1,0]+mesh[:,1,1]*mesh[:,2,0]+mesh[:,2,1]*mesh[:,0,0]))**2 + ((mesh[:,0,1]*mesh[:,1,2]+mesh[:,1,1]*mesh[:,2,2]+mesh[:,2,1]*mesh[:,0,2]) - (mesh[:,0,2]*mesh[:,1,1]+mesh[:,1,2]*mesh[:,2,1]+mesh[:,2,2]*mesh[:,0,1]))**2 + ((mesh[:,0,2]*mesh[:,1,0]+mesh[:,1,2]*mesh[:,2,0]+mesh[:,2,2]*mesh[:,0,0]) - (mesh[:,0,0]*mesh[:,1,2]+mesh[:,1,0]*mesh[:,2,2]+mesh[:,2,0]*mesh[:,0,2]))**2 )
         # The cosine of x,y,z for the center of the faces. shape = n_faces, 3
         print( "calculating the angles" )
         self.cosx, self.cosy, self.cosz = mesh.mean(axis=1).T
@@ -90,7 +90,7 @@ class Star(Star_base):
         print( "meshing the surface" )
         mesh = self.vertices[self.faces]
         print( "calculating the area" )
-        self.pre_area = 0.5 *numpy.sqrt( ((mesh[:,0,0]*mesh[:,1,1]+mesh[:,1,0]*mesh[:,2,1]+mesh[:,2,0]*mesh[:,0,1]) - (mesh[:,0,1]*mesh[:,1,0]+mesh[:,1,1]*mesh[:,2,0]+mesh[:,2,1]*mesh[:,0,0]))**2 + ((mesh[:,0,1]*mesh[:,1,2]+mesh[:,1,1]*mesh[:,2,2]+mesh[:,2,1]*mesh[:,0,2]) - (mesh[:,0,2]*mesh[:,1,1]+mesh[:,1,2]*mesh[:,2,1]+mesh[:,2,2]*mesh[:,0,1]))**2 + ((mesh[:,0,2]*mesh[:,1,0]+mesh[:,1,2]*mesh[:,2,0]+mesh[:,2,2]*mesh[:,0,0]) - (mesh[:,0,0]*mesh[:,1,2]+mesh[:,1,0]*mesh[:,2,2]+mesh[:,2,0]*mesh[:,0,2]))**2 )
+        self.pre_area = 0.5 *np.sqrt( ((mesh[:,0,0]*mesh[:,1,1]+mesh[:,1,0]*mesh[:,2,1]+mesh[:,2,0]*mesh[:,0,1]) - (mesh[:,0,1]*mesh[:,1,0]+mesh[:,1,1]*mesh[:,2,0]+mesh[:,2,1]*mesh[:,0,0]))**2 + ((mesh[:,0,1]*mesh[:,1,2]+mesh[:,1,1]*mesh[:,2,2]+mesh[:,2,1]*mesh[:,0,2]) - (mesh[:,0,2]*mesh[:,1,1]+mesh[:,1,2]*mesh[:,2,1]+mesh[:,2,2]*mesh[:,0,1]))**2 + ((mesh[:,0,2]*mesh[:,1,0]+mesh[:,1,2]*mesh[:,2,0]+mesh[:,2,2]*mesh[:,0,0]) - (mesh[:,0,0]*mesh[:,1,2]+mesh[:,1,0]*mesh[:,2,2]+mesh[:,2,0]*mesh[:,0,2]))**2 )
         # The cosine of x,y,z for the center of the faces. shape = n_faces, 3
         print( "calculating the angles" )
         self.cosx, self.cosy, self.cosz = mesh.mean(axis=1).T
@@ -99,8 +99,8 @@ class Star(Star_base):
     def Outline(self, ntheta=100, debug=False):
         """Outline(ntheta=100, debug=False)
         Calculates the radii of the outline of the star for a vector
-        of theta=numpy.arange(ntheta)/ntheta*TWOPI.
-            theta is defined as numpy.arctan2(y_projected,z_projected).
+        of theta=np.arange(ntheta)/ntheta*TWOPI.
+            theta is defined as np.arctan2(y_projected,z_projected).
             theta0 = 0
             dtheta = TWOPI/ntheta
         
@@ -111,9 +111,9 @@ class Star(Star_base):
         """
         if debug: print( 'Begin _Outline()' )
         
-        theta = numpy.arange(ntheta, dtype=float)/ntheta * cts.twopi
-        y = numpy.cos(theta)
-        z = numpy.sin(theta)
+        theta = np.arange(ntheta, dtype=float)/ntheta * cts.twopi
+        y = np.cos(theta)
+        z = np.sin(theta)
         # radii of the outline of the star.
         radii = self._Radius(y*0., y, z, self.psi0, self.rc_eq)
         return radii
@@ -135,10 +135,10 @@ class Star(Star_base):
         self.n_edges = int(self.n_edges)
 
         # Vertice information contains coordinate x,y,z of vertices. shape = n_vertices,3
-        self.vertices = numpy.array([l.split() for l in lines[1:1+self.n_vertices]], dtype=float)
+        self.vertices = np.array([l.split() for l in lines[1:1+self.n_vertices]], dtype=float)
 
         # Face information contains indices of vertices forming faces. shape = n_faces,3
-        self.faces = numpy.array([l.split() for l in lines[1+self.n_vertices:1+self.n_vertices+self.n_faces]], dtype=int)
+        self.faces = np.array([l.split() for l in lines[1+self.n_vertices:1+self.n_vertices+self.n_faces]], dtype=int)
         self.faces = self.faces[:,1:]
         
         # We calculate the associations
@@ -147,7 +147,7 @@ class Star(Star_base):
         # We will pre-calculate the surface areas. They will need to be multiplied by rc^2.
         # The calculation is simply the Pythagorean sum of the areas of the respective projections on the x,y,z planes.
         mesh = self.vertices[self.faces]
-        self.pre_area = 0.5 *numpy.sqrt( ((mesh[:,0,0]*mesh[:,1,1]+mesh[:,1,0]*mesh[:,2,1]+mesh[:,2,0]*mesh[:,0,1]) - (mesh[:,0,1]*mesh[:,1,0]+mesh[:,1,1]*mesh[:,2,0]+mesh[:,2,1]*mesh[:,0,0]))**2 + ((mesh[:,0,1]*mesh[:,1,2]+mesh[:,1,1]*mesh[:,2,2]+mesh[:,2,1]*mesh[:,0,2]) - (mesh[:,0,2]*mesh[:,1,1]+mesh[:,1,2]*mesh[:,2,1]+mesh[:,2,2]*mesh[:,0,1]))**2 + ((mesh[:,0,2]*mesh[:,1,0]+mesh[:,1,2]*mesh[:,2,0]+mesh[:,2,2]*mesh[:,0,0]) - (mesh[:,0,0]*mesh[:,1,2]+mesh[:,1,0]*mesh[:,2,2]+mesh[:,2,0]*mesh[:,0,2]))**2 )
+        self.pre_area = 0.5 *np.sqrt( ((mesh[:,0,0]*mesh[:,1,1]+mesh[:,1,0]*mesh[:,2,1]+mesh[:,2,0]*mesh[:,0,1]) - (mesh[:,0,1]*mesh[:,1,0]+mesh[:,1,1]*mesh[:,2,0]+mesh[:,2,1]*mesh[:,0,0]))**2 + ((mesh[:,0,1]*mesh[:,1,2]+mesh[:,1,1]*mesh[:,2,2]+mesh[:,2,1]*mesh[:,0,2]) - (mesh[:,0,2]*mesh[:,1,1]+mesh[:,1,2]*mesh[:,2,1]+mesh[:,2,2]*mesh[:,0,1]))**2 + ((mesh[:,0,2]*mesh[:,1,0]+mesh[:,1,2]*mesh[:,2,0]+mesh[:,2,2]*mesh[:,0,0]) - (mesh[:,0,0]*mesh[:,1,2]+mesh[:,1,0]*mesh[:,2,2]+mesh[:,2,0]*mesh[:,0,2]))**2 )
         # The cosine of x,y,z for the center of the faces. shape = n_faces, 3
         self.cosx, self.cosy, self.cosz = mesh.mean(axis=1).T
         return
@@ -216,13 +216,13 @@ class Star(Star_base):
         self.rc_pole = self._Radius(0.,0.,1.,self.psi0,self.rc_l1)
         trc, trx, dpsi, dpsidx, dpsidy, dpsidz, psi = self._Potential(0.,0.,self.rc_pole)
         # log surface gravity at the pole of the star
-        self.logg_pole = numpy.log10(numpy.sqrt(dpsidx**2+dpsidy**2+dpsidz**2))
+        self.logg_pole = np.log10(np.sqrt(dpsidx**2+dpsidy**2+dpsidz**2))
         
         # rc_eq is stellar radius at 90 degrees in the orbital plane, i.e. at the equator, but not in the direction of the companion
         self.rc_eq = self._Radius(0.,1.,0.,self.psi0,self.rc_l1)
         trc, trx, dpsi, dpsidx, dpsidy, dpsidz, psi = self._Potential(0.,self.rc_eq,0.)
         # log surface gravity at the pole of the star
-        self.logg_eq = numpy.log10(numpy.sqrt(dpsidx**2+dpsidy**2+dpsidz**2))
+        self.logg_eq = np.log10(np.sqrt(dpsidx**2+dpsidy**2+dpsidz**2))
         
         # r_vertices are the radii of the vertices. shape = n_vertices
         self.r_vertices = self._Radius(self.vertices[:,0], self.vertices[:,1], self.vertices[:,2], self.psi0, self.rc_l1)
@@ -234,7 +234,7 @@ class Star(Star_base):
         trc, self.rx, dpsi, dpsidx, dpsidy, dpsidz, psi = self._Potential(self.rc*self.cosx,self.rc*self.cosy,self.rc*self.cosz)
         # log surface gravity. shape = n_faces
         geff = self._Geff(dpsidx, dpsidy, dpsidz)
-        self.logg = numpy.log10(geff)
+        self.logg = np.log10(geff)
         # coschi is the cosine angle between the rx and the surface element. shape = n_faces
         # A value of 1 means that the companion's surface element is directly facing the pulsar, 0 is at the limb and -1 on the back.
         self.coschi = -(self.rc-self.cosx)/self.rx

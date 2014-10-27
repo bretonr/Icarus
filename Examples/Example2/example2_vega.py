@@ -3,12 +3,6 @@
 import Icarus
 from Icarus.Utils.import_modules import *
 
-try:
-    import pylab
-except:
-    print( "Cannot import Matplotlib. No plot will be made." )
-
-
 
 ##### Welcome message
 print( "##### example2_vega.py Re-creating Vega #####" )
@@ -150,7 +144,7 @@ z = i + 0.17
 
 ## Determining the conversion factor between the apparent and absolute magnitude of the Sun
 distance = 7.678 # in parsec (from Hipparcos, see Linnell, DeStefano & Hubzny, 2013, ApJ, 146, 68)
-apparent_to_absolute = -2.5 * numpy.log10((distance/10)**2)
+apparent_to_absolute = -2.5 * np.log10((distance/10)**2)
 
 def Calc_mag(atmo_grid):
     mag = star.Mag_flux(0.0, atmo_grid=atmo_grid)

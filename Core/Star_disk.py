@@ -117,7 +117,7 @@ class Star_disk(Star):
             proj = self._Proj(self.separation)
         if gravscale is None:
             gravscale = self._Gravscale()
-        return -2.5*numpy.log10(self.Flux_disk(phase, gravscale=gravscale, atmo_grid=atmo_grid, disk=disk) * proj) + atmo_grid.meta['zp']
+        return -2.5*np.log10(self.Flux_disk(phase, gravscale=gravscale, atmo_grid=atmo_grid, disk=disk) * proj) + atmo_grid.meta['zp']
 
 ######################## class Star_disk ########################
 

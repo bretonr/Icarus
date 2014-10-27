@@ -2,6 +2,8 @@
 
 __all__ = ["Atmo_AGSS_spectro", "Read_AGSS"]
 
+import sys
+
 try:
     import astropy.io.fits as pyfits
 except:
@@ -69,7 +71,7 @@ class Atmo_AGSS_spectro(Atmo_grid):
         """
         ## Reading the parameter information about the spectra
         lst = []
-        for i in numpy.arange(len(flns)):
+        for i in np.arange(len(flns)):
             ## Get the logg and temp value from the filename
             hdr = pyfits.getheader(flns[i], ext=0)
             temp = hdr['PHXTEFF']
@@ -79,20 +81,20 @@ class Atmo_AGSS_spectro(Atmo_grid):
                     lst.append( [i, logg, temp] )
 
         ## Reading the mu values
-        self.mu = numpy.array(pyfits.getdata(flns[0], ext=1), dtype=float)
+        self.mu = np.array(pyfits.getdata(flns[0], ext=1), dtype=float)
         n_mu = self.mu.size
 
         ## Sorting the grid by temperature and then logg
         Utils.Misc.Sort_list(lst, [2,1])
-        lst = numpy.array(lst)
+        lst = np.array(lst)
 
         ## Extracting the temperature values
-        self.logtemp = numpy.log(numpy.unique(lst[:,2]))
+        self.logtemp = np.log(np.unique(lst[:,2]))
         self.logtemp.sort()
         n_teff = self.logtemp.size
 
         ## Extracting the logg values
-        self.logg = numpy.unique(lst[:,1])
+        self.logg = np.unique(lst[:,1])
         self.logg.sort()
         n_logg = self.logg.size
 
@@ -105,10 +107,10 @@ class Atmo_AGSS_spectro(Atmo_grid):
                 for logg in self.logg:
                     missing = True
                     for l in lst:
-                        if numpy.log(l[2]) == teff and l[1] == logg:
+                        if np.log(l[2]) == teff and l[1] == logg:
                             missing = False
                     if missing:
-                        print("Missing -> logg: {:3.1f}, temp: {:5.0f}".format(logg,numpy.exp(teff)))
+                        print("Missing -> logg: {:3.1f}, temp: {:5.0f}".format(logg,np.exp(teff)))
             raise Exception( "There is a mismatch in the number of log(g) and teff grid points!" )
             return
 
@@ -125,7 +127,7 @@ class Atmo_AGSS_spectro(Atmo_grid):
             logger.log(8, "Number of wavelength points: {}, range: [{}, {}]".format(tmp[1].size, tmp[1][0], tmp[1][-1]) )
         if verbose: print( "\nFinished reading atmosphere grid files" )
         try:
-            wav = numpy.array(wav)
+            wav = np.array(wav)
             if wav.std(0).max() > 1.e-6:
                 raise Exception( "The wavelength grid is not uniform!" )
                 return
@@ -135,7 +137,7 @@ class Atmo_AGSS_spectro(Atmo_grid):
             raise Exception( "The wavelength grid has an inconsistent number of elements!" )
             return
         if verbose: print( "Transforming grid data to array" )
-        grid = numpy.asarray(grid)
+        grid = np.asarray(grid)
         if verbose: print( "Addressing the grid data shape" )
         grid.shape = n_teff, n_logg, n_mu, wav.size
         self.wav = wav
@@ -166,20 +168,20 @@ class Atmo_AGSS_spectro(Atmo_grid):
         logg = self.logg
         mu = self.mu
         logger.log(9, "Getting temp indices")
-        logger.log(5, "logtemp.min() {}, logtemp.max() {}".format(numpy.min(logtemp),numpy.max(logtemp)) )
-        logger.log(5, "val_logtemp.min() {}, val_logtemp.max() {}".format(numpy.min(val_logtemp),numpy.max(val_logtemp)) )
+        logger.log(5, "logtemp.min() {}, logtemp.max() {}".format(np.min(logtemp),np.max(logtemp)) )
+        logger.log(5, "val_logtemp.min() {}, val_logtemp.max() {}".format(np.min(val_logtemp),np.max(val_logtemp)) )
         wtemp, jtemp = self.Getaxispos(logtemp,val_logtemp)
         logger.log(9, "Getting logg indices")
         wlogg, jlogg = self.Getaxispos(logg,val_logg)
         logger.log(9, "Getting mu indices")
         wmu, jmu = self.Getaxispos(mu,val_mu)
-        #wmu = numpy.ones_like(wmu)
-        #jmu = numpy.zeros_like(jmu, dtype=int)+76
+        #wmu = np.ones_like(wmu)
+        #jmu = np.zeros_like(jmu, dtype=int)+76
 
         if self.z0:
             val_vel = val_vel/(-self.z0)
-            wwav = numpy.remainder(val_vel, 1)
-            jwav = numpy.floor(val_vel).astype(int)
+            wwav = np.remainder(val_vel, 1)
+            jwav = np.floor(val_vel).astype(int)
             #Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area, val_mu)
             #Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, mu_grid, area, val_mu)
             flux = Utils.Grid.Interp_doppler(grid, wtemp, wlogg, wmu, wwav, jtemp, jlogg, jmu, jwav, val_area, val_mu)
@@ -228,7 +230,7 @@ def Read_AGSS(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut
 
     ## Extracting the wavelength from the header
     hdr = hdu[0].header
-    wav = hdr['CRVAL1'] + numpy.arange(hdr['NAXIS1'], dtype=float) * hdr['CDELT1']
+    wav = hdr['CRVAL1'] + np.arange(hdr['NAXIS1'], dtype=float) * hdr['CDELT1']
 
     ## Extracting the data. grid.shape = n_mu, n_wavelength
     grid = hdu[0].data
@@ -242,9 +244,9 @@ def Read_AGSS(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut
     ## Oversample the spectrum if requested
     if oversample is not None and oversample != 1:
         #grid = scipy.ndimage.zoom(grid, oversample, order=1, mode='reflect')
-        #wav = numpy.linspace(wav[0], wav[-1], wav.size*oversample)
+        #wav = np.linspace(wav[0], wav[-1], wav.size*oversample)
         interp = scipy.interpolate.UnivariateSpline(wav, grid, k=1, s=0)
-        wav = numpy.linspace(wav[0], wav[-1], wav.size*oversample+1)
+        wav = np.linspace(wav[0], wav[-1], wav.size*oversample+1)
         grid = interp(wav)
 
     ## Smooth the spectrum if requested
@@ -279,7 +281,7 @@ def Read_AGSS(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut
         z = None
     if convert is not None:
         print( "Saving the data into "+fln+convert )
-        numpy.savetxt(fln+convert,numpy.vstack((wav,numpy.log10(grid))).T)
+        np.savetxt(fln+convert,np.vstack((wav,np.log10(grid))).T)
     return grid, wav, z
 
 

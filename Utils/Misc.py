@@ -26,7 +26,7 @@ def Fit_linear(y, x=None, err=1.0, m=None, b=None, output=None, inline=False):
     #sy = array([0.05, 0.05, 0.05, 0.05])
 
     if x is None:
-        x = numpy.arange(y.shape[0], dtype=float)
+        x = np.arange(y.shape[0], dtype=float)
     if (b is not None) and (m is not None):
         sol = [b, m]
         res = (((b + m*x - y)/err)**2).sum()
@@ -34,19 +34,19 @@ def Fit_linear(y, x=None, err=1.0, m=None, b=None, output=None, inline=False):
         s = 0.
     else:
         if b is not None:
-            A = numpy.reshape(x/err,(x.shape[0],1))
+            A = np.reshape(x/err,(x.shape[0],1))
             y1 = y-b
             y1 /= err
             sol, res, rank, s = scipy.linalg.lstsq(A, y1)
             sol = [b,sol[0]]
         elif m is not None:
-            A = numpy.resize(1/err,(x.shape[0],1))
+            A = np.resize(1/err,(x.shape[0],1))
             y1 = y-m*x
             y1 /= err
             sol, res, rank, s = scipy.linalg.lstsq(A, y1)
             sol = [sol[0],m]
         else:
-            A = (numpy.vstack([numpy.ones(x.shape[0], dtype=float),x])/err).T
+            A = (np.vstack([np.ones(x.shape[0], dtype=float),x])/err).T
             y1 = y/err
             sol, res, rank, s = scipy.linalg.lstsq(A, y1)
     if output:
@@ -58,9 +58,9 @@ def Fit_linear(y, x=None, err=1.0, m=None, b=None, output=None, inline=False):
         plotxy(y, x, line=None, symbol=2, color=2)
         plotxy(fit_y, x)
     if res.shape == (0,):
-        res = numpy.r_[0.]
+        res = np.r_[0.]
     if inline:
-        return numpy.hstack((sol, res, rank, s))
+        return np.hstack((sol, res, rank, s))
     else:
         return (sol, res, rank, s)
 

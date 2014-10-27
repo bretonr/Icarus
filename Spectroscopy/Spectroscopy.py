@@ -2,6 +2,9 @@
 
 __all__ = ["Spectroscopy", "Doppler_shift", "Normalize_spectrum", "Rebin", "Process_flux", "Process_flux1"]
 
+import sys
+import glob
+
 from ..Utils.import_modules import *
 from .. import Utils
 from .. import Core
@@ -111,7 +114,7 @@ class Spectroscopy:
         if v is None:
             v = [0.]*self.ndataset
         if inds is None:
-            inds = numpy.arange(self.ndataset)
+            inds = np.arange(self.ndataset)
         fluxes, chi2 = zip(*[ Process_flux(self.data['flux'][i], self.data['err'][i], flux_model[i], self.data['wavelength'][i], self.atmo_grid.wav, z=v[i]/cts.c) for i in inds ])
         return fluxes, chi2
 
@@ -152,11 +155,11 @@ class Spectroscopy:
         if orbph is None:
             orbph = self.data['phase']
         else:
-            orbph = numpy.atleast_1d(orbph)
+            orbph = np.atleast_1d(orbph)
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
-        #velocities = numpy.zeros_like(orbph) + par[7] + self.data['v_offset'] + velocities
-        velocities = numpy.zeros_like(orbph) + par[7] + velocities
+        #velocities = np.zeros_like(orbph) + par[7] + self.data['v_offset'] + velocities
+        velocities = np.zeros_like(orbph) + par[7] + velocities
         q = par[5] * self.K_to_q
         tirr = (par[6]**4 - par[3]**4)**0.25
 
@@ -189,7 +192,7 @@ class Spectroscopy:
             self.ws_rebin = []
             self.inds_rebin = []
             self.sigma = []
-            for i in numpy.arange(self.ndataset):
+            for i in np.arange(self.ndataset):
                 ## Checking if the bounds of the data are within those of the atmosphere grid
                 if self.data['wavelength'][i][0] < self.atmo_grid.wav[0]:
                     print( "Warning: the data wavelength coverage for {} is out of the atmosphere grid lower bound.".format(self.data['id'][i]) )
@@ -197,11 +200,11 @@ class Spectroscopy:
                         print( "Warning: the data wavelength coverage for {} is out of the atmosphere grid upper bound.".format(self.data['id'][i]) )
                 stepsize = self.data['wavelength'][i][1]-self.data['wavelength'][i][0]
                 # binfactor is the oversampling factor of the model vs observed spectrum
-                tmp = numpy.floor(stepsize/(self.atmo_grid.wav[1]-self.atmo_grid.wav[0]))
+                tmp = np.floor(stepsize/(self.atmo_grid.wav[1]-self.atmo_grid.wav[0]))
                 if tmp < 1: tmp = 1
                 self.binfactor.append( tmp )
                 stepsize /= self.binfactor[i]
-                self.wavelength.append( numpy.arange(self.data['wavelength'][i][0],self.data['wavelength'][i][-1]+stepsize/2,stepsize) )
+                self.wavelength.append( np.arange(self.data['wavelength'][i][0],self.data['wavelength'][i][-1]+stepsize/2,stepsize) )
                 # To rebin from log to lin
                 ws, inds = Utils.Series.Getaxispos_vector(self.atmo_grid.wav, self.wavelength[i]+0.0)
                 self.ws_loglin.append(ws)
@@ -239,7 +242,7 @@ class Spectroscopy:
         >>> self.Plot([PIBYTWO,1.,0.9,4000.,0.08,1.4,0.07,10.,0.])
         """
         if inds is None:
-            inds = numpy.arange(self.ndataset)
+            inds = np.arange(self.ndataset)
         if isinstance(inds, int):
             inds = [inds]
 
@@ -324,7 +327,7 @@ class Spectroscopy:
         >>> self.Plot([PIBYTWO,1.,0.9,4000.,0.08,1.4,0.07,10.,0.])
         """
         if inds is None:
-            inds = numpy.arange(self.ndataset)
+            inds = np.arange(self.ndataset)
         if isinstance(inds, int):
             inds = [inds]
 
@@ -392,7 +395,7 @@ class Spectroscopy:
         >>> self.Plot([PIBYTWO,1.,0.9,4000.,0.08,1.4,0.07,10.,0.])
         """
         if inds is None:
-            inds = numpy.arange(self.ndataset)
+            inds = np.arange(self.ndataset)
         if isinstance(inds, int):
             inds = [inds]
 
@@ -495,7 +498,7 @@ class Spectroscopy:
             print( "" )
             print( "Irration luminosity: %5.4e Lsun" %Lirr )
             print( "Backside temperature: %7.2f K" %temp_back )
-            print( "Frontside temperature: %7.2f (tabul.), %7.2f (approx.) K" %(numpy.exp(self.star.logteff.max()),temp_front) )
+            print( "Frontside temperature: %7.2f (tabul.), %7.2f (approx.) K" %(np.exp(self.star.logteff.max()),temp_front) )
             print( "" )
             print( "Inclination: %5.3f rad (%6.2f deg)" %(incl,incl*cts.RADTODEG) )
             print( "System velocity: %7.3f km/s" %(vel_sys/1000) )
@@ -577,7 +580,7 @@ class Spectroscopy:
                 sys.stdout.write( "Reading data file {}\r".format(tmp[0]) ); sys.stdout.flush()
                 self.data['id'].append(tmp[0])
                 self.data['fln'].append(tmp[1])
-                d = numpy.loadtxt(tmp[1], usecols=[int(tmp[2]),int(tmp[3]),int(tmp[4])], unpack=True)
+                d = np.loadtxt(tmp[1], usecols=[int(tmp[2]),int(tmp[3]),int(tmp[4])], unpack=True)
                 wavelow, wavehigh = float(tmp[9]), float(tmp[10])
                 if wavelow != wavehigh:
                     inds = (d[0] >= wavelow)*(d[0] <= wavehigh)
@@ -591,11 +594,11 @@ class Spectroscopy:
                 self.data['v_offset_err'].append(float(tmp[7]) * 1000)
                 self.data['v_approx'].append(float(tmp[8]) * 1000)
         sys.stdout.write("\n"); sys.stdout.flush()
-        self.data['id'] = numpy.asarray(self.data['id'])
-        self.data['phase'] = numpy.asarray(self.data['phase'])
-        self.data['v_offset'] = numpy.asarray(self.data['v_offset'])
-        self.data['v_offset_err'] = numpy.asarray(self.data['v_offset_err'])
-        self.data['v_approx'] = numpy.asarray(self.data['v_approx'])
+        self.data['id'] = np.asarray(self.data['id'])
+        self.data['phase'] = np.asarray(self.data['phase'])
+        self.data['v_offset'] = np.asarray(self.data['v_offset'])
+        self.data['v_offset_err'] = np.asarray(self.data['v_offset_err'])
+        self.data['v_approx'] = np.asarray(self.data['v_approx'])
         return
 
     def Save_flux(self, fln, par, velocities=0., verbose=False):
@@ -612,9 +615,9 @@ class Spectroscopy:
         verbose: verbosity flag.
         """
         flux = self.Get_flux(par, rebin=True, velocities=velocities, verbose=verbose)
-        for i in numpy.arange(self.ndataset):
-            err = numpy.abs(self.data['err'][i]/self.data['flux'][i]*flux[i])
-            numpy.savetxt(fln+".%02i" %i, numpy.c_[self.data['wavelength'][i],flux[i],err])
+        for i in np.arange(self.ndataset):
+            err = np.abs(self.data['err'][i]/self.data['flux'][i]*flux[i])
+            np.savetxt(fln+".%02i" %i, np.c_[self.data['wavelength'][i],flux[i],err])
         return
 
 ######################## class Spectroscopy ########################
@@ -676,7 +679,7 @@ def Process_flux1(flux_obs, flux_obs_err, flux_model, wave_obs, wave_model, v_ap
     kwargs['chi2only'] = True
     def return_chi2(z):
         chi2 = Process_flux(flux_obs, flux_obs_err, new_flux_model, wave_obs, wave_model, z=z **kwargs)
-        return numpy.sum(chi2)
+        return np.sum(chi2)
     sol = scipy.optimize.fmin(return_chi2, v_approx, full_output=1)
     return sol[:2]
 
@@ -701,8 +704,8 @@ def Doppler_shift(flux, z, z0=1):
         newflux = flux
     else:
         ws = z%1
-        bin = int(abs(numpy.floor(z)))
-        newflux = numpy.empty_like(flux)
+        bin = int(abs(np.floor(z)))
+        newflux = np.empty_like(flux)
         if z >= 0:
             if ws == 0:
                 newflux[...,:flux.shape[-1]-bin] = flux[...,bin:]
@@ -740,12 +743,12 @@ def Normalize_spectrum(flux_model, flux, flux_err=None, a_n=None, coeff=3, chi2o
     chi2only (bool): If True, will return the chi-square only.
     """
     if a_n is None:
-        x = numpy.arange(numpy.size(flux_model)) - numpy.size(flux_model)/2
+        x = np.arange(np.size(flux_model)) - np.size(flux_model)/2
         a_n, chi2 = Utils.Series.GPolynomial_fit(flux, x=x, err=flux_err, coeff=coeff, Xfnct=flux_model, Xfnct_offset=False)
     if chi2only:
         return chi2
     else:
-        poly = numpy.poly1d(a_n)
+        poly = np.poly1d(a_n)
         norm_flux_model = poly(x) * flux_model
     return norm_flux_model, chi2
 
@@ -774,8 +777,8 @@ def Rebin(flux, x, xnew, interpolate=True):
         w,inds = Utils.Series.Getaxispos_vector(x, xnew)
         newflux = Utils.Series.Interp_linear(flux, w, inds)
     else:
-        if numpy.ndim(flux) == 2:
-            newflux = numpy.empty((numpy.shape[0],xnew.shape[0]))
+        if np.ndim(flux) == 2:
+            newflux = np.empty((np.shape[0],xnew.shape[0]))
             for i in xrange(len(flux)):
                 newflux[i] = Utils.Series.Interp_integrate(flux[i], x[i], xnew[i])
         else:

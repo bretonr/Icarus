@@ -2,6 +2,8 @@
 
 __all__ = ["Photometry_doppler"]
 
+import warnings
+
 from ..Utils.import_modules import *
 from .. import Utils
 from .. import Core
@@ -111,7 +113,7 @@ class Photometry_doppler(Photometry):
             phases = self.data['phase']
         # If nsamples is set, we evaluate the lightcurve at nsamples
         else:
-            phases = (numpy.arange(nsamples, dtype=float)/nsamples).repeat(self.ndataset).reshape((nsamples,self.ndataset)).T
+            phases = (np.arange(nsamples, dtype=float)/nsamples).repeat(self.ndataset).reshape((nsamples,self.ndataset)).T
         
         # If DM_AJ, we take into account the DM and AJ into the flux here.
         if DM_AJ:
@@ -121,23 +123,23 @@ class Photometry_doppler(Photometry):
         
         # Calculate the actual lightcurves
         flux = []
-        for i in numpy.arange(self.ndataset):
+        for i in np.arange(self.ndataset):
                 # If we use the interpolation method and if the filter is the same as a previously
                 # calculated one, we do not recalculate the fluxes and simply copy them.
                 if nsamples is not None and self.grouping[i] < i:
                     flux.append(flux[self.grouping[i]])
                 else:
-                    flux.append( numpy.array([self.star.Mag_flux_doppler(phase, atmo_grid=self.atmo_grid[i], atmo_doppler=self.atmo_doppler[i]) for phase in phases[i]]) + DM_AJ[i] )
+                    flux.append( np.array([self.star.Mag_flux_doppler(phase, atmo_grid=self.atmo_grid[i], atmo_doppler=self.atmo_doppler[i]) for phase in phases[i]]) + DM_AJ[i] )
         
         # If nsamples is set, we interpolate the lightcurve at nsamples.
         if nsamples is not None:
-            for i in numpy.arange(self.ndataset):
+            for i in np.arange(self.ndataset):
                 ws, inds = Utils.Series.Getaxispos_vector(phases[i], self.data['phase'][i])
                 flux[i] = flux[i][inds]*(1-ws) + flux[i][inds+1]*ws
         
         # We can flatten the flux array to simplify some of the calculations in the Calc_chi2 function
         if flat:
-            return numpy.hstack(flux)
+            return np.hstack(flux)
         else:
             return flux
 
@@ -186,13 +188,13 @@ class Photometry_doppler(Photometry):
         DM_AJ = self.data['ext']*par[8] + par[7]
         
         flux = []
-        for i in numpy.arange(self.ndataset):
+        for i in np.arange(self.ndataset):
             # If the filter is the same as a previously calculated one
             # we do not recalculate the fluxes and simply copy them.
             if self.grouping[i] < i:
                 flux.append( flux[self.grouping[i]] )
             else:
-                flux.append( numpy.array([self.star.Mag_flux_doppler(phase, atmo_grid=self.atmo_grid[i], atmo_doppler=self.atmo_doppler[i]) for phase in phases[i]]) + DM_AJ[i] )
+                flux.append( np.array([self.star.Mag_flux_doppler(phase, atmo_grid=self.atmo_grid[i], atmo_doppler=self.atmo_doppler[i]) for phase in phases[i]]) + DM_AJ[i] )
         return flux
 
     def Get_Keff(self, *args, **kwargs):

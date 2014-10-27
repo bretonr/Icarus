@@ -2,6 +2,7 @@
 
 __all__ = ["AtmoGrid", "AtmoGridPhot", "AtmoGridDoppler", "Atmo_grid"]
 
+import os
 from copy import deepcopy
 
 from astropy.table import TableColumns, Column, MaskedColumn, Table
@@ -26,7 +27,7 @@ class AtmoGrid(Column):
         Grid of log(flux) values (e-base)
     name : str
         Keyword name of the atmosphere grid
-    dtype : numpy.dtype compatible value
+    dtype : np.dtype compatible value
         Data type the flux grid
     shape : tuple or ()
         Dimensions of a single row element in the flux grid
@@ -216,7 +217,7 @@ class AtmoGrid(Column):
             temp = Getaxispos('logtemp', np.log(3550.)
             logg = Getaxispos('logg', [4.11,4.13,4.02])
         """
-        if isinstance(x, (list, tuple, numpy.ndarray)):
+        if isinstance(x, (list, tuple, np.ndarray)):
             return Utils.Series.Getaxispos_vector(self.cols[colname], x)
         else:
             return Utils.Series.Getaxispos_scalar(self.cols[colname], x)
@@ -656,18 +657,18 @@ class Atmo_grid:
             print 'It appears that the number of lines in the file is weird'
             return None
         # Read the mu values
-        mu = numpy.array(lines[2].split()+lines[3].split(),dtype=float)
+        mu = np.array(lines[2].split()+lines[3].split(),dtype=float)
         # Read the info line for each grid point
         hdr = []
         grid = []
-        for i in numpy.arange(4,len(lines),3):
+        for i in np.arange(4,len(lines),3):
             hdr.append(lines[i].split())
             grid.append(lines[i+1].split()+lines[i+2].split())
-        hdr = numpy.array(hdr,dtype=float)
-        grid = numpy.log(numpy.array(grid,dtype=float)/(C*100)*self.wav**2)
+        hdr = np.array(hdr,dtype=float)
+        grid = np.log(np.array(grid,dtype=float)/(C*100)*self.wav**2)
         hdr.shape = (n_temp,abs(n_logg),hdr.shape[1])
         grid.shape = (n_temp,abs(n_logg),n_mu)
-        logtemp = numpy.log(hdr[:,0,0])
+        logtemp = np.log(hdr[:,0,0])
         logg = hdr[0,:,1]
         leff = hdr[0,0,2]
         #jl = hdr[:,:,3]
@@ -771,7 +772,7 @@ class Atmo_grid:
     def Getaxispos(self, xx, x):
         """
         """
-        if isinstance(x, (list, tuple, numpy.ndarray)):
+        if isinstance(x, (list, tuple, np.ndarray)):
             return Utils.Series.Getaxispos_vector(xx, x)
         else:
             return Utils.Series.Getaxispos_scalar(xx, x)
@@ -818,7 +819,7 @@ class Atmo_grid:
                             +w1mu*grid[jtemp,jlogg+1,jmu+1]) \
                     +w1temp*(w0mu*grid[jtemp+1,jlogg+1,jmu] \
                             +w1mu*grid[jtemp+1,jlogg+1,jmu+1]))
-        flux = numpy.exp(fl)*val_mu
+        flux = np.exp(fl)*val_mu
         return flux
 
 ######################## class Atmo_grid ########################

@@ -1,5 +1,9 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
+import os
+
+import scipy.weave
+
 from .import_modules import *
 
 logger = logging.getLogger(__name__)
@@ -41,12 +45,12 @@ def Err_velocity(chi2, vels, dof, clip=None, normalize=False, redchi2_unity=Fals
         y = chi2
         x = vels
     a_n = GPolynomial_fit(y, x, coeff=3)
-    p_n = numpy.poly1d(a_n)
+    p_n = np.poly1d(a_n)
     vfit = -0.5*a_n[1]/a_n[0]
     chi2fit = p_n(vfit)
-    err_vfit = numpy.sqrt(1/a_n[0])
+    err_vfit = np.sqrt(1/a_n[0])
     if redchi2_unity:
-        err_vfit *= numpy.sqrt(chi2fit/dof)
+        err_vfit *= np.sqrt(chi2fit/dof)
     if verbose:
         plotxy(chi2, vels, symbol=3)
         plotxy(y, x, line=None, symbol=3, color=4)
@@ -56,8 +60,8 @@ def Err_velocity(chi2, vels, dof, clip=None, normalize=False, redchi2_unity=Fals
 def Get_potential(x, y, z, q, omega=1.):
     qp1by2om2 = (q+1.)/2.*omega**2
     rc2 = x**2+y**2+z**2
-    rx = numpy.sqrt(rc2+1-2*x)
-    rc = numpy.sqrt(rc2)
+    rx = np.sqrt(rc2+1-2*x)
+    rc = np.sqrt(rc2)
     psi = 1/rc + q/rx - q*x + qp1by2om2*(rc2-z**2)
     dpsi = -1/rc**3-q/rx**3
     dpsidx = x*(dpsi+2*qp1by2om2)+q*(-1+1/rx**3)
@@ -106,7 +110,7 @@ def Mass_companion(mass_function, q, incl):
     
     >>> Mass_companion(mass_function, q, incl)
     """
-    return mass_function * (1+q)**2 / numpy.sin(incl)**3
+    return mass_function * (1+q)**2 / np.sin(incl)**3
 
 def Mass_ratio(mass_function, M_ns, incl):
     """Mass_ratio(mass_function, M_ns, incl)
@@ -119,9 +123,9 @@ def Mass_ratio(mass_function, M_ns, incl):
     >>> Mass_ratio(mass_function, M_ns, incl)
     """
     q = -1./9
-    r = 0.5*M_ns*numpy.sin(incl)**3/mass_function + 1./27
-    s = (r + numpy.sqrt(q**3+r**2))**(1./3)
-    t = (r - numpy.sqrt(q**3+r**2))**(1./3)
+    r = 0.5*M_ns*np.sin(incl)**3/mass_function + 1./27
+    s = (r + np.sqrt(q**3+r**2))**(1./3)
+    t = (r - np.sqrt(q**3+r**2))**(1./3)
     return s+t-2./3
 
 def Orbital_separation(asini, q, incl):
@@ -134,7 +138,7 @@ def Orbital_separation(asini, q, incl):
     
     >>> Orbital_separation(asini, q, incl)
     """
-    return asini*(1+q)/numpy.sin(incl)*C*100
+    return asini*(1+q)/np.sin(incl)*C*100
 
 def Potential(x, y, z, q, qp1by2om2):
     """
@@ -148,8 +152,8 @@ def Potential(x, y, z, q, qp1by2om2):
     >>> rc, rx, dpsi, dpsidx, dpsidy, dpsidz, psi = Potential(x, y, z, q, qp1by2om2)
     """
     rc2 = x**2+y**2+z**2
-    rx = numpy.sqrt(rc2+1-2*x)
-    rc = numpy.sqrt(rc2)
+    rx = np.sqrt(rc2+1-2*x)
+    rc = np.sqrt(rc2)
     psi = 1/rc + q/rx - q*x + qp1by2om2*(rc2-z**2)
     dpsi = -1/rc**3-q/rx**3
     dpsidx = x*(dpsi+2*qp1by2om2)+q*(-1+1/rx**3)
@@ -202,13 +206,13 @@ def Radius(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
     } while (fabs(dr) > 0.00001);
     return_val = r;
     """
-    psi0 = numpy.float(psi0)
-    r = numpy.float(r)
-    q = numpy.float(q)
-    cosx = numpy.float(cosx)
-    cosy = numpy.float(cosy)
-    cosz = numpy.float(cosz)
-    qp1by2om2 = numpy.float(qp1by2om2)
+    psi0 = np.float(psi0)
+    r = np.float(r)
+    q = np.float(q)
+    cosx = np.float(cosx)
+    cosy = np.float(cosy)
+    cosz = np.float(cosz)
+    qp1by2om2 = np.float(qp1by2om2)
     get_radius = scipy.weave.inline(code, ['r', 'cosx', 'cosy', 'cosz', 'psi0', 'q', 'qp1by2om2'], type_converters=scipy.weave.converters.blitz, compiler='gcc', verbose=2)
     r = get_radius
     logger.debug("end")
@@ -216,7 +220,7 @@ def Radius(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
 
 def Radii(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
     """Radii(cosx, cosy, cosz, psi0, r, q, qp1by2om2)
-    >>>Radii(numpy.array([-1.,0.,0.]), numpy.array([0.,0.1,0.1]), numpy.array([0.,0.,0.1]), 5454., 0.14, 56., 57./2)
+    >>>Radii(np.array([-1.,0.,0.]), np.array([0.,0.1,0.1]), np.array([0.,0.,0.1]), 5454., 0.14, 56., 57./2)
     """
     logger.debug("start")
     code = """
@@ -259,15 +263,15 @@ def Radii(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
     }
     }
     """
-    cosx = numpy.ascontiguousarray(cosx)
-    cosy = numpy.ascontiguousarray(cosy)
-    cosz = numpy.ascontiguousarray(cosz)
-    psi0 = numpy.float(psi0)
-    r = numpy.float(r)
-    q = numpy.float(q)
-    qp1by2om2 = numpy.float(qp1by2om2)
+    cosx = np.ascontiguousarray(cosx)
+    cosy = np.ascontiguousarray(cosy)
+    cosz = np.ascontiguousarray(cosz)
+    psi0 = np.float(psi0)
+    r = np.float(r)
+    q = np.float(q)
+    qp1by2om2 = np.float(qp1by2om2)
     n = cosx.size
-    rout = numpy.empty(n, dtype=float)
+    rout = np.empty(n, dtype=float)
     try:
         if os.uname()[0] == 'Darwin':
             extra_compile_args = extra_link_args = ['-O3']
@@ -299,8 +303,8 @@ def Saddle(x, q, qp1by2om2):
         } while (fabs(dx/x) > 0.00001);
         return_val = x;
         """
-    q = numpy.float(q)
-    qp1by2om2 = numpy.float(qp1by2om2)
+    q = np.float(q)
+    qp1by2om2 = np.float(qp1by2om2)
     get_saddle = scipy.weave.inline(code, ['x', 'q', 'qp1by2om2'], type_converters=scipy.weave.converters.blitz, compiler='gcc', verbose=2)
     x = get_saddle
     logger.debug("end")
