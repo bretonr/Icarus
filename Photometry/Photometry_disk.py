@@ -9,7 +9,7 @@ from .. import Atmosphere
 
 
 ######################## class Photometry_disk ########################
-class Photometry_disk:
+class Photometry_disk(object):
     """Photometry_disk
     This class allows to fit the flux from the primary star
     of a binary system, assuming it is heated by the secondary

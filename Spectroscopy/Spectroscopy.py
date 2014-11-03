@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 ######################## class Spectroscopy ########################
-class Spectroscopy:
+class Spectroscopy(object):
     """Spectroscopy
     This class allows to fit the flux from the primary star
     of a binary system, assuming it is heated by the secondary

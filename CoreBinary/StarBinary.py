@@ -9,7 +9,7 @@ from ..Utils import Eclipse
 
 
 ######################## class StarBinary ########################
-class StarBinary:
+class StarBinary(object):
     """StarBinary
     This class allows determine the flux of the two stars in a
     binary system using an atmosphere grid.

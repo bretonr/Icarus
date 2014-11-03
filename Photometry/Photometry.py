@@ -9,7 +9,7 @@ from .. import Atmosphere
 
 
 ######################## class Photometry ########################
-class Photometry:
+class Photometry(object):
     """Photometry
     This class allows to fit the flux from the primary star
     of a binary system, assuming it is heated by the secondary

@@ -102,7 +102,7 @@ def Doppler_boosting_factor(band_func, w, f, velocities, input_nu=False, AB=True
             boost[i] = Band_integration(band_func, w_shifted, f, input_nu=input_nu, AB=AB) / (1+vel/cts.c)**5 / f0
     return boost
 
-def Load_filter(band_fln, conv=1.):
+def Load_filter(band_fln, conv=1., kind='quadratic'):
     """
     Returns a function that interpolates the filter response at a given
     wavelength/frequency.
@@ -113,6 +113,7 @@ def Load_filter(band_fln, conv=1.):
             or
             frequency in Hz, response
     conv: the conversion factor to multiply the first column to get A or Hz.
+    kind: the type of interpolation to use ('linear', 'quadratic', 'cubic')
     """
     ## Load the pass band data, first column is wavelength in A, second column is transmission
     w, t  = np.loadtxt(band_fln, unpack=True)[:2]
@@ -121,7 +122,7 @@ def Load_filter(band_fln, conv=1.):
     w = w[inds]
     t = t[inds]
     ## We multiply the wavelength by the conversion factor to ensure that it is in A
-    band_func = scipy.interpolate.interp1d(w*conv, t, kind='quadratic', bounds_error=False, fill_value=0.)
+    band_func = scipy.interpolate.interp1d(w*conv, t, kind=kind, bounds_error=False, fill_value=0.)
     return band_func
 
 def Pivot_wavelength(band_func, w):
