@@ -687,6 +687,7 @@ class Photometry(object):
         
         >>> self._Setup()
         """
+        print('running _Setup')
         # We calculate the constant for the conversion of K to q (observed
         # velocity semi-amplitude to mass ratio, with K in m/s)
         self.K_to_q = Utils.Binary.Get_K_to_q(self.porb, self.x2sini)

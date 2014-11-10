@@ -247,7 +247,7 @@ class Photometry_doppler(Photometry):
             if (line[0] != '#') and (line[0] != '\n'):
                 tmp = line.split()
                 self.atmo_grid.append(Atmosphere.AtmoGridPhot.ReadHDF5(tmp[1]))
-                self.atmo_grid.append(Atmosphere.AtmoGridDoppler.ReadHDF5(tmp[2]))
+                self.atmo_doppler.append(Atmosphere.AtmoGridDoppler.ReadHDF5(tmp[2]))
         return
 
 ######################## class Photometry_doppler ########################
