@@ -40,7 +40,8 @@ class Photometry(object):
                     shift_to_phase_zero, calibration_error, softening_asinh,
                     data_file
             Here, the first column has index 0.
-            Here, orbital phase 0. is the superior conjunction of the pulsar.
+            Here, orbital phase 0. is the superior conjunction of the pulsar
+            (i.e. pulsar eclipse).
         ndiv (int): The number of surface slice. Defines how coarse/fine the
             surface grid is.
         porb (float): Orbital period of the system in seconds.
@@ -662,23 +663,68 @@ class Photometry(object):
         for line in lines:
             if (line[0] != '#') and (line[0] != '\n'):
                 tmp = line.split()
-                d = np.loadtxt(tmp[-1], usecols=[int(tmp[1]),int(tmp[2]),int(tmp[3])], unpack=True)
-                # With the flag '_' in the observation id, we do not take %1 so that
-                # we preserve the long-term phase coherence.
-                if tmp[0].find('_') != -1:
-                    self.data['phase'].append( np.atleast_1d(d[0] - float(tmp[4])) )
-                else:
-                    self.data['phase'].append( np.atleast_1d((d[0] - float(tmp[4]))%1.) )
-                self.data['mag'].append( np.atleast_1d(d[1]) )
-                self.data['err'].append( np.atleast_1d(d[2]) )
-                self.data['calib'].append( float(tmp[5]) )
-                self.data['fln'].append( tmp[-1] )
-                self.data['id'].append( tmp[0] )
-                # If we use the new file format, there will be 8 columns. Number 6 will be for the asinh softening parameter.
-                if len(tmp) == 8:
-                    self.data['softening'].append( float(tmp[6]) )
-                else:
+                ## Old version of the data files
+                if len(tmp) == 6:
+                    d = np.loadtxt(tmp[-1], usecols=[int(tmp[1]),int(tmp[2]),int(tmp[3])], unpack=True)
+                    ## With the flag '_' in the observation id, we do not take %1 so that
+                    ## we preserve the long-term phase coherence.
+                    if tmp[0].find('_') != -1:
+                        self.data['phase'].append( np.atleast_1d(d[0] - float(tmp[4])) )
+                    else:
+                        self.data['phase'].append( np.atleast_1d((d[0] - float(tmp[4]))%1.) )
+                    self.data['mag'].append( np.atleast_1d(d[1]) )
+                    self.data['err'].append( np.atleast_1d(d[2]) )
+                    self.data['calib'].append( float(tmp[5]) )
+                    self.data['fln'].append( tmp[-1] )
+                    self.data['id'].append( tmp[0] )
                     self.data['softening'].append( 0. )
+                ## Old version of the data files including asinh magnitudes
+                elif len(tmp) == 8:
+                    d = np.loadtxt(tmp[-1], usecols=[int(tmp[1]),int(tmp[2]),int(tmp[3])], unpack=True)
+                    # With the flag '_' in the observation id, we do not take %1 so that
+                    # we preserve the long-term phase coherence.
+                    if tmp[0].find('_') != -1:
+                        self.data['phase'].append( np.atleast_1d(d[0] - float(tmp[4])) )
+                    else:
+                        self.data['phase'].append( np.atleast_1d((d[0] - float(tmp[4]))%1.) )
+                    self.data['mag'].append( np.atleast_1d(d[1]) )
+                    self.data['err'].append( np.atleast_1d(d[2]) )
+                    self.data['calib'].append( float(tmp[5]) )
+                    self.data['fln'].append( tmp[-1] )
+                    self.data['id'].append( tmp[0] )
+                    self.data['softening'].append( float(tmp[6]) )
+                ## Current version of the data files including asinh magnitudes
+                else:
+                    d = np.loadtxt(tmp[-1], usecols=[int(tmp[1]),int(tmp[2]),int(tmp[3])], unpack=True)
+                    ## Data can be set in magnitude
+                    if tmp[-2] == 'mag':
+                        # With the flag '_' in the observation id, we do not take %1 so that
+                        # we preserve the long-term phase coherence.
+                        if tmp[0].find('_') != -1:
+                            self.data['phase'].append( np.atleast_1d(d[0] - float(tmp[4])) )
+                        else:
+                            self.data['phase'].append( np.atleast_1d((d[0] - float(tmp[4]))%1.) )
+                        self.data['mag'].append( np.atleast_1d(d[1]) )
+                        self.data['err'].append( np.atleast_1d(d[2]) )
+                        self.data['calib'].append( float(tmp[5]) )
+                        self.data['fln'].append( tmp[-1] )
+                        self.data['id'].append( tmp[0] )
+                        self.data['softening'].append( float(tmp[6]) )
+                    ## Data can be set in flux
+                    elif tmp[-2] == 'flux':
+                        # With the flag '_' in the observation id, we do not take %1 so that
+                        # we preserve the long-term phase coherence.
+                        if tmp[0].find('_') != -1:
+                            self.data['phase'].append( np.atleast_1d(d[0] - float(tmp[4])) )
+                        else:
+                            self.data['phase'].append( np.atleast_1d((d[0] - float(tmp[4]))%1.) )
+                        self.data['flux'].append( np.atleast_1d(d[1]) )
+                        self.data['flux_err'].append( np.atleast_1d(d[2]) )
+                        self.data['calib'].append( float(tmp[5]) )
+                        self.data['fln'].append( tmp[-1] )
+                        self.data['id'].append( tmp[0] )
+                        self.data['softening'].append( float(tmp[6]) )
+
         return
 
     def _Setup(self):
