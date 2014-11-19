@@ -664,7 +664,7 @@ class Photometry(object):
             if (line[0] != '#') and (line[0] != '\n'):
                 tmp = line.split()
                 ## Old version of the data files
-                if len(tmp) == 6:
+                if len(tmp) == 7:
                     d = np.loadtxt(tmp[-1], usecols=[int(tmp[1]),int(tmp[2]),int(tmp[3])], unpack=True)
                     ## With the flag '_' in the observation id, we do not take %1 so that
                     ## we preserve the long-term phase coherence.
@@ -694,7 +694,7 @@ class Photometry(object):
                     self.data['id'].append( tmp[0] )
                     self.data['softening'].append( float(tmp[6]) )
                 ## Current version of the data files including asinh magnitudes
-                else:
+                elif len(tmp) == 9:
                     d = np.loadtxt(tmp[-1], usecols=[int(tmp[1]),int(tmp[2]),int(tmp[3])], unpack=True)
                     ## Data can be set in magnitude
                     if tmp[-2] == 'mag':
@@ -724,7 +724,9 @@ class Photometry(object):
                         self.data['fln'].append( tmp[-1] )
                         self.data['id'].append( tmp[0] )
                         self.data['softening'].append( float(tmp[6]) )
-
+                ## Current version of the data files including asinh magnitudes
+                else:
+                    raise Exception("The data file does not have the expected number of columns.")
         return
 
     def _Setup(self):
