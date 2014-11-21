@@ -91,21 +91,21 @@ class Photometry(object):
                 The irradiation temperature is in the case of the
                 photometry_modeling_temperature class.
             [7]: Distance modulus (can be None).
-            [8]: Absorption A_J (can be None).
-            Note: DM and A_J can be set to None. In which case, if
+            [8]: Absorption A_V (can be None).
+            Note: DM and A_V can be set to None. In which case, if
             offset_free = 1, these parameters will be fit for.
             Note: Can also be a dictionary:
-                par.keys() = ['aj','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         offset_free (int):
             1) offset_free = 0:
-                If the offset is not free and the DM and A_J are specified, the chi2
+                If the offset is not free and the DM and A_V are specified, the chi2
                 is calculated directly without allowing an offset between the data and
                 the bands.
                 The full chi2 should be:
-                    chi2 = sum[ w_i*(off_i-dm-aj*C_i)**2]
+                    chi2 = sum[ w_i*(off_i-dm-av*C_i)**2]
                         + w_dm*(dm-dm_obs)**2 
-                        + w_aj*(aj-aj_obs)**2,     with w = 1/sigma**2
-                The extra terms (i.e. dm-dm_obs and aj-aj_obs) should be included
+                        + w_av*(av-av_obs)**2,     with w = 1/sigma**2
+                The extra terms (i.e. dm-dm_obs and av-av_obs) should be included
                 as priors.
             1) offset_free = 1:
                 The model light curves are fitted to the data with an arbitrary offset
@@ -127,7 +127,7 @@ class Photometry(object):
         full_output (bool): If true, will output a dictionnary of additional parameters.
             'offset' (array): the calculated offset for each band.
             'par' (array): the input parameters (useful if one wants to get the optimized
-                values of DM and AJ.
+                values of DM and A_V.
             'res' (array): the fit residuals.
         verbose (bool): If true will display the list of parameters and fit information.
         
@@ -139,7 +139,7 @@ class Photometry(object):
             par = func_par(par)
         # check if we are dealing with a dictionary
         if isinstance(par, dict):
-            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['aj']]
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
         
         if offset_free == 0:
             pred_flux = self.Get_flux(par, flat=True, nsamples=nsamples, verbose=verbose)
@@ -165,25 +165,25 @@ class Photometry(object):
                 if full_output:
                     residuals = [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in np.arange(self.ndataset) ]
             chi2_data = res1[:,2].sum()
-            # Fit for the best offset between the observed and theoretical flux given the DM and A_J
+            # Fit for the best offset between the observed and theoretical flux given the DM and A_V
             res2 = Utils.Misc.Fit_linear(offset, x=self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
             par[7], par[8] = res2[0], res2[1]
             chi2_band = res2[2]
             # Here we add the chi2 of the data from that of the offsets for the bands.
             chi2 = chi2_data + chi2_band
-            # Update the offset to be the actual offset between the data and the band (i.e. minus the DM and AJ contribution)
+            # Update the offset to be the actual offset between the data and the band (i.e. minus the DM and A_V contribution)
             offset -= self.data['ext']*par[8] + par[7]
 
         # Output results
         if verbose:
-            print('chi2: {:.3f}, chi2 (data): {:.3f}, chi2 (band offset): {:.3f}, D.M.: {:.3f}, AJ: {:.3f}'.format(chi2, chi2_data, chi2_band, par[7], par[8]))
+            print('chi2: {:.3f}, chi2 (data): {:.3f}, chi2 (band offset): {:.3f}, DM: {:.3f}, A_V: {:.3f}'.format(chi2, chi2_data, chi2_band, par[7], par[8]))
         if full_output:
             return chi2, {'offset':offset, 'par':par, 'res':residuals}
         else:
             return chi2
 
-    def Get_flux(self, par, flat=False, func_par=None, DM_AJ=False, nsamples=None, verbose=False):
-        """Get_flux(par, flat=False, func_par=None, DM_AJ=False, nsamples=None, verbose=False)
+    def Get_flux(self, par, flat=False, func_par=None, DM_AV=False, nsamples=None, verbose=False):
+        """Get_flux(par, flat=False, func_par=None, DM_AV=False, nsamples=None, verbose=False)
         Returns the predicted flux (in magnitude) by the model evaluated
         at the observed values in the data set.
         
@@ -198,9 +198,9 @@ class Photometry(object):
                 The irradiation temperature is in the case of the
                 photometry_modeling_temperature class.
             [7]: Distance modulus (optional).
-            [8]: Absorption A_J (optional).
+            [8]: Absorption A_V (optional).
             Note: Can also be a dictionary:
-                par.keys() = ['aj', 'corotation', 'dm', 'filling',
+                par.keys() = ['av', 'corotation', 'dm', 'filling',
                     'gravdark', 'incl','k1','tday','tnight']
         flat (False): If True, the values are returned in a 1D vector.
             If False, predicted values are grouped by data set left in a list.
@@ -208,7 +208,7 @@ class Photometry(object):
             returns the parameter vector. This allow for possible constraints
             on the parameters. The vector returned by func_par must have a length
             equal to the number of expected parameters.
-        DM_AJ (False): If true, will include the DM and AJ in the flux.
+        DM_AV (False): If true, will include the DM and A_V in the flux.
         nsamples (None): Number of points for the lightcurve sampling.
             If None, the lightcurve will be sampled at the observed data
             points.
@@ -222,7 +222,7 @@ class Photometry(object):
             par = func_par(par)
         # check if we are dealing with a dictionary
         if isinstance(par, dict):
-            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['aj']]
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
         
         # We call Make_surface to make the companion's surface.
         self.Make_surface(par, verbose=verbose)
@@ -234,11 +234,11 @@ class Photometry(object):
         else:
             phases = (np.arange(nsamples, dtype=float)/nsamples).repeat(self.ndataset).reshape((nsamples,self.ndataset)).T
         
-        # If DM_AJ, we take into account the DM and AJ into the flux here.
-        if DM_AJ:
-            DM_AJ = self.data['ext']*par[8] + par[7]
+        # If DM_AV, we take into account the DM and AV into the flux here.
+        if DM_AV:
+            DM_AV = self.data['ext']*par[8] + par[7]
         else:
-            DM_AJ = self.data['ext']*0.
+            DM_AV = self.data['ext']*0.
         
         # Calculate the actual lightcurves
         flux = []
@@ -248,7 +248,7 @@ class Photometry(object):
                 if nsamples is not None and self.grouping[i] < i:
                     flux.append(flux[self.grouping[i]])
                 else:
-                    flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AJ[i] )
+                    flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AV[i] )
         
         # If nsamples is set, we interpolate the lightcurve at nsamples.
         if nsamples is not None:
@@ -278,9 +278,9 @@ class Photometry(object):
                 The irradiation temperature is in the case of the
                 photometry_modeling_temperature class.
             [7]: Distance modulus.
-            [8]: Absorption A_J.
+            [8]: Absorption A_V.
             Note: Can also be a dictionary:
-                par.keys() = ['aj','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         phases: A list of orbital phases at which the model should be
             evaluated. The list must have the same length as the
             number of data sets, each element can contain many phases.
@@ -299,12 +299,12 @@ class Photometry(object):
             par = func_par(par)
         # check if we are dealing with a dictionary
         if isinstance(par, dict):
-            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['aj']]
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
         
         # We call Make_surface to make the companion's surface.
         self.Make_surface(par, verbose=verbose)
         
-        DM_AJ = self.data['ext']*par[8] + par[7]
+        DM_AV = self.data['ext']*par[8] + par[7]
         
         flux = []
         for i in np.arange(self.ndataset):
@@ -313,7 +313,7 @@ class Photometry(object):
             if self.grouping[i] < i:
                 flux.append( flux[self.grouping[i]] )
             else:
-                flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AJ[i] )            
+                flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AV[i] )            
         return flux
 
     def Get_Keff(self, par, nphases=20, atmo_grid=0, func_par=None, make_surface=False, verbose=False):
@@ -331,7 +331,7 @@ class Photometry(object):
             [5]: K (projected velocity semi-amplitude) in m/s.
             [6]: Front side temperature.
             [7]: Distance modulus.
-            [8]: Absorption A_J.
+            [8]: Absorption A_V.
         nphases (int): Number of phases to evaluate the velocity at.
         atmo_grid (int, AtmoGridPhot): The atmosphere grid to use for the velocity
             calculation. Can be an integer that represents the index of the atmosphere
@@ -388,9 +388,9 @@ class Photometry(object):
                 The irradiation temperature is in the case of the
                 photometry_modeling_temperature class.
             [7]: Distance modulus (optional). Not needed here.
-            [8]: Absorption A_J (optional). Not needed here.
+            [8]: Absorption A_V (optional). Not needed here.
             Note: Can also be a dictionary:
-                par.keys() = ['aj','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         func_par (None): Function that takes the parameter vector and
             returns the parameter vector. This allow for possible constraints
             on the parameters. The vector returned by func_par must have a length
@@ -403,7 +403,7 @@ class Photometry(object):
             par = func_par(par)
         # check if we are dealing with a dictionary
         if isinstance(par, dict):
-            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['aj']]
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
         
         # Verify parameter values to make sure they make sense.
         #if par[6] < par[3]: par[6] = par[3]
@@ -433,9 +433,9 @@ class Photometry(object):
                 The irradiation temperature is in the case of the
                 photometry_modeling_temperature class.
             [7]: Distance modulus.
-            [8]: Absorption A_J.
+            [8]: Absorption A_V.
             Note: Can also be a dictionary:
-                par.keys() = ['aj','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         nphases (int): Orbital phase resolution of the model
             light curve.
         verbose (bool): verbosity.
@@ -511,9 +511,9 @@ class Photometry(object):
                 The irradiation temperature is in the case of the
                 photometry_modeling_temperature class.
             [7]: Distance modulus.
-            [8]: Absorption A_J.
+            [8]: Absorption A_V.
             Note: Can also be a dictionary:
-                par.keys() = ['aj','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         nphases (31): Orbital phase resolution of the model
             light curve.
         verbose (False): verbosity.
@@ -554,9 +554,9 @@ class Photometry(object):
                 The irradiation temperature is in the case of the
                 photometry_modeling_temperature class.
             [7]: Distance modulus.
-            [8]: Absorption A_J.
+            [8]: Absorption A_V.
             Note: Can also be a dictionary:
-                par.keys() = ['aj','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         make_surface (True): Whether to recalculate the 
             surface of the star or not.
         verbose (True): Output the nice representation
@@ -567,7 +567,7 @@ class Photometry(object):
         """
         # check if we are dealing with a dictionary
         if isinstance(par, dict):
-            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['aj']]
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
         
         incl = par[0]
         corot = par[1]
@@ -577,9 +577,9 @@ class Photometry(object):
         K = par[5]
         temp_front = par[6]
         DM = par[7]
-        A_J = par[8]
+        A_V = par[8]
         if DM is None: DM = 0.
-        if A_J is None: A_J = 0.
+        if A_V is None: A_V = 0.
         q = K * self.K_to_q
         tirr = (temp_front**4 - temp_back**4)**0.25
         if make_surface:
@@ -611,7 +611,7 @@ class Photometry(object):
             print( "Frontside temperature: %7.2f (tabul.), %7.2f (approx.) K" %(np.exp(self.star.logteff.max()),temp_front) )
             print( "" )
             print( "Distance Modulus: %6.3f" %DM )
-            print( "Absorption (J band): %6.3f" %A_J )
+            print( "Absorption (V band): %6.3f" %A_V )
             print( "" )
             print( "Inclination: %5.3f rad (%6.2f deg)" %(incl,incl*cts.RADTODEG) )
             print( "K: %7.3f km/s" %(K/1000) )
@@ -619,7 +619,7 @@ class Photometry(object):
             print( "Mass ratio: %6.3f" %q )
             print( "Mass NS: %5.3f Msun" %Mns )
             print( "Mass Comp: %5.3f Msun" %Mwd )
-        return np.r_[corot,gdark,fill,separation,roche,eff,tirr,temp_back,np.exp(self.star.logteff.max()),temp_front,DM,A_J,incl,incl*cts.RADTODEG,K,q,Mns,Mwd]
+        return np.r_[corot,gdark,fill,separation,roche,eff,tirr,temp_back,np.exp(self.star.logteff.max()),temp_front,DM,A_V,incl,incl*cts.RADTODEG,K,q,Mns,Mwd]
 
     def _Read_atmo(self, atmo_fln):
         """_Read_atmo(atmo_fln)
@@ -740,19 +740,28 @@ class Photometry(object):
         # velocity semi-amplitude to mass ratio, with K in m/s)
         self.K_to_q = Utils.Binary.Get_K_to_q(self.porb, self.x2sini)
         # Storing values in 1D arrays.
-        # The J band extinction will be extracted from the atmosphere_grid class
+        # The V band extinction will be extracted from the atmosphere_grid class
         ext = []
         self.data['ext'] = []
-        # Converting magnitudes in fluxes in case this would be needed for upper limits
-        self.data['flux'] = []
-        self.data['flux_err'] = []
+        # Converting magnitudes <-> fluxes in case this would be needed for upper limits
+        if self.data.has_key('mag'):
+            has_mag = True
+            self.data['flux'] = []
+            self.data['flux_err'] = []
+        else:
+            has_mag = False
+            self.data['mag'] = []
+            self.data['err'] = []
         # The grouping will define datasets that are in the same band and can be evaluated only once in order to save on computation.
         grouping = np.arange(self.ndataset)
         for i in np.arange(self.ndataset):
             ext.extend(self.data['phase'][i]*0.+self.atmo_grid[i].meta['ext'])
             self.data['ext'].append(self.atmo_grid[i].meta['ext'])
             if self.data['softening'][i] == 0:
-                flux,flux_err = Utils.Flux.Mag_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].meta['zp'])
+                if has_mag:
+                    flux,flux_err = Utils.Flux.Mag_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].meta['zp'])
+                else:
+                    mag,err = Utils.Flux.Flux_to_mag(self.data['flux'][i], mag_err=self.data['flux_err'][i], flux0=self.atmo_grid[i].meta['zp'])
             else:
                 flux,flux_err = Utils.Flux.Asinh_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].meta['zp'], softening=self.data['softening'][i])
             self.data['flux'].append( flux )

@@ -2,6 +2,18 @@
 
 ## Release history
 
+### 2.1.0 (2014-11-21)
+
+Features:
+
+- MAJOR: Changed the nomenclature of extinction to be A_V instead of A_J. V-band extinction is much more common than J-band.
+- Created a new input format for the data file. The old 7-column and 8-column formats are still supported. However the new 9-column format includes a keyword that allows to switch the input between magnitude and flux.
+
+Bugfixes:
+
+- Fixed an issue with class inheritence needing to descend from "object" rather than being blank, in order to use the "super" parent function call.
+
+
 ### 2.0.2 (2014-10-10)
 
 Bugfixes:
@@ -9,6 +21,7 @@ Bugfixes:
 - Fixed an issue with the sign of the velocity (being negative) returned by Photometry.Get_Keff.
 
 ### 2.0 (2014-08-11)
+
 
 Features:
 
@@ -20,9 +33,11 @@ Bugfixes:
 
 - I have not tracked them all... but several small tweaks and improvements.
 
+
 ### 1.0 (2014-08-11)
 
 Features:
 
 - First release of **Icarus** with the core functionalities.
+
 

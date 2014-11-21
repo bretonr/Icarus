@@ -63,8 +63,8 @@ class Photometry_doppler(Photometry):
         """
         super(Photometry_doppler, self).__init__(atmo_fln, data_fln, ndiv, porb, x2sini, edot=edot, read=read)
 
-    def Get_flux(self, par, flat=False, func_par=None, DM_AJ=False, nsamples=None, verbose=False):
-        """Get_flux(par, flat=False, func_par=None, DM_AJ=False, nsamples=None, verbose=False)
+    def Get_flux(self, par, flat=False, func_par=None, DM_AV=False, nsamples=None, verbose=False):
+        """Get_flux(par, flat=False, func_par=None, DM_AV=False, nsamples=None, verbose=False)
         Returns the predicted flux (in magnitude) by the model evaluated
         at the observed values in the data set.
         
@@ -79,9 +79,9 @@ class Photometry_doppler(Photometry):
                 The irradiation temperature is in the case of the
                 photometry_modeling_temperature class.
             [7]: Distance modulus (optional).
-            [8]: Absorption A_J (optional).
+            [8]: Absorption A_V (optional).
             Note: Can also be a dictionary:
-                par.keys() = ['aj', 'corotation', 'dm', 'filling',
+                par.keys() = ['av', 'corotation', 'dm', 'filling',
                     'gravdark', 'incl','k1','tday','tnight']
         flat (False): If True, the values are returned in a 1D vector.
             If False, predicted values are grouped by data set left in a list.
@@ -89,7 +89,7 @@ class Photometry_doppler(Photometry):
             returns the parameter vector. This allow for possible constraints
             on the parameters. The vector returned by func_par must have a length
             equal to the number of expected parameters.
-        DM_AJ (False): If true, will include the DM and AJ in the flux.
+        DM_AV (False): If true, will include the DM and AV in the flux.
         nsamples (None): Number of points for the lightcurve sampling.
             If None, the lightcurve will be sampled at the observed data
             points.
@@ -103,7 +103,7 @@ class Photometry_doppler(Photometry):
             par = func_par(par)
         # check if we are dealing with a dictionary
         if isinstance(par, dict):
-            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['aj']]
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
         
         # We call Make_surface to make the companion's surface.
         self.Make_surface(par, verbose=verbose)
@@ -115,11 +115,11 @@ class Photometry_doppler(Photometry):
         else:
             phases = (np.arange(nsamples, dtype=float)/nsamples).repeat(self.ndataset).reshape((nsamples,self.ndataset)).T
         
-        # If DM_AJ, we take into account the DM and AJ into the flux here.
-        if DM_AJ:
-            DM_AJ = self.data['ext']*par[8] + par[7]
+        # If DM_AV, we take into account the DM and AV into the flux here.
+        if DM_AV:
+            DM_AV = self.data['ext']*par[8] + par[7]
         else:
-            DM_AJ = self.data['ext']*0.
+            DM_AV = self.data['ext']*0.
         
         # Calculate the actual lightcurves
         flux = []
@@ -129,7 +129,7 @@ class Photometry_doppler(Photometry):
                 if nsamples is not None and self.grouping[i] < i:
                     flux.append(flux[self.grouping[i]])
                 else:
-                    flux.append( np.array([self.star.Mag_flux_doppler(phase, atmo_grid=self.atmo_grid[i], atmo_doppler=self.atmo_doppler[i]) for phase in phases[i]]) + DM_AJ[i] )
+                    flux.append( np.array([self.star.Mag_flux_doppler(phase, atmo_grid=self.atmo_grid[i], atmo_doppler=self.atmo_doppler[i]) for phase in phases[i]]) + DM_AV[i] )
         
         # If nsamples is set, we interpolate the lightcurve at nsamples.
         if nsamples is not None:
@@ -159,9 +159,9 @@ class Photometry_doppler(Photometry):
                 The irradiation temperature is in the case of the
                 photometry_modeling_temperature class.
             [7]: Distance modulus.
-            [8]: Absorption A_J.
+            [8]: Absorption A_V.
             Note: Can also be a dictionary:
-                par.keys() = ['aj','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         phases: A list of orbital phases at which the model should be
             evaluated. The list must have the same length as the
             number of data sets, each element can contain many phases.
@@ -180,12 +180,12 @@ class Photometry_doppler(Photometry):
             par = func_par(par)
         # check if we are dealing with a dictionary
         if isinstance(par, dict):
-            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['aj']]
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
         
         # We call Make_surface to make the companion's surface.
         self.Make_surface(par, verbose=verbose)
         
-        DM_AJ = self.data['ext']*par[8] + par[7]
+        DM_AV = self.data['ext']*par[8] + par[7]
         
         flux = []
         for i in np.arange(self.ndataset):
@@ -194,7 +194,7 @@ class Photometry_doppler(Photometry):
             if self.grouping[i] < i:
                 flux.append( flux[self.grouping[i]] )
             else:
-                flux.append( np.array([self.star.Mag_flux_doppler(phase, atmo_grid=self.atmo_grid[i], atmo_doppler=self.atmo_doppler[i]) for phase in phases[i]]) + DM_AJ[i] )
+                flux.append( np.array([self.star.Mag_flux_doppler(phase, atmo_grid=self.atmo_grid[i], atmo_doppler=self.atmo_doppler[i]) for phase in phases[i]]) + DM_AV[i] )
         return flux
 
     def Get_Keff(self, *args, **kwargs):
@@ -212,7 +212,7 @@ class Photometry_doppler(Photometry):
             [5]: K (projected velocity semi-amplitude) in m/s.
             [6]: Front side temperature.
             [7]: Distance modulus.
-            [8]: Absorption A_J.
+            [8]: Absorption A_V.
         nphases (int): Number of phases to evaluate the velocity at.
         atmo_grid (int, AtmoGridPhot): The atmosphere grid to use for the velocity
             calculation. Can be an integer that represents the index of the atmosphere

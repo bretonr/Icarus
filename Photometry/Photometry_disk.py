@@ -22,8 +22,8 @@ class Photometry_disk(object):
     calculate the predicted flux of the model at every data point (i.e.
     for a given orbital phase).
     """
-    def __init__(self, atmo_fln, data_fln, ndiv, porb, x2sini, edot=1., DM=0., DMerr=0., AJ=0., AJerr=0., Keff=0., Kefferr=0., read=False):
-        """__init__(atmo_fln, data_fln, ndiv, porb, x2sini, edot=1., DM=0., DMerr=0., AJ=0., AJerr=0., Keff=0., Kefferr=0., read=False)
+    def __init__(self, atmo_fln, data_fln, ndiv, porb, x2sini, edot=1., DM=0., DMerr=0., AV=0., AVerr=0., Keff=0., Kefferr=0., read=False):
+        """__init__(atmo_fln, data_fln, ndiv, porb, x2sini, edot=1., DM=0., DMerr=0., AV=0., AVerr=0., Keff=0., Kefferr=0., read=False)
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
         (which in most cases will be a pulsar).
@@ -60,9 +60,9 @@ class Photometry_disk(object):
         DM (0.): Distance Modulus to the source, if known.
         DMerr (0.): Reciprocal of the Distance Modulus error to the source,
             if known. A value of 0. will disable the chi2DM contribution.
-        AJ (0.): J band absorption to the source, if known.
-        AJerr (0.): Reciprocal of the J band absorption error to the source,
-            if known. A value of 0. will disable the chi2AJ contribution.
+        AV (0.): V band absorption to the source, if known.
+        AVerr (0.): Reciprocal of the V band absorption error to the source,
+            if known. A value of 0. will disable the chi2AV contribution.
         Keff (0.): Effective projected velocity semi-amplitude in m/s, if known.
         Kefferr (0.): Reciprocal of the effective projected velocity
             semi-amplitude in m/s, if known.
@@ -77,8 +77,8 @@ class Photometry_disk(object):
         self.edot = edot
         self.DM = DM
         self.DMerr = DMerr
-        self.AJ = AJ
-        self.AJerr = AJerr
+        self.AV = AV
+        self.AVerr = AVerr
         self.Keff = Keff
         self.Kefferr = Kefferr
         # We read the data.
@@ -111,21 +111,21 @@ class Photometry_disk(object):
                 The irradiation temperature is in the case of the
                 photometry_modeling_temperature class.
             [7]: Distance modulus (can be None).
-            [8]: Absorption A_J (can be None).
-            Note: DM and A_J can be set to None. In which case, if
+            [8]: Absorption A_V (can be None).
+            Note: DM and A_V can be set to None. In which case, if
             offset_free = 1, these parameters will be fit for.
             Note: Can also be a dictionary:
-                par.keys() = ['aj','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         offset_free (int):
             1) offset_free = 0:
-                If the offset is not free and the DM and A_J are specified, the chi2
+                If the offset is not free and the DM and A_V are specified, the chi2
                 is calculated directly without allowing an offset between the data and
                 the bands.
                 The full chi2 should be:
-                    chi2 = sum[ w_i*(off_i-dm-aj*C_i)**2]
+                    chi2 = sum[ w_i*(off_i-dm-av*C_i)**2]
                         + w_dm*(dm-dm_obs)**2 
-                        + w_aj*(aj-aj_obs)**2,     with w = 1/sigma**2
-                The extra terms (i.e. dm-dm_obs and aj-aj_obs) should be included
+                        + w_av*(av-av_obs)**2,     with w = 1/sigma**2
+                The extra terms (i.e. dm-dm_obs and av-av_obs) should be included
                 as priors.
             1) offset_free = 1:
                 The model light curves are fitted to the data with an arbitrary offset
@@ -147,7 +147,7 @@ class Photometry_disk(object):
         full_output (bool): If true, will output a dictionnary of additional parameters.
             'offset' (array): the calculated offset for each band.
             'par' (array): the input parameters (useful if one wants to get the optimized
-                values of DM and AJ.
+                values of DM and AV.
             'res' (array): the fit residuals.
         verbose (bool): If true will display the list of parameters and fit information.
         
@@ -159,7 +159,7 @@ class Photometry_disk(object):
             par = func_par(par)
         # check if we are dealing with a dictionary
         if isinstance(par, dict):
-            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['aj']]
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
         
         if offset_free == 0:
             pred_flux = self.Get_flux(par, flat=True, nsamples=nsamples, verbose=verbose)
@@ -186,18 +186,18 @@ class Photometry_disk(object):
                 if full_output:
                     residuals = np.r_[ [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in np.arange(self.ndataset) ] ]
             chi2_data = res1[:,2].sum()
-            # Fit for the best offset between the observed and theoretical flux given the DM and A_J
+            # Fit for the best offset between the observed and theoretical flux given the DM and A_V
             res2 = Utils.Misc.Fit_linear(offset, x=self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
             par[7], par[8] = res2[0], res2[1]
             chi2_band = res2[2]
             # Here we add the chi2 of the data from that of the offsets for the bands.
             chi2 = chi2_data + chi2_band
-            # Update the offset to be the actual offset between the data and the band (i.e. minus the DM and AJ contribution)
+            # Update the offset to be the actual offset between the data and the band (i.e. minus the DM and AV contribution)
             offset -= self.data['ext']*par[8] + par[7]
 
         # Output results
         if verbose:
-            print('chi2: {:.3f}, chi2 (data): {:.3f}, chi2 (band offset): {:.3f}, D.M.: {:.3f}, AJ: {:.3f}'.format(chi2, chi2_data, chi2_band, par[7], par[8]))
+            print('chi2: {:.3f}, chi2 (data): {:.3f}, chi2 (band offset): {:.3f}, D.M.: {:.3f}, AV: {:.3f}'.format(chi2, chi2_data, chi2_band, par[7], par[8]))
         if full_output:
             return chi2, {'offset':offset, 'par':par, 'res':residuals}
         else:
@@ -216,11 +216,11 @@ class Photometry_disk(object):
             [5]: K (projected velocity semi-amplitude) in m/s.
             [6]: Front side temperature.
             [7]: Distance modulus (can be None).
-            [8]: Absorption A_J (can be None).
+            [8]: Absorption A_V (can be None).
             [9-?]: Disk flux.
             Note: If there extra parameters after [9], they are assumed to
             be the individual disk fluxes of each data set.
-            Note: Unlike Calc_chi2, DM and A_J cannot be fitted for.
+            Note: Unlike Calc_chi2, DM and A_V cannot be fitted for.
         func_par (None): Function that takes the parameter vector and
             returns the parameter vector. This allow for possible constraints
             on the parameters. The vector returned by func_par must have a length
@@ -300,7 +300,7 @@ class Photometry_disk(object):
             chi2Keff = 0.
         
         chi2DM = ((self.DM-par[7])*self.DMerr)**2
-        chi2AJ = ((self.AJ-par[8])*self.AJerr)**2
+        chi2AV = ((self.AV-par[8])*self.AVerr)**2
         
         if verbose:
             disk_str = ""
@@ -309,15 +309,15 @@ class Photometry_disk(object):
             disk_str = disk_str[:-2]
             for i in xrange(self.ndataset):
                 print( "chi2 (%i): %f,   d.o.f.: %i,   avg. companion flux: %.4e,   comp. flux/tot. flux: %.4f,   max. companion flux: %.4e,   max. comp. flux/tot. flux: %.4f,   avg. error: %.4f" %(i, chi2[i], self.data['mag'][i].size, pred_flux[i].mean(), pred_flux[i].mean()/(pred_flux[i].mean()+disk[i]), pred_flux[i].max(), pred_flux[i].max()/(pred_flux[i].max()+disk[i]), self.data['err'][i].mean()) )
-            print( "chi2: " + str(chi2.sum()) + ", chi2DM: " + str(chi2DM) + ", chi2AJ: " + str(chi2AJ) + ", chi2Keff: " + str(chi2Keff) + "\n    Keff: " + str(pred_Keff) + ", disk: " + disk_str )
+            print( "chi2: " + str(chi2.sum()) + ", chi2DM: " + str(chi2DM) + ", chi2AV: " + str(chi2AV) + ", chi2Keff: " + str(chi2Keff) + "\n    Keff: " + str(pred_Keff) + ", disk: " + disk_str )
         
         if return_residuals:
-            return np.sqrt(np.r_[chi2, chi2DM, chi2AJ, chi2Keff])
+            return np.sqrt(np.r_[chi2, chi2DM, chi2AV, chi2Keff])
         else:
             if return_disk is True:
-                return chi2.sum() + chi2DM + chi2AJ + chi2Keff, disk, disk_slope
+                return chi2.sum() + chi2DM + chi2AV + chi2Keff, disk, disk_slope
             else:
-                return chi2.sum() + chi2DM + chi2AJ + chi2Keff
+                return chi2.sum() + chi2DM + chi2AV + chi2Keff
 
     def Get_flux(self, par, flat=False, func_par=None, make_surface=True, verbose=False):
         """Get_flux(par, flat=False, func_par=None, make_surface=True, verbose=False)
@@ -333,7 +333,7 @@ class Photometry_disk(object):
             [5]: K (projected velocity semi-amplitude) in m/s.
             [6]: Front side temperature.
             [7]: Distance modulus (not used).
-            [8]: Absorption A_J (not used).
+            [8]: Absorption A_V (not used).
             [9-?]: Disk flux.
             Note: If there extra parameters after [9], they are assumed to
             be the individual disk fluxes of each data set.
@@ -392,7 +392,7 @@ class Photometry_disk(object):
             [5]: K (projected velocity semi-amplitude) in m/s.
             [6]: Front side temperature.
             [7]: Distance modulus.
-            [8]: Absorption A_J.
+            [8]: Absorption A_V.
             [9-?]: Disk flux.
             Note: If there extra parameters after [9], they are assumed to
             be the individual disk fluxes of each data set.
@@ -452,7 +452,7 @@ class Photometry_disk(object):
             [5]: K (projected velocity semi-amplitude) in m/s.
             [6]: Front side temperature.
             [7]: Distance modulus.
-            [8]: Absorption A_J.
+            [8]: Absorption A_V.
             [9-?]: Disk flux.
             Note: If there extra parameters after [9], they are assumed to
             be the individual disk fluxes of each data set.
@@ -501,7 +501,7 @@ class Photometry_disk(object):
             [5]: K (projected velocity semi-amplitude) in m/s.
             [6]: Front side temperature.
             [7]: Distance modulus.
-            [8]: Absorption A_J.
+            [8]: Absorption A_V.
             [9-?]: Disk flux.
             Note: If there extra parameters after [9], they are assumed to
             be the individual disk fluxes of each data set.
@@ -572,7 +572,7 @@ class Photometry_disk(object):
             [5]: K (projected velocity semi-amplitude) in m/s.
             [6]: Front side temperature.
             [7]: Distance modulus.
-            [8]: Absorption A_J.
+            [8]: Absorption A_V.
             [9-?]: Disk flux.
             Note: If there extra parameters after [9], they are assumed to
             be the individual disk fluxes of each data set.
@@ -602,7 +602,7 @@ class Photometry_disk(object):
             [5]: K (projected velocity semi-amplitude) in m/s.
             [6]: Front side temperature.
             [7]: Distance modulus.
-            [8]: Absorption A_J.
+            [8]: Absorption A_V.
             [9]: Disk flux.
             Note: If there extra parameters after [9], they are assumed to
             be the individual disk fluxes of each data set.
@@ -620,11 +620,11 @@ class Photometry_disk(object):
         K = par[5]
         temp_front = par[6]
         DM = par[7]
-        A_J = par[8]
+        A_V = par[8]
         #disk = par[9]
         ndisk = len(par)-9
         if DM is None: DM = 0.
-        if A_J is None: A_J = 0.
+        if A_V is None: A_V = 0.
         q = K * self.K_to_q
         tirr = (temp_front**4 - temp_back**4)**0.25
         if make_surface:
@@ -658,7 +658,7 @@ class Photometry_disk(object):
             print( "Frontside temperature: %7.2f (tabul.), %7.2f (approx.) K" %(np.exp(self.star.logteff.max()),temp_front) )
             print( "" )
             print( "Distance Modulus: %6.3f" %DM )
-            print( "Absorption (J band): %6.3f" %A_J )
+            print( "Absorption (V band): %6.3f" %A_V )
             print( "" )
             for i in np.arange(0,ndisk):
                 print( "Disk flux %d: %6.4e" %(i+1,par[9+i]) )
@@ -669,7 +669,7 @@ class Photometry_disk(object):
             print( "Mass ratio: %6.3f" %q )
             print( "Mass NS: %5.3f Msun" %Mns )
             print( "Mass Comp: %5.3f Msun" %Mwd )
-        return np.r_[corot,gdark,fill,separation,roche,eff,tirr,temp_back,np.exp(self.star.logteff.max()),temp_front,DM,A_J,incl,incl*cts.RADTODEG,K,q,Mns,Mwd]
+        return np.r_[corot,gdark,fill,separation,roche,eff,tirr,temp_back,np.exp(self.star.logteff.max()),temp_front,DM,A_V,incl,incl*cts.RADTODEG,K,q,Mns,Mwd]
 
     def __Read_atmo(self, atmo_fln):
         """__Read_atmo(atmo_fln)

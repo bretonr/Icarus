@@ -95,7 +95,7 @@ class Photometry_temperature(Photometry):
                 If None, will use self.tirr, otherwise, will use
                 tirr and set self.tirr = tirr.
             [7]: Distance modulus (optional).
-            [8]: Absorption A_J (optional).
+            [8]: Absorption A_V (optional).
             Note: Can also be a dictionary:
                 par.keys() = ['aj','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         func_par (None): Function that takes the parameter vector and
