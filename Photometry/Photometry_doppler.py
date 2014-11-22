@@ -38,14 +38,55 @@ class Photometry_doppler(Photometry):
         
         atmo_fln (str): A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
-                band_name, band_filename, doppler_filename
+                Col 0: band name
+                Col 1: band filename
+                Col 2: Doppler boosting coefficient filename
         data_fln (str): A file containing the information for each data set.
-            The format of the file is as follows:
-                band_name, column_phase, column_flux, column_error_flux,
-                    shift_to_phase_zero, calibration_error, softening_asinh,
-                    data_file
-            Here, the first column has index 0.
-            Here, orbital phase 0. is the superior conjunction of the pulsar.
+            Three formats are currently supported.
+            9-column (preferred):
+                Col 0: band name
+                Col 1: column id for orbital phase. Orbital phases must be 0-1.
+                    Phase 0 is defined as the primary star (the one modelled),
+                    located at inferior conjunction.
+                Col 2: column id for flux/magnitude
+                Col 3: column id for flux/magnitude error
+                Col 4: shift to phase zero. Sometimes people use other
+                    definition for orbital phases, so this allows to correct for
+                    it.
+                Col 5: band calibration error
+                Col 6: softening parameter for asinh magnitude conversion. If
+                    the value is 0., then standard magnitudes are used.
+                Col 7: flux or mag flag. Currently, all the data must be in the
+                    same format.
+                    'm' means magnitude system
+                    'f' means flux system
+                Col 8: filename
+            8-column (support for asinh magnitudes, no fluxes input):
+                Col 0: band name
+                Col 1: column id for orbital phase. Orbital phases must be 0-1.
+                    Phase 0 is defined as the primary star (the one modelled),
+                    located at inferior conjunction.
+                Col 2: column id for magnitude
+                Col 3: column id for magnitude error
+                Col 4: shift to phase zero. Sometimes people use other
+                    definition for orbital phases, so this allows to correct for
+                    it.
+                Col 5: band calibration error
+                Col 6: softening parameter for asinh magnitude conversion. If
+                    the value is 0., then standard magnitudes are used.
+                Col 7: filename
+            7-column (only support standard magnitude input):
+                Col 0: band name
+                Col 1: column id for orbital phase. Orbital phases must be 0-1.
+                    Phase 0 is defined as the primary star (the one modelled),
+                    located at inferior conjunction.
+                Col 2: column id for magnitude
+                Col 3: column id for magnitude error
+                Col 4: shift to phase zero. Sometimes people use other
+                    definition for orbital phases, so this allows to correct for
+                    it.
+                Col 5: band calibration error
+                Col 6: filename
         ndiv (int): The number of surface slice. Defines how coarse/fine the
             surface grid is.
         porb (float): Orbital period of the system in seconds.
@@ -233,9 +274,11 @@ class Photometry_doppler(Photometry):
         """_Read_atmo(atmo_fln)
         Reads the atmosphere model data.
         
-        atmo_fln: A file containing the grid model information for each
+        atmo_fln (str): A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
-                band_name, grid_file, doppler_file
+                Col 0: band name
+                Col 1: band filename
+                Col 2: Doppler boosting coefficient filename
         
         >>> self._Read_atmo(atmo_fln)
         """
