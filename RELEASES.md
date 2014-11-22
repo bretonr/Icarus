@@ -20,8 +20,8 @@ Bugfixes:
 
 - Fixed an issue with the sign of the velocity (being negative) returned by Photometry.Get_Keff.
 
-### 2.0 (2014-08-11)
 
+### 2.0 (2014-08-11)
 
 Features:
 
