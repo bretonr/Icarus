@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
-__all__ = ["Atmo_IRTF_spectro", "Read_IRTF"]
+__all__ = ["Atmo_spectro_IRTF", "Read_IRTF"]
 
 import sys
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 ######################## class Atmo_IRTF_spectro ########################
-class Atmo_IRTF_spectro(Atmo_grid):
+class Atmo_spectro_IRTF(Atmo_grid):
     """
     This class handles the atmosphere grid containing a spectral
     dimension.

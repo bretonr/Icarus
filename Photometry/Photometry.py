@@ -47,13 +47,13 @@ class Photometry(object):
                 Col 4: shift to phase zero. Sometimes people use other
                     definition for orbital phases, so this allows to correct for
                     it.
-                Col 5: band calibration error
+                Col 5: band calibration error, in magnitude
                 Col 6: softening parameter for asinh magnitude conversion. If
                     the value is 0., then standard magnitudes are used.
                 Col 7: flux or mag flag. Currently, all the data must be in the
                     same format.
-                    'm' means magnitude system
-                    'f' means flux system
+                    'mag' means magnitude system
+                    'flux' means flux system
                 Col 8: filename
             8-column (support for asinh magnitudes, no fluxes input):
                 Col 0: band name
@@ -65,7 +65,7 @@ class Photometry(object):
                 Col 4: shift to phase zero. Sometimes people use other
                     definition for orbital phases, so this allows to correct for
                     it.
-                Col 5: band calibration error
+                Col 5: band calibration error, in magnitude
                 Col 6: softening parameter for asinh magnitude conversion. If
                     the value is 0., then standard magnitudes are used.
                 Col 7: filename
@@ -79,7 +79,7 @@ class Photometry(object):
                 Col 4: shift to phase zero. Sometimes people use other
                     definition for orbital phases, so this allows to correct for
                     it.
-                Col 5: band calibration error
+                Col 5: band calibration error, in magnitude
                 Col 6: filename
         ndiv (int): The number of surface slice. Defines how coarse/fine the
             surface grid is.
@@ -521,7 +521,7 @@ class Photometry(object):
             ncolors = 1
         for i in np.arange(self.ndataset):
             color = np.ones((self.data['mag'][i].size,1), dtype=float) * matplotlib.cm.jet(float(i)/ncolors)
-            ax.errorbar(self.data['phase'][i], self.data['mag'][i], yerr=self.data['err'][i], fmt=None, ecolor=color[0])
+            ax.errorbar(self.data['phase'][i], self.data['mag'][i], yerr=self.data['err'][i], fmt='none', ecolor=color[0])
             ax.scatter(self.data['phase'][i], self.data['mag'][i], edgecolor=color, facecolor=color)
             ax.plot(phases[i], pred_flux[i], 'k--')
             ax.plot(phases[i], pred_flux[i]+offset[i], 'k-')
@@ -696,13 +696,13 @@ class Photometry(object):
                 Col 4: shift to phase zero. Sometimes people use other
                     definition for orbital phases, so this allows to correct for
                     it.
-                Col 5: band calibration error
+                Col 5: band calibration error, in magnitude
                 Col 6: softening parameter for asinh magnitude conversion. If
                     the value is 0., then standard magnitudes are used.
                 Col 7: flux or mag flag. Currently, all the data must be in the
                     same format.
-                    'm' means magnitude system
-                    'f' means flux system
+                    'mag' means magnitude system
+                    'flux' means flux system
                 Col 8: filename
             8-column (support for asinh magnitudes, no fluxes input):
                 Col 0: band name
@@ -714,7 +714,7 @@ class Photometry(object):
                 Col 4: shift to phase zero. Sometimes people use other
                     definition for orbital phases, so this allows to correct for
                     it.
-                Col 5: band calibration error
+                Col 5: band calibration error, in magnitude
                 Col 6: softening parameter for asinh magnitude conversion. If
                     the value is 0., then standard magnitudes are used.
                 Col 7: filename
@@ -728,7 +728,7 @@ class Photometry(object):
                 Col 4: shift to phase zero. Sometimes people use other
                     definition for orbital phases, so this allows to correct for
                     it.
-                Col 5: band calibration error
+                Col 5: band calibration error, in magnitude
                 Col 6: filename
 
         >>> self._Read_data(data_fln)
@@ -811,7 +811,6 @@ class Photometry(object):
         
         >>> self._Setup()
         """
-        print('running _Setup')
         # We calculate the constant for the conversion of K to q (observed
         # velocity semi-amplitude to mass ratio, with K in m/s)
         self.K_to_q = Utils.Binary.Get_K_to_q(self.porb, self.x2sini)

@@ -2,6 +2,17 @@
 
 ## Release history
 
+### 2.1.1x (2014-11-28) (partial release, more will be added to reach official 2.1.1)
+
+Features:
+
+- New _Distance_to_distance_modulus_ and _Distance_modulus_to_distance_ functions in the _Utils.Flux_ module.
+
+Bugfixes:
+
+- None
+
+
 ### 2.1.0 (2014-11-21)
 
 Features:

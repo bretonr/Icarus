@@ -53,13 +53,13 @@ class Photometry_doppler(Photometry):
                 Col 4: shift to phase zero. Sometimes people use other
                     definition for orbital phases, so this allows to correct for
                     it.
-                Col 5: band calibration error
+                Col 5: band calibration error, in magnitude
                 Col 6: softening parameter for asinh magnitude conversion. If
                     the value is 0., then standard magnitudes are used.
                 Col 7: flux or mag flag. Currently, all the data must be in the
                     same format.
-                    'm' means magnitude system
-                    'f' means flux system
+                    'mag' means magnitude system
+                    'flux' means flux system
                 Col 8: filename
             8-column (support for asinh magnitudes, no fluxes input):
                 Col 0: band name
@@ -71,7 +71,7 @@ class Photometry_doppler(Photometry):
                 Col 4: shift to phase zero. Sometimes people use other
                     definition for orbital phases, so this allows to correct for
                     it.
-                Col 5: band calibration error
+                Col 5: band calibration error, in magnitude
                 Col 6: softening parameter for asinh magnitude conversion. If
                     the value is 0., then standard magnitudes are used.
                 Col 7: filename
@@ -85,7 +85,7 @@ class Photometry_doppler(Photometry):
                 Col 4: shift to phase zero. Sometimes people use other
                     definition for orbital phases, so this allows to correct for
                     it.
-                Col 5: band calibration error
+                Col 5: band calibration error, in magnitude
                 Col 6: filename
         ndiv (int): The number of surface slice. Defines how coarse/fine the
             surface grid is.

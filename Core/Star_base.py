@@ -555,10 +555,17 @@ class Star_base(object):
         omega (None): co-rotation factor
         filling (None): filling factor
         temp (None): surface temperature of the star.
+            The temperature is define at the pole of the star, before irradiation.
         tempgrav (None): gravity darkening coefficient.
+            The gravity darkening is accounted as follow:
+                T = Tpole * (g/g_pole)**tempgrav
         tirr (None): irradiation temperature.
             (lirr = eff * edot / (4*PI * a**2 * sigma))
             (tirr = (eff * edot / (4*PI * a**2 * sigma))**0.25)
+            The irradiation temperature is added as Teff**4 = tirr**4 + temp**4.
+            The 1/distance**2 effect is accounted for. The fiducial reference point is
+            the center of mass of the star.
+            The projection effect is also factored in.
         porb (None): orbital period, in seconds.
         k1 (None): velocity semi-amplitude, in m/s.
         incl (None): orbital inclination, in radians.

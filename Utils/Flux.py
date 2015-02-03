@@ -43,6 +43,26 @@ def Asinh_to_flux(mag, mag_err=None, zeropoint=0., flux0=1., softening=1.):
         flux_err = mag_err * 2*softening/pogson * np.sqrt( 1 + (flux/(2*softening))**2 )
         return flux, flux_err
 
+def Distance_modulus_to_distance(dm, absorption=0.0):
+    """
+    Returns the distance in kpc for a distance modulus.
+
+    dm (float): distance modulus.
+    absorption (float): absorption to the source.
+    """
+    distance = 10.**(((dm-absorption)+5.)/5.) / 1000.
+    return distance
+
+def Distance_to_distance_modulus(distance, absorption=0.0):
+    """
+    Returns the distance modulus for a distance in kpc.
+
+    distance (float): distance in kpc.
+    absorption (float): absorption to the source.
+    """
+    dm = 5.0*np.log10(distance*1000.) - 5. + absorption
+    return dm
+
 def Extinction(w, Rv=3.1, cardelli=False):
     """Extinction(w, Rv=3.1)
     Returns the selective extinction for A_V=1 for a set of wavelengths w.
