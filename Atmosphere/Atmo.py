@@ -14,7 +14,7 @@ from ..Utils.import_modules import *
 from .. import Utils
 
 
-######################## class Atmo_grid ########################
+######################## class AtmoGrid ########################
 class AtmoGrid(Column):
     """
     Define the base atmosphere grid structure.
@@ -665,7 +665,7 @@ class Atmo_grid:
             hdr.append(lines[i].split())
             grid.append(lines[i+1].split()+lines[i+2].split())
         hdr = np.array(hdr,dtype=float)
-        grid = np.log(np.array(grid,dtype=float)/(C*100)*self.wav**2)
+        grid = np.log(np.array(grid,dtype=float)/(cts.c*100)*self.wav**2)
         hdr.shape = (n_temp,abs(n_logg),hdr.shape[1])
         grid.shape = (n_temp,abs(n_logg),n_mu)
         logtemp = np.log(hdr[:,0,0])

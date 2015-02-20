@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
-__all__ = ["Photometry"]
+__all__ = ["Photometry_legacy"]
 
 from ..Utils.import_modules import *
 from .. import Utils
@@ -9,28 +9,28 @@ from .. import Atmosphere
 
 
 ######################## class Photometry ########################
-class Photometry(object):
-    """Photometry
+class Photometry_legacy(object):
+    """Photometry_legacy
     This class allows to fit the flux from the primary star
     of a binary system, assuming it is heated by the secondary
     (which in most cases will be a pulsar).
-
+    
     It is meant to deal with photometry data. Many sets of photometry
     data (i.e. different filters) are read. For each data set, one can
     calculate the predicted flux of the model at every data point (i.e.
     for a given orbital phase).
     """
-    def __init__(self, atmo_fln, data_fln, ndiv, read=True):
-        """__init__(atmo_fln, data_fln, ndiv, read=True)
+    def __init__(self, atmo_fln, data_fln, ndiv, porb, x2sini, edot=1., read=True):
+        """__init__(atmo_fln, data_fln, ndiv, porb, x2sini, edot=1., read=True)
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
         (which in most cases will be a pulsar).
-
+        
         It is meant to deal with photometry data. Many sets of photometry
         data (i.e. different filters) are read. For each data set, one can
         calculate the predicted flux of the model at every data point (i.e.
         for a given orbital phase).
-
+        
         atmo_fln (str): A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
                 Col 0: band name
@@ -83,14 +83,25 @@ class Photometry(object):
                 Col 6: filename
         ndiv (int): The number of surface slice. Defines how coarse/fine the
             surface grid is.
+        porb (float): Orbital period of the system in seconds.
+        x2sini (float): Projected semi-major axis of the secondary (pulsar)
+            in light-second.
+        edot (float): Irradiated energy from the secondary, aka pulsar (i.e.
+            spin-down luminosity) in erg/s. This is only used for the
+            calculation of the irradiation efficiency so it does not
+            enter in the modeling itself.
         read (bool): If True, Icarus will use the pre-calculated geodesic
             primitives. This is the recommended option, unless you have the
             pygts package installed to calculate it on the spot.
-
-        >>> fit = Photometry(atmo_fln, data_fln, ndiv, read=True)
+        
+        >>> fit = Photometry(atmo_fln, data_fln, ndiv, porb, x2sini)
         """
-        Warning("This is the new Photometry class. Major changes have been done. To use the old one, load the Photometry_legacy module.")
+        DeprecationWarning("This is the old Photometry class. Use the one from the Photometry instead.")
 
+        # We define some class attributes.
+        self.porb = porb
+        self.x2sini = x2sini
+        self.edot = edot
         # We read the data.
         self._Read_data(data_fln)
         # We read the atmosphere models with the atmo_grid class
@@ -106,11 +117,26 @@ class Photometry(object):
         self._Init_lightcurve(ndiv, read=read)
         self._Setup()
 
-    def Calc_chi2(self, par, offset_free=1, DM=0., AV=0., nsamples=None, influx=False, full_output=False, verbose=False):
-        """
+    def Calc_chi2(self, par, offset_free=1, func_par=None, nsamples=None, influx=False, full_output=False, verbose=False):
+        """Calc_chi2(par, offset_free=1, func_par=None, nsamples=None, influx=False, full_output=False, verbose=False)
         Returns the chi-square of the fit of the data to the model.
-
-        par (list/array): Parameter list as expected by the Make_surface function.
+        
+        par (list/array): Parameter list.
+            [0]: Orbital inclination in radians.
+            [1]: Corotation factor.
+            [2]: Roche-lobe filling.
+            [3]: Companion temperature.
+            [4]: Gravity darkening coefficient.
+            [5]: K (projected velocity semi-amplitude) in m/s.
+            [6]: Front side temperature or irradiation temperature.
+                The irradiation temperature is in the case of the
+                photometry_modeling_temperature class.
+            [7]: Distance modulus (can be None).
+            [8]: Absorption A_V (can be None).
+            Note: DM and A_V can be set to None. In which case, if
+            offset_free = 1, these parameters will be fit for.
+            Note: Can also be a dictionary:
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         offset_free (int):
             1) offset_free = 0:
                 If the offset is not free and the DM and A_V are specified, the chi2
@@ -123,42 +149,45 @@ class Photometry(object):
                 The extra terms (i.e. dm-dm_obs and av-av_obs) should be included
                 as priors.
             1) offset_free = 1:
-                The model light curves are fitted to the data with an arbitrary
-                offset for each band. After, a post-fit is performed in order to
-                adjust the offsets of the curves accounting for the fact that
-                the absolute calibration of the photometry may vary.
-                Note: The errors should be
-                err**2 = calib_err**2 + 1/sum(flux_err)**2
+                The model light curves are fitted to the data with an arbitrary offset
+                for each band. After, a post-fit is performed in order to adjust the offsets
+                of the curves accounting for the fact that the absolute calibration of the
+                photometry may vary.
+                Note:
+                The errors should be err**2 = calib_err**2 + 1/sum(flux_err)**2
                 but we neglect the second term because it is negligeable.
-        DM (float): Distance modulus o apply to the data.
-            It is possible to specify None in case one would like to allow for
-            an arbitrary offset to be optimized for the offset_free = 1 case.
-        AV (float): V band extinction.
-            It is possible to specify None in case one would like to allow for
-            an arbitrary offset to be optimized for the offset_free = 1 case.
-        nsamples (int): Number of points for the lightcurve sampling.
+        func_par (None): Function that takes the parameter vector and
+            returns the parameter vector. This allow for possible constraints
+            on the parameters. The vector returned by func_par must have a length
+            equal to the number of expected parameters.
+        nsamples (None): Number of points for the lightcurve sampling.
             If None, the lightcurve will be sampled at the observed data
             points.
-        influx (bool): If true, will calculate the fit between the data and the
+        influx (False): If true, will calculate the fit between the data and the
             model in the flux domain.
         full_output (bool): If true, will output a dictionnary of additional parameters.
             'offset' (array): the calculated offset for each band.
-            'par' (array): the input parameters (useful some get modified.
+            'par' (array): the input parameters (useful if one wants to get the optimized
+                values of DM and A_V.
             'res' (array): the fit residuals.
-            'dm' (float): value of the DM.
-            'av' (float): value of AV.
         verbose (bool): If true will display the list of parameters and fit information.
-
-        >>> self.Calc_chi2([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
+        
+        >>> chi2 = self.Calc_chi2([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
+        # We can provide a function that massages the input parameters and returns them.
+        # This function can, for example, handle fixed parameters or boundary limits.
+        if func_par is not None:
+            par = func_par(par)
+        # check if we are dealing with a dictionary
+        if isinstance(par, dict):
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
+        
         if offset_free == 0:
-            # Calculate the fluxes, directly applying the DM and AV
             pred_flux = self.Get_flux(par, flat=True, nsamples=nsamples, verbose=verbose)
-            # Fit the data to the fluxes as they are
-            diff = self.mag-pred_flux
-            ((DM,AV), chi2_data, rank, s) = Utils.Misc.Fit_linear(diff, x=self.ext, err=self.err, b=DM, m=AV)
-            residuals = ( diff - (self.ext*AV + DM) ) / self.err
-            offset_band = np.zeros(self.ndataset)
+            ((par[7],par[8]), chi2_data, rank, s) = Utils.Misc.Fit_linear(self.mag-pred_flux, x=self.ext, err=self.err, b=par[7], m=par[8])
+            if full_output:
+                residuals = ( (self.mag-pred_flux) - (self.ext*par[8] + par[7]) ) / self.err
+                offset = np.zeros(self.ndataset)
             chi2_band = 0.
             chi2 = chi2_data + chi2_band
         else:
@@ -167,65 +196,91 @@ class Photometry(object):
             # Calculate the residuals between observed and theoretical flux
             if influx: # Calculate the residuals in the flux domain
                 res1 = np.array([ Utils.Misc.Fit_linear(self.data['flux'][i], x=Utils.Flux.Mag_to_flux(pred_flux[i], flux0=self.atmo_grid[i].flux0), err=self.data['flux_err'][i], b=0., inline=True) for i in np.arange(self.ndataset) ])
-                offset_band = -2.5*np.log10(res1[:,1])
+                offset = -2.5*np.log10(res1[:,1])
                 if full_output:
                     print( "Impossible to return proper residuals" )
                     residuals = None
             else: # Calculate the residuals in the magnitude domain
                 res1 = np.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in np.arange(self.ndataset) ])
-                offset_band = res1[:,0]
+                offset = res1[:,0]
                 if full_output:
-                    residuals = [ ((self.data['mag'][i]-pred_flux[i]) - offset_band[i])/self.data['err'][i] for i in np.arange(self.ndataset) ]
+                    residuals = [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in np.arange(self.ndataset) ]
             chi2_data = res1[:,2].sum()
             # Fit for the best offset between the observed and theoretical flux given the DM and A_V
-            res2 = Utils.Misc.Fit_linear(offset_band, x=self.data['ext'], err=self.data['calib'], b=DM, m=AV, inline=True)
-            DM, AV = res2[0], res2[1]
+            res2 = Utils.Misc.Fit_linear(offset, x=self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
+            par[7], par[8] = res2[0], res2[1]
             chi2_band = res2[2]
             # Here we add the chi2 of the data from that of the offsets for the bands.
             chi2 = chi2_data + chi2_band
             # Update the offset to be the actual offset between the data and the band (i.e. minus the DM and A_V contribution)
-            offset_band -= self.data['ext']*AV + DM
+            offset -= self.data['ext']*par[8] + par[7]
 
         # Output results
         if verbose:
-            print('chi2: {:.3f}, chi2 (data): {:.3f}, chi2 (band offset): {:.3f}, DM: {:.3f}, AV: {:.3f}'.format(chi2, chi2_data, chi2_band, DM, AV))
+            print('chi2: {:.3f}, chi2 (data): {:.3f}, chi2 (band offset): {:.3f}, DM: {:.3f}, A_V: {:.3f}'.format(chi2, chi2_data, chi2_band, par[7], par[8]))
         if full_output:
-            return chi2, {'offset':offset_band, 'par':par, 'res':residuals, 'dm':DM, 'av':AV}
+            return chi2, {'offset':offset, 'par':par, 'res':residuals}
         else:
             return chi2
 
-    def Get_flux(self, par, flat=False, DM=0., AV=0., nsamples=None, verbose=False):
-        """
+    def Get_flux(self, par, flat=False, func_par=None, DM_AV=False, nsamples=None, verbose=False):
+        """Get_flux(par, flat=False, func_par=None, DM_AV=False, nsamples=None, verbose=False)
         Returns the predicted flux (in magnitude) by the model evaluated
         at the observed values in the data set.
-
-        par (list/array): Parameter list as expected by the Make_surface function.
+        
+        par: Parameter list.
+            [0]: Orbital inclination in radians.
+            [1]: Corotation factor.
+            [2]: Roche-lobe filling.
+            [3]: Companion temperature.
+            [4]: Gravity darkening coefficient.
+            [5]: K (projected velocity semi-amplitude) in m/s.
+            [6]: Front side temperature or irradiation temperature.
+                The irradiation temperature is in the case of the
+                photometry_modeling_temperature class.
+            [7]: Distance modulus (optional).
+            [8]: Absorption A_V (optional).
+            Note: Can also be a dictionary:
+                par.keys() = ['av', 'corotation', 'dm', 'filling',
+                    'gravdark', 'incl','k1','tday','tnight']
         flat (False): If True, the values are returned in a 1D vector.
             If False, predicted values are grouped by data set left in a list.
-        DM (float): Distance modulus o apply to the data.
-        AV (float): V band extinction.
+        func_par (None): Function that takes the parameter vector and
+            returns the parameter vector. This allow for possible constraints
+            on the parameters. The vector returned by func_par must have a length
+            equal to the number of expected parameters.
+        DM_AV (False): If true, will include the DM and A_V in the flux.
         nsamples (None): Number of points for the lightcurve sampling.
             If None, the lightcurve will be sampled at the observed data
             points.
-        verbose (False): Print some info.
-
-        >>> self.Get_flux([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
+        
+        Note: tirr = (par[6]**4 - par[3]**4)**0.25
+        
+        >>> self.Get_flux([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
+        # func_par
+        if func_par is not None:
+            par = func_par(par)
+        # check if we are dealing with a dictionary
+        if isinstance(par, dict):
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
+        
         # We call Make_surface to make the companion's surface.
         self.Make_surface(par, verbose=verbose)
-
+        
         # If nsamples is None we evaluate the lightcurve at each data point.
         if nsamples is None:
             phases = self.data['phase']
         # If nsamples is set, we evaluate the lightcurve at nsamples
         else:
             phases = (np.arange(nsamples, dtype=float)/nsamples).repeat(self.ndataset).reshape((nsamples,self.ndataset)).T
-
-        # We take into account flux offset due to the DM and AV.
-        if DM is None: DM = 0.
-        if AV is None: AV = 0.
-        offsets = self.data['ext']*AV + DM
-
+        
+        # If DM_AV, we take into account the DM and AV into the flux here.
+        if DM_AV:
+            DM_AV = self.data['ext']*par[8] + par[7]
+        else:
+            DM_AV = self.data['ext']*0.
+        
         # Calculate the actual lightcurves
         flux = []
         for i in np.arange(self.ndataset):
@@ -234,47 +289,64 @@ class Photometry(object):
                 if nsamples is not None and self.grouping[i] < i:
                     flux.append(flux[self.grouping[i]])
                 else:
-                    flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + offsets[i] )
-
+                    flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AV[i] )
+        
         # If nsamples is set, we interpolate the lightcurve at nsamples.
         if nsamples is not None:
             for i in np.arange(self.ndataset):
                 ws, inds = Utils.Series.Getaxispos_vector(phases[i], self.data['phase'][i])
                 flux[i] = flux[i][inds]*(1-ws) + flux[i][inds+1]*ws
-
+        
         # We can flatten the flux array to simplify some of the calculations in the Calc_chi2 function
         if flat:
             return np.hstack(flux)
         else:
             return flux
 
-    def Get_flux_theoretical(self, par, phases, DM=0., AV=0., verbose=False):
-        """
+    def Get_flux_theoretical(self, par, phases, func_par=None, verbose=False):
+        """Get_flux_theoretical(par, phases, func_par=None, verbose=False)
         Returns the predicted flux (in magnitude) by the model evaluated at the
         observed values in the data set.
-
-        par (list/array): Parameter list as expected by the Make_surface function.
+        
+        par: Parameter list.
+            [0]: Orbital inclination in radians.
+            [1]: Corotation factor.
+            [2]: Roche-lobe filling.
+            [3]: Companion temperature.
+            [4]: Gravity darkening coefficient.
+            [5]: K (projected velocity semi-amplitude) in m/s.
+            [6]: Front side temperature or irradiation temperature.
+                The irradiation temperature is in the case of the
+                photometry_modeling_temperature class.
+            [7]: Distance modulus.
+            [8]: Absorption A_V.
+            Note: Can also be a dictionary:
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         phases: A list of orbital phases at which the model should be
             evaluated. The list must have the same length as the
             number of data sets, each element can contain many phases.
-        DM (float): Distance modulus o apply to the data.
-        AV (float): V band extinction.
-        verbose (False): Print some info.
-
+        func_par (None): Function that takes the parameter vector and
+            returns the parameter vector. This allow for possible constraints
+            on the parameters. The vector returned by func_par must have a length
+            equal to the number of expected parameters.
+        verbose (False)
+        
         Note: tirr = (par[6]**4 - par[3]**4)**0.25
-
-                par.keys() = ['q','porb','incl','k1','omega','filling','tempgrav','temp','tirr']
-
-        >>> self.Get_flux_theoretical([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
+        
+        >>> self.Get_flux_theoretical([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.], [[0.,0.25,0.5,0.75]]*4)
         """
+        # func_par
+        if func_par is not None:
+            par = func_par(par)
+        # check if we are dealing with a dictionary
+        if isinstance(par, dict):
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
+        
         # We call Make_surface to make the companion's surface.
         self.Make_surface(par, verbose=verbose)
-
-        # We take into account flux offset due to the DM and AV.
-        if DM is None: DM = 0.
-        if AV is None: AV = 0.
-        offsets = self.data['ext']*AV + DM
-
+        
+        DM_AV = self.data['ext']*par[8] + par[7]
+        
         flux = []
         for i in np.arange(self.ndataset):
             # If the filter is the same as a previously calculated one
@@ -282,20 +354,33 @@ class Photometry(object):
             if self.grouping[i] < i:
                 flux.append( flux[self.grouping[i]] )
             else:
-                flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + offsets[i] )
+                flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + DM_AV[i] )            
         return flux
 
-    def Get_Keff(self, par, nphases=20, atmo_grid=0, make_surface=False, verbose=False):
+    def Get_Keff(self, par, nphases=20, atmo_grid=0, func_par=None, make_surface=False, verbose=False):
         """
         Returns the effective projected velocity semi-amplitude of the star in m/s.
         The luminosity-weighted average velocity of the star is returned for
         nphases, for the specified dataset, and a sin wave is fitted to them.
-
-        par (list/array): Parameter list as expected by the Make_surface function.
+        
+        par: Parameter list.
+            [0]: Orbital inclination in radians.
+            [1]: Corotation factor.
+            [2]: Roche-lobe filling.
+            [3]: Companion temperature.
+            [4]: Gravity darkening coefficient.
+            [5]: K (projected velocity semi-amplitude) in m/s.
+            [6]: Front side temperature.
+            [7]: Distance modulus.
+            [8]: Absorption A_V.
         nphases (int): Number of phases to evaluate the velocity at.
         atmo_grid (int, AtmoGridPhot): The atmosphere grid to use for the velocity
             calculation. Can be an integer that represents the index of the atmosphere
             grid object in self.atmo_grid, and it can be an AtmoGridPhot instance.
+        func_par (function): Function that takes the parameter vector and
+            returns the parameter vector. This allow for possible constraints
+            on the parameters. The vector returned by func_par must have a length
+            equal to the number of expected parameters.
         make_surface (bool): Whether lightcurve.make_surface should be called
             or not. If the flux has been evaluate before and the parameters have
             not changed, False is fine.
@@ -321,114 +406,95 @@ class Photometry(object):
         """_Init_lightcurve(ndiv, read=False)
         Call the appropriate Lightcurve class and initialize
         the stellar array.
-
+        
         >>> self._Init_lightcurve(ndiv)
         """
         self.star = Core.Star(ndiv, read=read)
         return
 
-    def Make_surface(self, par, verbose=False):
+    def Make_surface(self, par, func_par=None, verbose=False):
         """Make_surface(par, func_par=None, verbose=False)
         This function gets the parameters to construct to companion
         surface model and calls the Make_surface function from the
         Lightcurve object.
-
+        
         par: Parameter list.
-            [0]: Mass ratio q = M2/M1, where M1 is the modelled star.
-            [1]: Orbital period in seconds.
-            [2]: Orbital inclination in radians.
-            [3]: K1 (projected velocity semi-amplitude) in m/s.
-            [4]: Corotation factor Protation/Porbital.
-            [5]: Roche-lobe filling in fraction of x_nose/L1.
-            [6]: Gravity darkening coefficient.
-                Should be 0.25 for radiation envelopes, 0.08 for convective.
-            [7]: Star base temperature at the pole, before gravity darkening.
-            [8]: Irradiation temperature at the center of mass location.
-                The effective temperature is calculated as T^4 = Tbase^4+Tirr^4
-                and includes projection and distance effect.
-
+            [0]: Orbital inclination in radians.
+            [1]: Corotation factor.
+            [2]: Roche-lobe filling.
+            [3]: Companion temperature.
+            [4]: Gravity darkening coefficient.
+            [5]: K (projected velocity semi-amplitude) in m/s.
+            [6]: Front side temperature or irradiation temperature.
+                The irradiation temperature is in the case of the
+                photometry_modeling_temperature class.
+            [7]: Distance modulus (optional). Not needed here.
+            [8]: Absorption A_V (optional). Not needed here.
             Note: Can also be a dictionary:
-                par.keys() = ['q','porb','incl','k1','omega','filling','tempgrav','temp','tirr']
-
-        >>> self.Make_surface([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
+        func_par (None): Function that takes the parameter vector and
+            returns the parameter vector. This allow for possible constraints
+            on the parameters. The vector returned by func_par must have a length
+            equal to the number of expected parameters.
+        
+        >>> self.Make_surface([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
-        ## check if we are dealing with a dictionary
+        # Apply a function that can modify the value of parameters.
+        if func_par is not None:
+            par = func_par(par)
+        # check if we are dealing with a dictionary
         if isinstance(par, dict):
-            self.star.Make_surface(
-                q        = par['q'],
-                porb     = par['porb'],
-                incl     = par['incl'],
-                k1       = par['k1'],
-                omega    = par['omega'],
-                filling  = par['filling'],
-                tempgrav = par['tempgrav'],
-                temp     = par['temp'],
-                tirr     = par['tirr']
-                )
-        else:
-            self.star.Make_surface(
-                q        = par[0],
-                porb     = par[1],
-                incl     = par[2],
-                k1       = par[3],
-                omega    = par[4],
-                filling  = par[5],
-                tempgrav = par[6],
-                temp     = par[7],
-                tirr     = par[8]
-                )
-
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
+        
+        # Verify parameter values to make sure they make sense.
+        #if par[6] < par[3]: par[6] = par[3]
+        # Let's move on with the flux calculation.
+        q = par[5] * self.K_to_q
+        tirr = (par[6]**4 - par[3]**4)**0.25
+        
         if verbose:
-            print( "Content on input parameter for Make_surface" )
-            print( par )
-
+            print( "#####\n" + str(par[0]) + ", " + str(par[1]) + ", " + str(par[2]) + ", " + str(par[3]) + ", " + str(par[4]) + ", " + str(par[5]) + ", " + str(par[6]) + ", " + str(par[7]) + ", " + str(par[8]) + "\n" + "q: " + str(q) + ", tirr: " + str(tirr)  )
+        
+        self.star.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
         return
 
-    def Plot(self, par, nphases=51, offset_free=1, DM=0., AV=0., verbose=True, nsamples=None, output=False):
+    def Plot(self, par, nphases=51, verbose=True, func_par=None, nsamples=None, output=False):
         """
         Plots the observed and predicted values along with the
         light curve.
-
-        par (list/array): Parameter list as expected by the Make_surface function.
+        
+        par (list): Parameter list.
+            [0]: Orbital inclination in radians.
+            [1]: Corotation factor.
+            [2]: Roche-lobe filling.
+            [3]: Companion temperature.
+            [4]: Gravity darkening coefficient.
+            [5]: K (projected velocity semi-amplitude) in m/s.
+            [6]: Front side temperature or irradiation temperature.
+                The irradiation temperature is in the case of the
+                photometry_modeling_temperature class.
+            [7]: Distance modulus.
+            [8]: Absorption A_V.
+            Note: Can also be a dictionary:
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         nphases (int): Orbital phase resolution of the model
             light curve.
-        offset_free (int):
-            1) offset_free = 0:
-                If the offset is not free and the DM and A_V are specified, the chi2
-                is calculated directly without allowing an offset between the data and
-                the bands.
-                The full chi2 should be:
-                    chi2 = sum[ w_i*(off_i-dm-av*C_i)**2]
-                        + w_dm*(dm-dm_obs)**2 
-                        + w_av*(av-av_obs)**2,     with w = 1/sigma**2
-                The extra terms (i.e. dm-dm_obs and av-av_obs) should be included
-                as priors.
-            1) offset_free = 1:
-                The model light curves are fitted to the data with an arbitrary offset
-                for each band. After, a post-fit is performed in order to adjust the offsets
-                of the curves accounting for the fact that the absolute calibration of the
-                photometry may vary.
-                Note:
-                The errors should be err**2 = calib_err**2 + 1/sum(flux_err)**2
-                but we neglect the second term because it is negligeable.
-        DM (float): Distance modulus o apply to the data.
-            It is possible to specify None in case one would like to allow for
-            an arbitrary offset to be optimized for the offset_free = 1 case.
-        AV (float): V band extinction.
-            It is possible to specify None in case one would like to allow for
-            an arbitrary offset to be optimized for the offset_free = 1 case.
         verbose (bool): verbosity.
+        func_par (function): Function that takes the parameter vector and
+            returns the parameter vector. This allow for possible constraints
+            on the parameters. The vector returned by func_par must have a length
+            equal to the number of expected parameters.
         nsamples (int): Number of points for the lightcurve sampling.
             If None, the lightcurve will be sampled at the observed data
             points.
         output (bool): If true, will return the model flux values and the offsets.
-
-        >>> self.Plot([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
+        
+        >>> self.Plot([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
         # Calculate the orbital phases at which the flux will be evaluated
         phases = np.resize(np.linspace(0.,1.,nphases), (self.ndataset, nphases))
         # Fit the data in order to get the offset
-        chi2, extras = self.Calc_chi2(par, offset_free=offset_free, DM_AV=DM_AV, verbose=verbose, nsamples=nsamples, full_output=True)
+        chi2, extras = self.Calc_chi2(par, offset_free=1, verbose=verbose, func_par=func_par, nsamples=nsamples, full_output=True)
         offset = extras['offset']
         par = extras['par']
         # Calculate the theoretical flux at the orbital phases.
@@ -467,122 +533,144 @@ class Photometry(object):
         ax.set_xlabel( "Orbital Phase" )
         ax.set_ylabel( "Magnitude" )
         pylab.draw()
-
+        
         if output:
             return pred_flux, offset
         return
 
-    def Plot_theoretical(self, par, nphases=31, verbose=False, output=False):
-        """
+    def Plot_theoretical(self, par, nphases=31, verbose=False, device='/XWIN', func_par=None, output=False):
+        """Plot_theoretical(par, nphases=31, verbose=False, device='/XWIN', func_par=None, output=False)
         Plots the predicted light curves.
-
-        par (list/array): Parameter list as expected by the Make_surface function.
+        par: Parameter list.
+            [0]: Orbital inclination in radians.
+            [1]: Corotation factor.
+            [2]: Roche-lobe filling.
+            [3]: Companion temperature.
+            [4]: Gravity darkening coefficient.
+            [5]: K (projected velocity semi-amplitude) in m/s.
+            [6]: Front side temperature or irradiation temperature.
+                The irradiation temperature is in the case of the
+                photometry_modeling_temperature class.
+            [7]: Distance modulus.
+            [8]: Absorption A_V.
+            Note: Can also be a dictionary:
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         nphases (31): Orbital phase resolution of the model
             light curve.
         verbose (False): verbosity.
+        device ('/XWIN'): Device driver for Pgplot (can be '/XWIN',
+            'filename.ps/PS', 'filename.ps./CPS', '/AQT' (on mac only)).
+        func_par (None): Function that takes the parameter vector and
+            returns the parameter vector. This allow for possible constraints
+            on the parameters. The vector returned by func_par must have a length
+            equal to the number of expected parameters.
         output (False): If true, will return the model flux values and the offsets.
-
+        
         >>> self.Plot_theoretical([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
         # Calculate the orbital phases at which the flux will be evaluated
         phases = np.resize(np.linspace(0.,1.,nphases), (self.ndataset, nphases))
         # Calculate the theoretical flux at the orbital phases.
         pred_flux = self.Get_flux_theoretical(par, phases, func_par=func_par, verbose=verbose)
-
-        #---------------------------------
-        ##### Plot using matplotlib
-        try:
-            fig = pylab.gcf()
-            try:
-                ax = pylab.gca()
-            except:
-                ax = fig.add_subplot(1,1,1)
-        except:
-            fig, ax = pylab.subplots(nrows=1, ncols=1)
-        ncolors = self.ndataset - 1
-        if ncolors == 0:
-            ncolors = 1
+        # Loop over the data set and plot the flux, theoretical flux and offset theoretical flux
         for i in np.arange(self.ndataset):
-            color = np.ones((self.data['mag'][i].size,1), dtype=float) * matplotlib.cm.jet(float(i)/ncolors)
-            ax.plot(phases[i], pred_flux[i], color=color)
+            plotxy(pred_flux[i], phases[i], color=1+i, line=1, rangey=[np.max(pred_flux)+0.5,np.min(pred_flux)-0.5], rangex=[0.,1.], device=device)
         if output:
             return pred_flux
         return
 
-    def Pretty_print(self, par, make_surface=True, DM=0., AV=0., verbose=True):
-        """
+    def Pretty_print(self, par, make_surface=True, verbose=True):
+        """Pretty_print(par, make_surface=True, verbose=True)
         Return a nice representation of the important
         parameters.
-
-        par (list/array): Parameter list as expected by the Make_surface function.
+        
+        par: Parameter list.
+            [0]: Orbital inclination in radians.
+            [1]: Corotation factor.
+            [2]: Roche-lobe filling.
+            [3]: Companion temperature.
+            [4]: Gravity darkening coefficient.
+            [5]: K (projected velocity semi-amplitude) in m/s.
+            [6]: Front side temperature or irradiation temperature.
+                The irradiation temperature is in the case of the
+                photometry_modeling_temperature class.
+            [7]: Distance modulus.
+            [8]: Absorption A_V.
+            Note: Can also be a dictionary:
+                par.keys() = ['av','corotation','dm','filling','gravdark','incl','k1','tday','tnight']
         make_surface (True): Whether to recalculate the 
             surface of the star or not.
-        DM (float): Distance modulus o apply to the data.
-        AV (float): V band extinction.
         verbose (True): Output the nice representation
             of the important parameters or just return them
             as a list.
-
-        >>> self.Pretty_print([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
+        
+        >>> self.Pretty_print([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
+        # check if we are dealing with a dictionary
+        if isinstance(par, dict):
+            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
+        
+        incl = par[0]
+        corot = par[1]
+        fill = par[2]
+        temp_back = par[3]
+        gdark = par[4]
+        K = par[5]
+        temp_front = par[6]
+        DM = par[7]
+        A_V = par[8]
+        if DM is None: DM = 0.
+        if A_V is None: A_V = 0.
+        q = K * self.K_to_q
+        tirr = (temp_front**4 - temp_back**4)**0.25
         if make_surface:
-            self.Make_surface(par)
-        q = self.star.q
-        porb = self.star.porb
-        incl = self.star.incl
-        omega = self.star.omega
-        filling = self.star.filling
-        temp = self.star.temp
-        tirr = self.star.tirr
-        tempgrav = self.star.tempgrav
-        k1 = self.star.k1
-        tday = (temp**4 + tirr**4)**0.25
+            self.star.Make_surface(q=q, omega=corot, filling=fill, temp=temp_back, tempgrav=gdark, tirr=tirr, porb=self.porb, k1=K, incl=incl)
         separation = self.star.separation
         roche = self.star.Roche()
-        radius = self.star.Radius()
-        M1 = self.star.mass1
-        M2 = self.star.mass2
-        ## below we transform sigma from W m^-2 K^-4 to erg s^-1 cm^-2 K^-4
-        ## below we transform the separation from m to cm
-        #Lirr = tirr**4 * (cts.sigma*1e3) * (separation*100)**2 * 4*cts.pi
-        #eff = Lirr/self.edot
-        ## we convert Lirr in Lsun units
-        #Lirr /= 3.839e33
+        Mwd = self.star.mass1
+        Mns = self.star.mass2
+        # below we transform sigma from W m^-2 K^-4 to erg s^-1 cm^-2 K^-4
+        # below we transform the separation from m to cm
+        Lirr = tirr**4 * (cts.sigma*1e3) * (separation*100)**2 * 4*cts.pi
+        eff = Lirr/self.edot
+        # we convert Lirr in Lsun units
+        Lirr /= 3.839e33
         if verbose:
             print( "##### Pretty Print #####" )
-            print( "Mass ratio (M2/M1): %6.3f" %q )
-            print( "Orbital period: %6.3f hrs" %(porb/3600) )
-            print( "Inclination: %5.3f rad (%6.2f deg)" %(incl,incl*cts.RADTODEG) )
+            print( "%9.7f, %3.1f, %9.7f, %10.5f, %4.2f, %9.2f, %9.7f, %6.3f, %6.3f" %tuple(par) )
             print( "" )
-            print( "K1: %7.3f km/s" %(K/1000) )
+            print( "Corotation factor: %4.2f" %corot )
+            print( "Gravity Darkening: %5.3f" %gdark )
             print( "" )
-            print( "Corotation factor: %4.2f" %omega )
-            print( "Filling factor: %6.4f" %filling )
-            print( "Gravity Darkening: %5.3f" %tempgrav )
+            print( "Filling factor: %6.4f" %fill )
+            print( "Orbital separation: %5.4e km" %(separation/1000) )
+            print( "Roche lobe size: %6.4f (orb. sep.)" %roche )
             print( "" )
-            print( "Base temperature: %7.2f K" %temp )
-            print( "Dayside temperature: %7.2f K" %tday )
+            print( "Irradiation efficiency: %6.4f" %eff )
+            print( "Irration luminosity: %5.4e Lsun" %Lirr )
+            print( "Backside temperature: %7.2f K" %temp_back )
+            print( "Frontside temperature: %7.2f (tabul.), %7.2f (approx.) K" %(np.exp(self.star.logteff.max()),temp_front) )
             print( "" )
             print( "Distance Modulus: %6.3f" %DM )
             print( "Absorption (V band): %6.3f" %A_V )
             print( "" )
-            print( "Orbital separation: %5.4e km" %(separation/1000) )
-            print( "Roche lobe size: %6.4f (orb. sep.)" %roche )
-            print( "Volume-averaged radius: %6.4f (orb. sep.)" %radius )
+            print( "Inclination: %5.3f rad (%6.2f deg)" %(incl,incl*cts.RADTODEG) )
+            print( "K: %7.3f km/s" %(K/1000) )
             print( "" )
-            print( "Mass 1 (modelled star): %5.3f Msun" %M1 )
-            print( "Mass 2 (companion star): %5.3f Msun" %M2 )
-        return
+            print( "Mass ratio: %6.3f" %q )
+            print( "Mass NS: %5.3f Msun" %Mns )
+            print( "Mass Comp: %5.3f Msun" %Mwd )
+        return np.r_[corot,gdark,fill,separation,roche,eff,tirr,temp_back,np.exp(self.star.logteff.max()),temp_front,DM,A_V,incl,incl*cts.RADTODEG,K,q,Mns,Mwd]
 
     def _Read_atmo(self, atmo_fln):
         """_Read_atmo(atmo_fln)
         Reads the atmosphere model data.
-
+        
         atmo_fln (str): A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
                 Col 0: band name
                 Col 1: band filename
-
+        
         >>> self._Read_atmo(atmo_fln)
         """
         f = open(atmo_fln,'r')
@@ -597,7 +685,7 @@ class Photometry(object):
     def _Read_data(self, data_fln):
         """_Read_data(data_fln)
         Reads the photometric data.
-
+        
         data_fln (str): A file containing the information for each data set.
             Three formats are currently supported.
             9-column (preferred):
@@ -722,12 +810,12 @@ class Photometry(object):
     def _Setup(self):
         """_Setup()
         Stores some important information in class variables.
-
+        
         >>> self._Setup()
         """
         # We calculate the constant for the conversion of K to q (observed
         # velocity semi-amplitude to mass ratio, with K in m/s)
-        #self.K_to_q = Utils.Binary.Get_K_to_q(self.porb, self.x2sini)
+        self.K_to_q = Utils.Binary.Get_K_to_q(self.porb, self.x2sini)
         # Storing values in 1D arrays.
         # The V band extinction will be extracted from the atmosphere_grid class
         ext = []
