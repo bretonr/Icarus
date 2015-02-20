@@ -338,7 +338,7 @@ class Photometry(object):
             [1]: Orbital period in seconds.
             [2]: Orbital inclination in radians.
             [3]: K1 (projected velocity semi-amplitude) in m/s.
-            [4]: Corotation factor Protation/Porbital.
+            [4]: Corotation factor (Protation/Porbital).
             [5]: Roche-lobe filling in fraction of x_nose/L1.
             [6]: Gravity darkening coefficient.
                 Should be 0.25 for radiation envelopes, 0.08 for convective.

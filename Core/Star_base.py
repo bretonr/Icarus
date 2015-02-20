@@ -551,20 +551,23 @@ class Star_base(object):
         internal functions. If q, omega and filling are not changed,
         only the temperature is recalculated.
         
-        q (None): mass ratio (M2/M1)
-        omega (None): co-rotation factor
-        filling (None): filling factor
+        q (None): mass ratio (M2/M1). M1 is the star being modelled.
+        omega (None): co-rotation factor (Protation/Porbital).
+        filling (None): Roche-lobe filling factor (x_nose/L1).
         temp (None): surface temperature of the star.
-            The temperature is define at the pole of the star, before irradiation.
+            The temperature is define at the pole of the star, before 
+            irradiation and gravity darkening.
         tempgrav (None): gravity darkening coefficient.
             The gravity darkening is accounted as follow:
                 T = Tpole * (g/g_pole)**tempgrav
+            Should be 0.25 for radiation envelopes, 0.08 for convective.
         tirr (None): irradiation temperature.
             (lirr = eff * edot / (4*PI * a**2 * sigma))
             (tirr = (eff * edot / (4*PI * a**2 * sigma))**0.25)
-            The irradiation temperature is added as Teff**4 = tirr**4 + temp**4.
-            The 1/distance**2 effect is accounted for. The fiducial reference point is
-            the center of mass of the star.
+            The irradiation temperature is added as
+                Teff**4 = tirr**4 + temp**4.
+            The 1/distance**2 effect is accounted for. The fiducial reference
+            point is the center of mass of the star.
             The projection effect is also factored in.
         porb (None): orbital period, in seconds.
         k1 (None): velocity semi-amplitude, in m/s.

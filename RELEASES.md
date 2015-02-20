@@ -11,6 +11,7 @@ Features:
     - The initialisation does not take porb, x2sini anymore.
     - Calling Calc_chi2, Get_flux, etc, uses a new list of parameters, which calls the function Photometry Make_surface directly. The point is to reflect more closely the Star base class and allow for modification of the parameters more easily (e.g. in case the orbital period is a free parameter).
     - The DM and AV are passed to the functions as DM and AV optional parameters rather than through the list of parameters.
+    - IMPORTANT NOTE: In order to make your old scripts still work, change any call from Icarus.Photometry.Photometry to Icarus.Photometry_legacy.Photometry_legacy in order to use the old version.
 
 Bug fixes:
 
