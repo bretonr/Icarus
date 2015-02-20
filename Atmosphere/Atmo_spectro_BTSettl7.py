@@ -335,7 +335,7 @@ def Read_BTSettl7(fln, oversample=None, sigma=None, tophat=None, thin=None, wave
 
     ## Grid values are log10(F_lambda) [cgs]
     #grid = 10**grid * 4/cts.pi**2 # Conversion to flux units (make sure that in the Get_flux routine does not re-correct again!)
-    grid = (2 / PI / np.sqrt(3)) * 10**grid
+    grid = (2 / cts.pi / np.sqrt(3)) * 10**grid
 
     ## Wavelengths are often not ordered so we re-order them
     inds = wav.argsort()

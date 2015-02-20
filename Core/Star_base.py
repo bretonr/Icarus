@@ -662,7 +662,7 @@ class Star_base(object):
         # Note: (1+q)/q is the ratio of the separation to the semi-major axis
         self.separation = self.a1 * (1+self.q)/self.q
         # We calculate the mass of the primary using Kepler's 3rd law and convert to Msun
-        # Law: (Porb/TWOPI)**2 = a**3/G/(M+m)
+        # Law: (Porb/cts.twopi)**2 = a**3/G/(M+m)
         self.mass1 = (self.separation**3 / (cts.G * (self.porb/cts.twopi)**2 * (1+self.q))) / cts.Msun
         self.mass2 = self.q*self.mass1
         return

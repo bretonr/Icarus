@@ -99,10 +99,10 @@ class Star(Star_base):
     def Outline(self, ntheta=100, debug=False):
         """Outline(ntheta=100, debug=False)
         Calculates the radii of the outline of the star for a vector
-        of theta=np.arange(ntheta)/ntheta*TWOPI.
+        of theta=np.arange(ntheta)/ntheta*cts.twopi.
             theta is defined as np.arctan2(y_projected,z_projected).
             theta0 = 0
-            dtheta = TWOPI/ntheta
+            dtheta = cts.twopi/ntheta
         
         ntheta (100): Number of points defining the outline.
         debug (False): Print debug information when True.
