@@ -243,12 +243,14 @@ def Interp_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, 
     code = """
     double fl = 0.;
     double Keff = 0.;
+    double KeffSquare = 0;
     double Teff = 0.;
-    #pragma omp parallel shared(grid,wteff,wlogg,wmu,jteff,jlogg,jmu,area,val_mu,v,val_teff,nsurf,fl,Keff,Teff) default(none)
+    double vsini = 0.;
+    #pragma omp parallel shared(grid,wteff,wlogg,wmu,jteff,jlogg,jmu,area,val_mu,v,val_teff,nsurf,fl,Keff,KeffSquare,Teff) default(none)
     {
     double w1teff, w0teff, w1logg, w0logg, w1mu, w0mu, tmp_fl;
     int j0teff, j1teff, j0logg, j1logg, j0mu, j1mu;
-    #pragma omp for reduction(+:fl,Keff,Teff)
+    #pragma omp for reduction(+:fl,Keff,KeffSquare,Teff)
     for (int i=0; i<nsurf; i++) {
         w1teff = wteff(i);
         w0teff = 1.-w1teff;
@@ -269,14 +271,17 @@ def Interp_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, 
         tmp_fl = exp(tmp_fl) * area(i) * val_mu(i);
         fl = fl + tmp_fl;
         Keff = Keff + v(i) * tmp_fl;
+        KeffSquare = KeffSquare + v(i)*v(i) * tmp_fl;
         Teff = Teff + exp(val_teff(i)) * tmp_fl;
     }
     }
     Keff = Keff/fl;
     Teff = Teff/fl;
+    vsini = sqrt((KeffSquare/fl) - Keff*Keff);
     results(0) = fl;
     results(1) = Keff;
-    results(2) = Teff;
+    results(2) = vsini;
+    results(3) = Teff;
     """
     grid = np.ascontiguousarray(grid)
     wteff = np.ascontiguousarray(wteff)
@@ -290,7 +295,7 @@ def Interp_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, 
     v = np.ascontiguousarray(v)
     val_teff = np.ascontiguousarray(val_teff)
     nsurf = jteff.size
-    results = np.zeros(3, dtype=float)
+    results = np.zeros(4, dtype=float)
     try:
         if os.uname()[0] == 'Darwin':
             extra_compile_args = extra_link_args = ['-O3']
@@ -300,8 +305,8 @@ def Interp_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, 
     except:
         get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'jteff', 'jlogg', 'jmu', 'area', 'val_mu', 'v', 'val_teff', 'nsurf', 'results'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], headers=['<cmath>'], libraries=['m'], verbose=2)
     tmp = get_flux
-    fl, Keff, Teff = results
-    return fl, Keff, Teff
+    fl, Keff, vsini, Teff = results
+    return fl, Keff, vsini, Teff
 
 def Interp_photometry_Keff(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, v):
     """

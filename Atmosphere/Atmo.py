@@ -507,13 +507,13 @@ class AtmoGridPhot(AtmoGrid):
         Examples
         ----------
           Examples::
-            flux, Keff, temp = Get_flux_details(val_logtemp, val_logg, val_mu, val_area, val_v)
+            flux, Keff, vsini, temp = Get_flux_details(val_logtemp, val_logg, val_mu, val_area, val_v)
         """
         w1logtemp, jlogtemp = self.Getaxispos('logtemp', val_logtemp)
         w1logg, jlogg = self.Getaxispos('logg', val_logg)
         w1mu, jmu = self.Getaxispos('mu', val_mu)
-        flux, Keff, temp = Utils.Grid.Interp_photometry_details(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu, val_v, val_logtemp)
-        return flux, Keff, temp
+        flux, Keff, vsini, temp = Utils.Grid.Interp_photometry_details(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu, val_v, val_logtemp)
+        return flux, Keff, vsini, temp
 
     def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel, atmo_doppler):
         """
@@ -714,7 +714,7 @@ class Atmo_grid:
         val_v: velocity of the surface element
         
         >>> self.Get_flux_details(val_logtemp, val_logg, val_mu, val_area, val_v)
-        flux, Keff, temp
+        flux, Keff, vsini, temp
         """
         grid = self.grid
         logtemp = self.logtemp
@@ -723,8 +723,8 @@ class Atmo_grid:
         w1temp, jtemp = self.Getaxispos(logtemp,val_logtemp)
         w1logg, jlogg = self.Getaxispos(logg,val_logg)
         w1mu, jmu = self.Getaxispos(mu,val_mu)
-        flux, Keff, temp = Utils.Grid.Interp_photometry_details(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu, val_v, val_logtemp)
-        return flux, Keff, temp
+        flux, Keff, vsini, temp = Utils.Grid.Interp_photometry_details(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu, val_v, val_logtemp)
+        return flux, Keff, vsini, temp
 
     def Get_flux_Keff(self, val_logtemp, val_logg, val_mu, val_area, val_v):
         """

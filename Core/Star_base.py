@@ -290,7 +290,7 @@ class Star_base(object):
             calculate the flux.
         gravscale (optional): gravitational scaling parameter.
         nosum (False): if true, will no sum across the surface.
-        details (False): if true, will return (flux, Keff, Teff).
+        details (False): if true, will return (flux, Keff, vsini, Teff).
         mu (None): if provided, the vector of mu angles (angle between
             line of sight and surface normal).
         inds (None): if provided, the list of indices to use for
@@ -316,15 +316,14 @@ class Star_base(object):
     
         if details:
             v = self._Velocity_surface(phase)[inds]
-            fsum, Keff, Teff = atmo_grid.Get_flux_details(logteff, logg, mu, area, v)
-            return fsum, Keff*cts.c, Teff
-        
-        if nosum:
+            fsum, Keff, vsini, Teff = atmo_grid.Get_flux_details(logteff, logg, mu, area, v)
+            return fsum, Keff*cts.c, vsini*cts.c, Teff
+        elif nosum:
             fsum = atmo_grid.Get_flux_nosum(logteff, logg, mu, area)
             return fsum
-    
-        fsum = atmo_grid.Get_flux(logteff, logg, mu, area)
-    
+        else:    
+            fsum = atmo_grid.Get_flux(logteff, logg, mu, area)
+
         return fsum
 
     def Flux_doppler(self, phase, atmo_grid=None, gravscale=None, nosum=False, mu=None, inds=None, velocity=0., atmo_doppler=None):
