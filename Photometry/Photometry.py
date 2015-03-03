@@ -166,7 +166,7 @@ class Photometry(object):
             pred_flux = self.Get_flux(par, flat=False, nsamples=nsamples, verbose=verbose)
             # Calculate the residuals between observed and theoretical flux
             if influx: # Calculate the residuals in the flux domain
-                res1 = np.array([ Utils.Misc.Fit_linear(self.data['flux'][i], x=Utils.Flux.Mag_to_flux(pred_flux[i], flux0=self.atmo_grid[i].flux0), err=self.data['flux_err'][i], b=0., inline=True) for i in np.arange(self.ndataset) ])
+                res1 = np.array([ Utils.Misc.Fit_linear(self.data['flux'][i], x=Utils.Flux.Mag_to_flux(pred_flux[i], zeropoint=self.atmo_grid[i].meta['zp']), err=self.data['flux_err'][i], b=0., inline=True) for i in np.arange(self.ndataset) ])
                 offset_band = -2.5*np.log10(res1[:,1])
                 if full_output:
                     print( "Impossible to return proper residuals" )
@@ -748,11 +748,11 @@ class Photometry(object):
             self.data['ext'].append(self.atmo_grid[i].meta['ext'])
             if self.data['softening'][i] == 0:
                 if has_mag:
-                    flux,flux_err = Utils.Flux.Mag_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].meta['zp'])
+                    flux,flux_err = Utils.Flux.Mag_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], zeropoint=self.atmo_grid[i].meta['zp'])
                 else:
-                    mag,err = Utils.Flux.Flux_to_mag(self.data['flux'][i], mag_err=self.data['flux_err'][i], flux0=self.atmo_grid[i].meta['zp'])
+                    mag,err = Utils.Flux.Flux_to_mag(self.data['flux'][i], mag_err=self.data['flux_err'][i], zeropoint=self.atmo_grid[i].meta['zp'])
             else:
-                flux,flux_err = Utils.Flux.Asinh_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].meta['zp'], softening=self.data['softening'][i])
+                flux,flux_err = Utils.Flux.Asinh_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], zeropoint=self.atmo_grid[i].meta['zp'], softening=self.data['softening'][i])
             self.data['flux'].append( flux )
             self.data['flux_err'].append( flux_err )
             for j in np.arange(i+1):

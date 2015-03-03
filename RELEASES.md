@@ -2,6 +2,15 @@
 
 ## Release history
 
+### 2.1.x (2015-02-20)
+
+Features:
+
+Bug fixes:
+
+- Fixed an issue with the conversion of mag to/from flux. The new atmosphere grids should have zeropoints, rather than _flux0_.
+
+
 ### 2.1.1 (2015-02-20)
 
 Features:
