@@ -31,7 +31,7 @@ class Star(Star_base):
             self._Read_geodesic()
         else:
             self._New_Initialization()
-    
+
     def _New_Initialization(self):
         """Initialization(self)
         Run important initialization steps important for the

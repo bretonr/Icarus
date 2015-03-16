@@ -201,17 +201,19 @@ class Photometry(object):
             chi2 = chi2_data + chi2_band
         else:
             # Calculate the theoretical flux
-            pred_flux = self.Get_flux(par, flat=False, nsamples=nsamples, verbose=verbose)
+            pred_flux = self.Get_flux(par, flat=False, nsamples=nsamples, influx=influx, verbose=verbose)
             # Calculate the residuals between observed and theoretical flux
             if influx: # Calculate the residuals in the flux domain
-                res1 = np.array([ Utils.Misc.Fit_linear(self.data['flux'][i], x=Utils.Flux.Mag_to_flux(pred_flux[i], zeropoint=self.atmo_grid[i].meta['zp']), err=self.data['flux_err'][i], b=0., inline=True) for i in np.arange(self.ndataset) ])
-                offset_band = -2.5*np.log10(res1[:,1])
+                res1 = np.array([ Utils.Misc.Fit_linear(self.data['flux'][i], x=pred_flux[i], err=self.data['flux_err'][i], b=0., inline=True) for i in np.arange(self.ndataset) ])
+                offset_band = res1[:,1]
+                print(offset_band)
                 if full_output:
-                    print( "Impossible to return proper residuals" )
-                    residuals = None
+                    residuals = [ (self.data['flux'][i] - pred_flux[i]*offset_band[i]) / self.data['flux_err'][i] for i in np.arange(self.ndataset) ]
+                offset_band = -2.5*np.log10(offset_band)
             else: # Calculate the residuals in the magnitude domain
                 res1 = np.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['mag_err'][i], m=0., inline=True) for i in np.arange(self.ndataset) ])
                 offset_band = res1[:,0]
+                print(offset_band)
                 if full_output:
                     residuals = [ ((self.data['mag'][i]-pred_flux[i]) - offset_band[i])/self.data['mag_err'][i] for i in np.arange(self.ndataset) ]
             chi2_data = res1[:,2].sum()
@@ -232,7 +234,7 @@ class Photometry(object):
         else:
             return chi2
 
-    def Get_flux(self, par, flat=False, DM=0., AV=0., nsamples=None, verbose=False):
+    def Get_flux(self, par, flat=False, DM=0., AV=0., nsamples=None, influx=False, verbose=False):
         """
         Returns the predicted flux (in magnitude) by the model evaluated
         at the observed values in the data set.
@@ -245,6 +247,7 @@ class Photometry(object):
         nsamples (None): Number of points for the lightcurve sampling.
             If None, the lightcurve will be sampled at the observed data
             points.
+        influx (bool): If true, will return flux instead of magnitude.
         verbose (False): Print some info.
 
         >>> self.Get_flux([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
@@ -263,14 +266,19 @@ class Photometry(object):
         if DM is None: DM = 0.
         if AV is None: AV = 0.
         offsets = self.data['ext']*AV + DM
+        if influx:
+            offsets = 10**(-0.4*offsets)
 
         # Calculate the actual lightcurves
         flux = []
         for i in np.arange(self.ndataset):
-                # If we use the interpolation method and if the filter is the same as a previously
-                # calculated one, we do not recalculate the fluxes and simply copy them.
-                if nsamples is not None and self.grouping[i] < i:
-                    flux.append(flux[self.grouping[i]])
+            # If we use the interpolation method and if the filter is the same as a previously
+            # calculated one, we do not recalculate the fluxes and simply copy them.
+            if nsamples is not None and self.grouping[i] < i:
+                flux.append(flux[self.grouping[i]])
+            else:
+                if influx:
+                    flux.append( np.array([self.star.Flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) * offsets[i] )
                 else:
                     flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + offsets[i] )
 
@@ -286,7 +294,7 @@ class Photometry(object):
         else:
             return flux
 
-    def Get_flux_theoretical(self, par, phases, DM=0., AV=0., verbose=False):
+    def Get_flux_theoretical(self, par, phases, DM=0., AV=0., influx=False, verbose=False):
         """
         Returns the predicted flux (in magnitude) by the model evaluated at the
         observed values in the data set.
@@ -297,6 +305,7 @@ class Photometry(object):
             number of data sets, each element can contain many phases.
         DM (float): Distance modulus o apply to the data.
         AV (float): V band extinction.
+        influx (bool): If true, will return flux instead of magnitude.
         verbose (False): Print some info.
 
         Note: tirr = (par[6]**4 - par[3]**4)**0.25
@@ -312,6 +321,8 @@ class Photometry(object):
         if DM is None: DM = 0.
         if AV is None: AV = 0.
         offsets = self.data['ext']*AV + DM
+        if influx:
+            offsets = 10**(-0.4*offsets)
 
         flux = []
         for i in np.arange(self.ndataset):
@@ -320,7 +331,10 @@ class Photometry(object):
             if self.grouping[i] < i:
                 flux.append( flux[self.grouping[i]] )
             else:
-                flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + offsets[i] )
+                if influx:
+                    flux.append( np.array([self.star.Flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) * offsets[i] )
+                else:
+                    flux.append( np.array([self.star.Mag_flux(phase, atmo_grid=self.atmo_grid[i]) for phase in phases[i]]) + offsets[i] )
         return flux
 
     def Get_Keff(self, par, nphases=20, atmo_grid=0, make_surface=False, verbose=False):
@@ -502,12 +516,12 @@ class Photometry(object):
         ## Calculate the orbital phases at which the flux will be evaluated
         phases = np.resize(np.linspace(0.,1.,nphases), (self.ndataset, nphases))
         ## Calculate the theoretical flux at the orbital phases
-        pred_flux = self.Get_flux_theoretical(par, phases, DM=DM, AV=AV)
+        pred_flux = self.Get_flux_theoretical(par, phases, DM=DM, AV=AV, influx=influx)
 
         ## if do_offset is true, we calculate the offset of the model to the data
         if offsets is None:
             if do_offset:
-                chi2, extras = self.Calc_chi2(par, offset_free=offset_free, DM=DM, AV=AV, verbose=verbose, full_output=True)
+                chi2, extras = self.Calc_chi2(par, offset_free=offset_free, DM=DM, AV=AV, verbose=verbose, full_output=True, influx=influx)
                 offsets = extras['offset']
                 par = extras['par']
             else:
@@ -519,7 +533,10 @@ class Photometry(object):
             if do_offset == 2:
                 ax.plot(phases[i], pred_flux[i], ls='--', color=colors[i])
             if do_offset:
-                ax.plot(phases[i], pred_flux[i]+offsets[i], ls='-', color=colors[i])
+                if influx:
+                    ax.plot(phases[i], pred_flux[i]*10**(-0.4*offsets[i]), ls='-', color=colors[i])
+                else:
+                    ax.plot(phases[i], pred_flux[i]+offsets[i], ls='-', color=colors[i])
             else:
                 ax.plot(phases[i], pred_flux[i], ls='-', color=colors[i])
         Post_plot(influx=influx)

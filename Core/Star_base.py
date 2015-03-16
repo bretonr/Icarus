@@ -375,7 +375,7 @@ class Star_base(object):
             boosting factors. Must be the same dimensions as the atmosphere grid.
             This is needed for the photometry atmosphere grid, but not for the
             spectroscopy.
-        
+
         >>> self.Flux_doppler(phase)
         flux
         """
