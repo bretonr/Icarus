@@ -51,10 +51,10 @@ omega = 1.0
 filling = scipy.optimize.brentq(solve_radius_ratio, 0.1, 1.0, args=(q,omega))
 
 ##### Step 2: We solve for the orbital period given the rc_eq found from step 1 that makes the mass 2.4Msun and the equatorial radius 2.4Rsun
-porb = np.sqrt( (4*cts.pi**2) / (cts.G * Mass*cts.Msun * (1+q)) * (Req*cts.Rsun/star.rc_eq)**3 )
+porb = np.sqrt( (4*cts.PI**2) / (cts.G * Mass*cts.Msun * (1+q)) * (Req*cts.Rsun/star.rc_eq)**3 )
 
 ##### Step 3: We solve for the projected velocity given the orbital period found from step 2 that makes everything else self-consistent
-K = ( Mass*cts.Msun * 2*cts.pi * cts.G * np.sin(incl)**3 * q**3 / (1+q)**2 / porb )**(1./3)
+K = ( Mass*cts.Msun * 2*cts.PI * cts.G * np.sin(incl)**3 * q**3 / (1+q)**2 / porb )**(1./3)
 
 ##### Updating the star object
 star.Make_surface(q=q, omega=omega, filling=filling, temp=Tpole, porb=porb, k1=K, incl=incl)

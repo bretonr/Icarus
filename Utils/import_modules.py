@@ -19,7 +19,17 @@ import scipy.stats
 
 try:
     import matplotlib, pylab
+    HAS_MATPLOTLIB = True
+    try:
+        import seaborn as sns
+        HAS_SEABORN = True
+        sns.set_style('ticks')
+    except:
+        HAS_SEABORN = False
+        print( "Cannot import seaborn. This is not a critical error, but you might want to consider in order to have nicer plots." )
 except:
+    HAS_MATPLOTLIB = False
+    HAS_SEABORN = False
     print( "Cannot import matplotlib/pylab. This is not a critical error, but some of the plotting functionalities might be impossible." )
 
 ## define some useful constants
@@ -44,11 +54,9 @@ cts.RADTODEG    = float('57.295779513082320876798154814105170332405472466564')
 cts.DEGTORAD    = float('1.7453292519943295769236907684886127134428718885417e-2')
 cts.RADTOHRS    = float('3.8197186342054880584532103209403446888270314977710')
 cts.HRSTORAD    = float('2.6179938779914943653855361527329190701643078328126e-1')
-#cts.pi          = float('3.1415926535897932384626433832795028841971693993751')
-#cts.twopi       = float('6.2831853071795864769252867665590057683943387987502')
-cts.twopi       = cts.pi * 2
-#PIBYTWO     = float('1.5707963267948966192313216916397514420985846996876')
-cts.pibytwo       = cts.pi / 2
+cts.PI          = cts.pi
+cts.TWOPI       = cts.PI * 2
+cts.PIBYTWO     = cts.PI / 2
 cts.SECPERDAY   = float('86400.0')
 cts.SECPERJULYR = float('31557600.0')
 

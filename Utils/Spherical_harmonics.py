@@ -23,7 +23,7 @@ def Alm(l,m,phi,theta,f):
     theta: co-latitude in the range [0,PI].
     f: pixelized function f (f.size = phi.size = theta.size)
     """
-    if Norm_type == 0: norm = 4*cts.pi
+    if Norm_type == 0: norm = 4*cts.PI
     elif Norm_type == 1: norm = 2*l+1.
     return (f * Ylm(phi,theta).conj()).real.sum() * norm/f.size
 
@@ -38,7 +38,7 @@ def Almr(l,m,phi,theta,f):
     theta: co-latitude in the range [0,PI].
     f: pixelized function f (f.size = phi.size = theta.size)
     """
-    if Norm_type == 0: norm = 4*cts.pi
+    if Norm_type == 0: norm = 4*cts.PI
     elif Norm_type == 1: norm = 2*l+1.
     return (f * Ylmr(l,m,phi,theta)).sum() * norm/f.size
 
@@ -106,7 +106,7 @@ def Legendre_assoc(l,m,x):
     """
     l,m = int(l),int(m)
     assert 0<=m<=l and np.all(abs(x)<=1.)
-    if Norm_type == 0: norm = np.sqrt(2*l+1) / np.sqrt(4*cts.pi)
+    if Norm_type == 0: norm = np.sqrt(2*l+1) / np.sqrt(4*cts.PI)
     elif Norm_type == 1: norm = 1.
     if m == 0:
         pmm = norm * np.ones_like(x)

@@ -8,6 +8,44 @@ from .. import Core
 from .. import Atmosphere
 
 
+######################## Plotting functions ########################
+def Prep_plot(ncolors=5, cmap="Paired_r"):
+    ## We retrieve the figure and axes
+    try:
+        fig = pylab.gcf()
+        try:
+            ax = pylab.gca()
+        except:
+            ax = fig.add_subplot(1,1,1)
+    except:
+        fig, ax = pylab.subplots(nrows=1, ncols=1)
+    ## We generate a list of colors
+    if HAS_SEABORN:
+        colors = sns.color_palette(cmap, ncolors)
+    else:
+        colors = pylab.get_cmap(cmap)(np.linspace(0,1,ncolors))
+    return fig, ax, colors
+
+def Post_plot(influx=False):
+    ## Capture figure, axes
+    fig, ax, colors = Prep_plot()
+    ## Display legend if hasn't been done before
+    if ax.legend_ is None:
+        ax.legend(loc='upper left')
+    ## Set the axis limits
+    ax.set_xlim([0,1])
+    bbox = ax.dataLim.expanded(1., 1.2)
+    ## Set the axis labels
+    ax.set_xlabel( "Orbital Phase" )
+    if influx:
+        ax.set_ylabel( "Flux" )
+        ax.set_ylim(bbox.y0,bbox.y1)
+    else:
+        ax.set_ylabel( "Magnitude" )
+        ax.set_ylim(bbox.y1,bbox.y0)
+    pylab.draw()
+
+
 ######################## class Photometry ########################
 class Photometry(object):
     """Photometry
@@ -96,7 +134,7 @@ class Photometry(object):
         # We read the atmosphere models with the atmo_grid class
         self._Read_atmo(atmo_fln)
         # We make sure that the length of data and atmo_dict are the same
-        if len(self.atmo_grid) != len(self.data['mag']):
+        if len(self.atmo_grid) != len(self.data['id']):
             print 'The number of atmosphere grids and data sets (i.e. photometric bands) do not match!!!'
             return
         else:
@@ -156,8 +194,8 @@ class Photometry(object):
             pred_flux = self.Get_flux(par, flat=True, nsamples=nsamples, verbose=verbose)
             # Fit the data to the fluxes as they are
             diff = self.mag-pred_flux
-            ((DM,AV), chi2_data, rank, s) = Utils.Misc.Fit_linear(diff, x=self.ext, err=self.err, b=DM, m=AV)
-            residuals = ( diff - (self.ext*AV + DM) ) / self.err
+            ((DM,AV), chi2_data, rank, s) = Utils.Misc.Fit_linear(diff, x=self.ext, err=self.mag_err, b=DM, m=AV)
+            residuals = ( diff - (self.ext*AV + DM) ) / self.mag_err
             offset_band = np.zeros(self.ndataset)
             chi2_band = 0.
             chi2 = chi2_data + chi2_band
@@ -172,10 +210,10 @@ class Photometry(object):
                     print( "Impossible to return proper residuals" )
                     residuals = None
             else: # Calculate the residuals in the magnitude domain
-                res1 = np.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in np.arange(self.ndataset) ])
+                res1 = np.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['mag_err'][i], m=0., inline=True) for i in np.arange(self.ndataset) ])
                 offset_band = res1[:,0]
                 if full_output:
-                    residuals = [ ((self.data['mag'][i]-pred_flux[i]) - offset_band[i])/self.data['err'][i] for i in np.arange(self.ndataset) ]
+                    residuals = [ ((self.data['mag'][i]-pred_flux[i]) - offset_band[i])/self.data['mag_err'][i] for i in np.arange(self.ndataset) ]
             chi2_data = res1[:,2].sum()
             # Fit for the best offset between the observed and theoretical flux given the DM and A_V
             res2 = Utils.Misc.Fit_linear(offset_band, x=self.data['ext'], err=self.data['calib'], b=DM, m=AV, inline=True)
@@ -310,9 +348,9 @@ class Photometry(object):
         # Get the Keffs and fluxes
         phases = np.arange(nphases)/float(nphases)
         Keffs = np.array( [self.star.Keff(phase, atmo_grid=atmo_grid) for phase in phases] )
-        tmp = Utils.Misc.Fit_linear(Keffs, np.sin(cts.twopi*(phases)), inline=True)
+        tmp = Utils.Misc.Fit_linear(Keffs, np.sin(cts.TWOPI*(phases)), inline=True)
         if verbose:
-            pylab.plot(np.linspace(0.,1.), tmp[1]*np.sin(np.linspace(0.,1.)*cts.twopi)+tmp[0])
+            pylab.plot(np.linspace(0.,1.), tmp[1]*np.sin(np.linspace(0.,1.)*cts.TWOPI)+tmp[0])
             pylab.scatter(phases, Keffs)
         Keff = tmp[1]
         return Keff
@@ -384,129 +422,109 @@ class Photometry(object):
 
         return
 
-    def Plot(self, par, nphases=51, offset_free=1, DM=0., AV=0., verbose=True, nsamples=None, output=False):
+    def Plot(self, par, nphases=51, DM=0., AV=0., do_offset=1, offset_free=1, offsets=None, verbose=False, output=False, cmap="Paired_r", errors=True, influx=False):
         """
-        Plots the observed and predicted values along with the
-        light curve.
+        Plot the predicted light curves.
 
         par (list/array): Parameter list as expected by the Make_surface function.
-        nphases (int): Orbital phase resolution of the model
-            light curve.
-        offset_free (int):
-            1) offset_free = 0:
-                If the offset is not free and the DM and A_V are specified, the chi2
-                is calculated directly without allowing an offset between the data and
-                the bands.
-                The full chi2 should be:
-                    chi2 = sum[ w_i*(off_i-dm-av*C_i)**2]
-                        + w_dm*(dm-dm_obs)**2 
-                        + w_av*(av-av_obs)**2,     with w = 1/sigma**2
-                The extra terms (i.e. dm-dm_obs and av-av_obs) should be included
-                as priors.
-            1) offset_free = 1:
-                The model light curves are fitted to the data with an arbitrary offset
-                for each band. After, a post-fit is performed in order to adjust the offsets
-                of the curves accounting for the fact that the absolute calibration of the
-                photometry may vary.
-                Note:
-                The errors should be err**2 = calib_err**2 + 1/sum(flux_err)**2
-                but we neglect the second term because it is negligeable.
+        nphases (int): Orbital phase resolution of the model light curve.
         DM (float): Distance modulus o apply to the data.
-            It is possible to specify None in case one would like to allow for
-            an arbitrary offset to be optimized for the offset_free = 1 case.
         AV (float): V band extinction.
-            It is possible to specify None in case one would like to allow for
-            an arbitrary offset to be optimized for the offset_free = 1 case.
-        verbose (bool): verbosity.
-        nsamples (int): Number of points for the lightcurve sampling.
-            If None, the lightcurve will be sampled at the observed data
-            points.
-        output (bool): If true, will return the model flux values and the offsets.
-
-        >>> self.Plot([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
-        """
-        # Calculate the orbital phases at which the flux will be evaluated
-        phases = np.resize(np.linspace(0.,1.,nphases), (self.ndataset, nphases))
-        # Fit the data in order to get the offset
-        chi2, extras = self.Calc_chi2(par, offset_free=offset_free, DM_AV=DM_AV, verbose=verbose, nsamples=nsamples, full_output=True)
-        offset = extras['offset']
-        par = extras['par']
-        # Calculate the theoretical flux at the orbital phases.
-        pred_flux = self.Get_flux_theoretical(par, phases)
-        # Calculating the min and the max
-        tmp = []
-        for i in np.arange(self.ndataset):
-            tmp = np.r_[tmp, pred_flux[i]+offset[i]]
-        minmag = tmp.min()
-        maxmag = tmp.max()
-        deltamag = (maxmag - minmag)
-        spacing = 0.2
-
-        #---------------------------------
-        ##### Plot using matplotlib
-        try:
-            fig = pylab.gcf()
-            try:
-                ax = pylab.gca()
-            except:
-                ax = fig.add_subplot(1,1,1)
-        except:
-            fig, ax = pylab.subplots(nrows=1, ncols=1)
-        ncolors = self.ndataset - 1
-        if ncolors == 0:
-            ncolors = 1
-        for i in np.arange(self.ndataset):
-            color = np.ones((self.data['mag'][i].size,1), dtype=float) * matplotlib.cm.jet(float(i)/ncolors)
-            ax.errorbar(self.data['phase'][i], self.data['mag'][i], yerr=self.data['err'][i], fmt='none', ecolor=color[0])
-            ax.scatter(self.data['phase'][i], self.data['mag'][i], edgecolor=color, facecolor=color)
-            ax.plot(phases[i], pred_flux[i], 'k--')
-            ax.plot(phases[i], pred_flux[i]+offset[i], 'k-')
-            ax.text(1.01, pred_flux[i].max(), self.data['id'][i])
-        ax.set_xlim([0,1])
-        ax.set_ylim([maxmag+spacing*deltamag, minmag-spacing*deltamag])
-        ax.set_xlabel( "Orbital Phase" )
-        ax.set_ylabel( "Magnitude" )
-        pylab.draw()
-
-        if output:
-            return pred_flux, offset
-        return
-
-    def Plot_theoretical(self, par, nphases=31, verbose=False, output=False):
-        """
-        Plots the predicted light curves.
-
-        par (list/array): Parameter list as expected by the Make_surface function.
-        nphases (31): Orbital phase resolution of the model
-            light curve.
+        do_offset (int/bool): If true will calculate the offset of the model to
+            the data.
+            If 2, will plot both the non-offset curves and the offset curves.
+            If 1, will plot only the offset curves.
+            If 0, does not apply any offset.
+        offset_free (int): The type of offset calculation, according to
+            Calc_chi2
+        offsets (list/array): The list of offset to apply. If provided, the offset
+            calculation is not performed, which voids the previous two keywords.
         verbose (False): verbosity.
         output (False): If true, will return the model flux values and the offsets.
+        cmap : The name of the colormap to use for the lightcurve colors.
+        errors : Whether to show error bars or not.
+        influx : Whether to show the data in flux instead of magnitude.
 
-        >>> self.Plot_theoretical([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
+        >>> self.Plot_model([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
         """
-        # Calculate the orbital phases at which the flux will be evaluated
-        phases = np.resize(np.linspace(0.,1.,nphases), (self.ndataset, nphases))
-        # Calculate the theoretical flux at the orbital phases.
-        pred_flux = self.Get_flux_theoretical(par, phases, func_par=func_par, verbose=verbose)
+        self.Plot_data(cmap=cmap, errors=errors, influx=influx)
+        results = self.Plot_model(par, nphases=nphases, DM=DM, AV=AV, do_offset=do_offset, offset_free=offset_free, offsets=offsets, verbose=verbose, output=output, cmap=cmap, influx=influx)
+        return results
 
-        #---------------------------------
-        ##### Plot using matplotlib
-        try:
-            fig = pylab.gcf()
-            try:
-                ax = pylab.gca()
-            except:
-                ax = fig.add_subplot(1,1,1)
-        except:
-            fig, ax = pylab.subplots(nrows=1, ncols=1)
-        ncolors = self.ndataset - 1
-        if ncolors == 0:
-            ncolors = 1
+    def Plot_data(self, cmap="Paired_r", errors=True, influx=False):
+        """
+        Plots the observed data.
+
+        cmap : The name of the colormap to use for the lightcurve colors.
+        errors : Whether to show error bars or not.
+        influx : Whether to show the data in flux instead of magnitude.
+
+        >>> self.Plot_data()
+        """
+        ncolors = max(self.ndataset,4)
+        fig, ax, colors = Prep_plot(ncolors=ncolors, cmap=cmap)
         for i in np.arange(self.ndataset):
-            color = np.ones((self.data['mag'][i].size,1), dtype=float) * matplotlib.cm.jet(float(i)/ncolors)
-            ax.plot(phases[i], pred_flux[i], color=color)
+            if influx:
+                if errors:
+                    ax.errorbar(self.data['phase'][i], self.data['flux'][i], yerr=self.data['flux_err'][i], fmt='none', ecolor=colors[i])
+                ax.plot(self.data['phase'][i], self.data['flux'][i], linestyle='None', marker='o', markersize=3, markeredgecolor=colors[i], markerfacecolor=colors[i], label=self.data['id'][i])
+            else:
+                if errors:
+                    ax.errorbar(self.data['phase'][i], self.data['mag'][i], yerr=self.data['mag_err'][i], fmt='none', ecolor=colors[i])
+                ax.plot(self.data['phase'][i], self.data['mag'][i], linestyle='None', marker='o', markersize=3, markeredgecolor=colors[i], markerfacecolor=colors[i], label=self.data['id'][i])
+        Post_plot(influx=influx)
+        return
+
+    def Plot_model(self, par, nphases=51, DM=0., AV=0., do_offset=1, offset_free=1, offsets=None, verbose=False, output=False, cmap="Paired_r", influx=False):
+        """
+        Plot the predicted light curves.
+
+        par (list/array): Parameter list as expected by the Make_surface function.
+        nphases (int): Orbital phase resolution of the model light curve.
+        DM (float): Distance modulus o apply to the data.
+        AV (float): V band extinction.
+        do_offset (int/bool): If true will calculate the offset of the model to
+            the data.
+            If 2, will plot both the non-offset curves and the offset curves.
+            If 1, will plot only the offset curves.
+            If 0, does not apply any offset.
+        offset_free (int): The type of offset calculation, according to
+            Calc_chi2
+        offsets (list/array): The list of offset to apply. If provided, the offset
+            calculation is not performed, which voids the previous two keywords.
+        verbose (False): verbosity.
+        output (False): If true, will return the model flux values and the offsets.
+        cmap : The name of the colormap to use for the lightcurve colors.
+        influx : Whether to show the data in flux instead of magnitude.
+
+        >>> self.Plot_model([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
+        """
+        ## Calculate the orbital phases at which the flux will be evaluated
+        phases = np.resize(np.linspace(0.,1.,nphases), (self.ndataset, nphases))
+        ## Calculate the theoretical flux at the orbital phases
+        pred_flux = self.Get_flux_theoretical(par, phases, DM=DM, AV=AV)
+
+        ## if do_offset is true, we calculate the offset of the model to the data
+        if offsets is None:
+            if do_offset:
+                chi2, extras = self.Calc_chi2(par, offset_free=offset_free, DM=DM, AV=AV, verbose=verbose, full_output=True)
+                offsets = extras['offset']
+                par = extras['par']
+            else:
+                offsets = np.zeros(self.ndataset)
+
+        ncolors = max(self.ndataset,4)
+        fig, ax, colors = Prep_plot(ncolors=ncolors, cmap=cmap)
+        for i in np.arange(self.ndataset):
+            if do_offset == 2:
+                ax.plot(phases[i], pred_flux[i], ls='--', color=colors[i])
+            if do_offset:
+                ax.plot(phases[i], pred_flux[i]+offsets[i], ls='-', color=colors[i])
+            else:
+                ax.plot(phases[i], pred_flux[i], ls='-', color=colors[i])
+        Post_plot(influx=influx)
         if output:
-            return pred_flux
+            return pred_flux, offsets
         return
 
     def Pretty_print(self, par, make_surface=True, DM=0., AV=0., verbose=True):
@@ -544,7 +562,7 @@ class Photometry(object):
         M2 = self.star.mass2
         ## below we transform sigma from W m^-2 K^-4 to erg s^-1 cm^-2 K^-4
         ## below we transform the separation from m to cm
-        #Lirr = tirr**4 * (cts.sigma*1e3) * (separation*100)**2 * 4*cts.pi
+        #Lirr = tirr**4 * (cts.sigma*1e3) * (separation*100)**2 * 4*cts.PI
         #eff = Lirr/self.edot
         ## we convert Lirr in Lsun units
         #Lirr /= 3.839e33
@@ -649,7 +667,7 @@ class Photometry(object):
         """
         f = open(data_fln,'r')
         lines = f.readlines()
-        self.data = {'mag':[], 'phase':[], 'err':[], 'calib':[], 'fln':[], 'id':[], 'softening':[]}
+        self.data = {'phase':[], 'mag':[], 'mag_err':[], 'flux':[], 'flux_err':[], 'calib':[], 'fln':[], 'id':[], 'softening':[]}
         for line in lines:
             if (line[0] != '#') and (line[0] != '\n'):
                 tmp = line.split()
@@ -663,7 +681,7 @@ class Photometry(object):
                     else:
                         self.data['phase'].append( np.atleast_1d((d[0] - float(tmp[4]))%1.) )
                     self.data['mag'].append( np.atleast_1d(d[1]) )
-                    self.data['err'].append( np.atleast_1d(d[2]) )
+                    self.data['mag_err'].append( np.atleast_1d(d[2]) )
                     self.data['calib'].append( float(tmp[5]) )
                     self.data['fln'].append( tmp[-1] )
                     self.data['id'].append( tmp[0] )
@@ -678,7 +696,7 @@ class Photometry(object):
                     else:
                         self.data['phase'].append( np.atleast_1d((d[0] - float(tmp[4]))%1.) )
                     self.data['mag'].append( np.atleast_1d(d[1]) )
-                    self.data['err'].append( np.atleast_1d(d[2]) )
+                    self.data['mag_err'].append( np.atleast_1d(d[2]) )
                     self.data['calib'].append( float(tmp[5]) )
                     self.data['fln'].append( tmp[-1] )
                     self.data['id'].append( tmp[0] )
@@ -695,7 +713,7 @@ class Photometry(object):
                         else:
                             self.data['phase'].append( np.atleast_1d((d[0] - float(tmp[4]))%1.) )
                         self.data['mag'].append( np.atleast_1d(d[1]) )
-                        self.data['err'].append( np.atleast_1d(d[2]) )
+                        self.data['mag_err'].append( np.atleast_1d(d[2]) )
                         self.data['calib'].append( float(tmp[5]) )
                         self.data['fln'].append( tmp[-1] )
                         self.data['id'].append( tmp[0] )
@@ -733,14 +751,10 @@ class Photometry(object):
         ext = []
         self.data['ext'] = []
         # Converting magnitudes <-> fluxes in case this would be needed for upper limits
-        if self.data.has_key('mag'):
+        if len(self.data['flux']) == 0:
             has_mag = True
-            self.data['flux'] = []
-            self.data['flux_err'] = []
         else:
             has_mag = False
-            self.data['mag'] = []
-            self.data['err'] = []
         # The grouping will define datasets that are in the same band and can be evaluated only once in order to save on computation.
         grouping = np.arange(self.ndataset)
         for i in np.arange(self.ndataset):
@@ -748,13 +762,17 @@ class Photometry(object):
             self.data['ext'].append(self.atmo_grid[i].meta['ext'])
             if self.data['softening'][i] == 0:
                 if has_mag:
-                    flux,flux_err = Utils.Flux.Mag_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], zeropoint=self.atmo_grid[i].meta['zp'])
+                    flux,flux_err = Utils.Flux.Mag_to_flux(self.data['mag'][i], mag_err=self.data['mag_err'][i], zeropoint=self.atmo_grid[i].meta['zp'])
+                    self.data['flux'].append( flux )
+                    self.data['flux_err'].append( flux_err )
                 else:
-                    mag,err = Utils.Flux.Flux_to_mag(self.data['flux'][i], mag_err=self.data['flux_err'][i], zeropoint=self.atmo_grid[i].meta['zp'])
+                    mag,mag_err = Utils.Flux.Flux_to_mag(self.data['flux'][i], flux_err=self.data['flux_err'][i], zeropoint=self.atmo_grid[i].meta['zp'])
+                    self.data['mag'].append( mag )
+                    self.data['mag_err'].append( mag_err )
             else:
-                flux,flux_err = Utils.Flux.Asinh_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], zeropoint=self.atmo_grid[i].meta['zp'], softening=self.data['softening'][i])
-            self.data['flux'].append( flux )
-            self.data['flux_err'].append( flux_err )
+                flux,flux_err = Utils.Flux.Asinh_to_flux(self.data['mag'][i], mag_err=self.data['mag_err'][i], zeropoint=self.atmo_grid[i].meta['zp'], softening=self.data['softening'][i])
+                self.data['flux'].append( flux )
+                self.data['flux_err'].append( flux_err )
             for j in np.arange(i+1):
                 if self.data['id'][i] == self.data['id'][j]:
                     grouping[i] = j
@@ -764,7 +782,7 @@ class Photometry(object):
         self.data['ext'] = np.asarray(self.data['ext'])
         self.data['calib'] = np.asarray(self.data['calib'])
         self.mag = np.hstack(self.data['mag'])
-        self.err = np.hstack(self.data['err'])
+        self.mag_err = np.hstack(self.data['mag_err'])
         self.phase = np.hstack(self.data['phase'])
         self.flux = np.hstack(self.data['flux'])
         self.flux_err = np.hstack(self.data['flux_err'])

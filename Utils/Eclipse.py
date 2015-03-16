@@ -390,7 +390,7 @@ def Occultation_shapely(vertices, faces_ind, incl, orbph, q, ntheta, radii):
     T.append(time.time())
     
     # Defining the front star polygon
-    theta = np.arange(ntheta, dtype=float)/ntheta * cts.twopi
+    theta = np.arange(ntheta, dtype=float)/ntheta * cts.TWOPI
     xoff, yoff = Observer_2Dprojection(1./(1+q), 0., 0., incl, orbph+0.5)
     x_front = radii * np.cos(theta) + xoff
     y_front = radii * np.sin(theta) + yoff
@@ -465,8 +465,8 @@ def Observer_2Dprojection(x, y, z, incl, orbph, xoffset=None):
     orbph = orbph%1
     cos_incl = np.cos(incl)
     sin_incl = np.sin(incl)
-    cos_phs = np.cos(orbph*cts.twopi)
-    sin_phs = np.sin(orbph*cts.twopi)
+    cos_phs = np.cos(orbph*cts.TWOPI)
+    sin_phs = np.sin(orbph*cts.TWOPI)
     xnew = x*cos_phs + y*sin_phs
     ynew = -x*sin_phs + y*cos_phs
     znew = z*sin_incl + xnew*cos_incl
@@ -491,8 +491,8 @@ def Observer_3Dprojection(x, y, z, incl, orbph, xoffset=None):
     orbph = orbph%1
     cos_incl = np.cos(incl)
     sin_incl = np.sin(incl)
-    cos_phs = np.cos(orbph*cts.twopi)
-    sin_phs = np.sin(orbph*cts.twopi)
+    cos_phs = np.cos(orbph*cts.TWOPI)
+    sin_phs = np.sin(orbph*cts.TWOPI)
     xnew = x*cos_phs + y*sin_phs
     ynew = -x*sin_phs + y*cos_phs
     znew = z

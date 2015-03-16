@@ -6,9 +6,12 @@
 
 Features:
 
+- In the _Star_base_ class, change in the way _Flux_ is calculated in order to add the possibility to account for the projection effect in order to scale the flux to physical values. There wasn't a need for it before as the fluxes were always used in a normalised way (e.g. fitting a non-flux calibrated spectrum), but this would make things fail if one was to fit flux calibrated data. The issue wouldn't arise with magnitudes, which already included the projection.
+
 Bug fixes:
 
-- Fixed an issue with the conversion of mag to/from flux. The new atmosphere grids should have zeropoints, rather than _flux0_.
+- Fixed an issue with the conversion of mag to/from flux in the _Photometry_ module. The conversion was expecting to find a _flux0_ parameter, whereas the zeropoint is now incorporated as _zp_ in the atmosphere files.
+- The _Utils.import_modules_ has a set of constants defined under the _cts_ namespace. Converted some lower case constants into upper case.
 
 
 ### 2.1.1 (2015-02-20)

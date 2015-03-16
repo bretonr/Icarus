@@ -98,7 +98,7 @@ def Get_K_to_q(porb, xsini):
     
     >>> K_to_q = Get_K_to_q(porb, xsini)
     """
-    return porb / (cts.twopi * xsini * cts.c)
+    return porb / (cts.TWOPI * xsini * cts.c)
 
 def Mass_companion(mass_function, q, incl):
     """

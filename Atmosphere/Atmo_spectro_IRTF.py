@@ -334,9 +334,9 @@ def Read_IRTF(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut
     wav, grid = np.loadtxt(fln, usecols=(0,1), unpack=True)
 
     ## Grid values are log10(F_lambda) [cgs]
-    #grid = 10**grid * 4/cts.pi**2 # Conversion to flux units (make sure that in the Get_flux routine does not re-correct again!)
-    #grid = (2 / cts.pi / np.sqrt(3)) * 10**grid
-    #grid = (2 / cts.pi / np.sqrt(3)) * grid
+    #grid = 10**grid * 4/cts.PI**2 # Conversion to flux units (make sure that in the Get_flux routine does not re-correct again!)
+    #grid = (2 / cts.PI / np.sqrt(3)) * 10**grid
+    #grid = (2 / cts.PI / np.sqrt(3)) * grid
 
     ## Wavelengths are often not ordered so we re-order them
     inds = wav.argsort()

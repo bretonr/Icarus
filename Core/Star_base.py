@@ -69,7 +69,7 @@ class Star_base(object):
         """
         return arl*r**2
 
-    def Bbody_flux(self, phase, limbdark, atmo_grid=None):
+    def Bbody_flux(self, phase, limbdark, atmo_grid=None, proj=None):
         """Bbody_flux(phase, limbdark, atmo_grid=None)
         Returns the blackbody flux of a star which is modulated
         by a linear limb darkening coefficient (i.e. some linear
@@ -80,40 +80,50 @@ class Star_base(object):
         limbdark: limb darkening coefficient.
         atmo_grid (optional): atmosphere grid instance to 
             calculate the flux.
+        proj (optional): projection effect to scale the flux to real flux
+            units. If None is provided, will call _Proj with the current
+            orbital separation as input parameter.
         
         >>> self.Bbody_flux(phase, limbdark)
         bbody_flux
         """
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
+        if proj is None:
+            proj = self._Proj(self.separation)
         const1 = 3.74177e-5
         const2 = 1.43877
         mu = self._Mu(phase)
         limbnorm = 1.-limbdark/3.
         limb0 = 1/limbnorm
         limb1 = limbdark/limbnorm
-        bbconst = const1/(C*100)/cts.pi/atmo_grid.wav**3
+        bbconst = const1/(C*100)/cts.PI/atmo_grid.wav**3
         f = bbconst/(np.exp(const2/self.temp/atmo_grid.grid_lam)-1)
         if isinstance(f, np.ndarray):
             f.shape = f.size,1
         inds = mu > 0
-        return (self.area[inds] * f * mu[inds] * (limb0-limb1*(1-mu[inds]))).sum(axis=-1)
+        return (self.area[inds] * f * mu[inds] * (limb0-limb1*(1-mu[inds]))).sum(axis=-1) * proj
 
-    def Bol_flux(self, phase):
+    def Bol_flux(self, phase, proj=None):
         """Bol_flux(phase)
         Returns the bolometric flux of a star
         (i.e. mu*sigma*T**4).
         
         phase: orbital phase (in orbital fraction; 0: companion 
             in front, 0.5: companion behind).
+        proj (optional): projection effect to scale the flux to real flux
+            units. If None is provided, will call _Proj with the current
+            orbital separation as input parameter.
         
         >>> self.Bol_flux(phase)
         bol_flux
         """
-        sigmabypi = 5.67051e-5/cts.pi # sigma/pi (sigma is the stefan-boltzman constant)
+        if proj is None:
+            proj = self._Proj(self.separation)
+        sigmabypi = 5.67051e-5/cts.PI # sigma/pi (sigma is the stefan-boltzman constant)
         mu = self._Mu(phase)
         inds = mu > 0
-        return (self.area[inds] * (mu[inds]*sigmabypi*self.temp**4)).sum()
+        return (self.area[inds] * (mu[inds]*sigmabypi*self.temp**4)).sum() * proj
 
     def _Calc_qp1by2om2(self):
         """_Calc_qp1by2om2
@@ -280,15 +290,18 @@ class Star_base(object):
         radius = self.Radius()
         return radius/radius_RL
 
-    def Flux(self, phase, atmo_grid=None, gravscale=None, nosum=False, details=False, mu=None, inds=None):
-        """Flux(phase, gravscale=None, atmo_grid=None, nosum=False, details=False, mu=None, inds=None)
+    def Flux(self, phase, atmo_grid=None, gravscale=None, proj=None, nosum=False, details=False, mu=None, inds=None):
+        """
         Return the flux interpolated from the atmosphere grid.
-        
+
         phase: orbital phase (in orbital fraction; 0: companion 
             in front, 0.5: companion behind).
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
         gravscale (optional): gravitational scaling parameter.
+        proj (optional): projection effect to scale the flux to real flux
+            units. If None is provided, will call _Proj with the current
+            orbital separation as input parameter.
         nosum (False): if true, will no sum across the surface.
         details (False): if true, will return (flux, Keff, vsini, Teff).
         mu (None): if provided, the vector of mu angles (angle between
@@ -300,10 +313,13 @@ class Star_base(object):
         >>> self.Flux(phase)
         flux
         """
+        logger.debug("start")
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
         if gravscale is None:
             gravscale = self._Gravscale()
+        if proj is None:
+            proj = self._Proj(self.separation)
         if mu is None:
             mu = self._Mu(phase)
         if inds is None:
@@ -317,16 +333,24 @@ class Star_base(object):
         if details:
             v = self._Velocity_surface(phase)[inds]
             fsum, Keff, vsini, Teff = atmo_grid.Get_flux_details(logteff, logg, mu, area, v)
+            if proj != 1:
+                fsum *= proj
             return fsum, Keff*cts.c, vsini*cts.c, Teff
         elif nosum:
             fsum = atmo_grid.Get_flux_nosum(logteff, logg, mu, area)
+            if proj != 1:
+                fsum *= proj
             return fsum
-        else:    
+        else:
             fsum = atmo_grid.Get_flux(logteff, logg, mu, area)
+            if proj != 1:
+                fsum *= proj
+            return fsum
 
-        return fsum
+        logger.debug("end")
+        return
 
-    def Flux_doppler(self, phase, atmo_grid=None, gravscale=None, nosum=False, mu=None, inds=None, velocity=0., atmo_doppler=None):
+    def Flux_doppler(self, phase, atmo_grid=None, gravscale=None, proj=None, nosum=False, mu=None, inds=None, velocity=0., atmo_doppler=None):
         """
         Return the flux interpolated from the atmosphere grid.
         Takes into account the Doppler shift of the different surface
@@ -337,6 +361,9 @@ class Star_base(object):
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
         gravscale (optional): gravitational scaling parameter.
+        proj (optional): projection effect to scale the flux to real flux
+            units. If None is provided, will call _Proj with the current
+            orbital separation as input parameter.
         nosum (False): if true, will no sum across the surface.
         mu (None): if provided, the vector of mu angles (angle between
             line of sight and surface normal).
@@ -357,11 +384,15 @@ class Star_base(object):
             atmo_grid = self.atmo_grid
         if gravscale is None:
             gravscale = self._Gravscale()
+        if proj is None:
+            proj = self._Proj(self.separation)
         if mu is None:
             mu = self._Mu(phase)
         if inds is None:
             inds = mu > 0
+
         v = self._Velocity_surface(phase, velocity=velocity)
+
         if atmo_doppler is not None:
             if nosum:
                 fsum = atmo_grid.Get_flux_doppler_nosum(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds], atmo_doppler)
@@ -372,6 +403,9 @@ class Star_base(object):
                 fsum = atmo_grid.Get_flux_doppler_nosum(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds])
             else:
                 fsum = atmo_grid.Get_flux_doppler(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds])
+
+        if proj != 1:
+            fsum *= proj
         logger.debug("stop")
         return fsum
 
@@ -416,9 +450,8 @@ class Star_base(object):
 
     def Keff(self, phase, gravscale=None, atmo_grid=None):
         """Keff(phase, gravscale=None, atmo_grid=None)
-        Return the effective velocity of the star (i.e.
-        averaged over the visible surface and flux intensity
-        weighted).
+        Return the effective velocity of the star in m/s (i.e. averaged over
+        the visible surface and flux intensity weighted).
         
         phase: orbital phase (in orbital fraction; 0: companion 
             in front, 0.5: companion behind).
@@ -439,15 +472,16 @@ class Star_base(object):
         fsum, Keff = atmo_grid.Get_flux_Keff(self.logteff[inds],self.logg[inds]+gravscale,mu[inds],self.area[inds],v[inds])
         return Keff*cts.c
 
-    def Mag_bbody_flux(self, phase, limbdark, a=None, atmo_grid=None):
+    def Mag_bbody_flux(self, phase, limbdark, proj=None, atmo_grid=None):
         """Mag_flux(phase)
         Returns the blackbody magnitude of a star.
         
         phase: orbital phase (in orbital fraction; 0: companion 
             in front, 0.5: companion behind).
         limbdark: limb darkening coefficient.
-        a (optional): orbital separation. If not provided, derives it from
-            q and asini (provided when creating the instance of the class).
+        proj (optional): projection effect to scale the flux to real flux
+            units. If None is provided, will call _Proj with the current
+            orbital separation as input parameter.
         atmo_grid (optional): atmosphere grid instance to calculate the flux.
         
         >>> self.Mag_bbody_flux(phase, limbdark, a=None)
@@ -455,42 +489,39 @@ class Star_base(object):
         """
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
-        if a is not None:
-            proj = self._Proj(a)
-        else:
+        if proj is None:
             proj = self._Proj(self.separation)
-        return -2.5*np.log10(self.Bbody_flux(phase, limbdark, atmo_grid=atmo_grid)*proj) + atmo_grid.meta['zp']
 
-    def Mag_bol_flux(self, phase, a=None):
+        return -2.5*np.log10(self.Bbody_flux(phase, limbdark, atmo_grid=atmo_grid, proj=proj)) + atmo_grid.meta['zp']
+
+    def Mag_bol_flux(self, phase, proj=None):
         """Mag_bol_flux(phase, a=None)
         Returns the bolometric magnitude of a star.
         
         phase: orbital phase (in orbital fraction; 0: companion 
             in front, 0.5: companion behind).
-        a (optional): orbital separation. If not provided, derives it
-            from q and asini (provided when creating the instance of
-            the class).
+        proj (optional): projection effect to scale the flux to real flux
+            units. If None is provided, will call _Proj with the current
+            orbital separation as input parameter.
         
         >>> self.Mag_bol_flux(phase)
         mag_bol_flux
         """
         bolflux0 = 2.54e-5 # bolometric zero-point flux
-        if a is not None:
-            proj = self._Proj(a)
-        else:
+        if proj is None:
             proj = self._Proj(self.separation)
-        return -2.5*np.log10(self.Bol_flux(phase)*proj/bolflux0)
+        return -2.5*np.log10(self.Bol_flux(phase, proj=proj)/bolflux0)
 
-    def Mag_flux(self, phase, gravscale=None, a=None, atmo_grid=None):
+    def Mag_flux(self, phase, gravscale=None, proj=None, atmo_grid=None):
         """Mag_flux(phase, gravscale=None, a=None, atmo_grid=None)
         Returns the magnitude interpolated from the atmosphere grid.
         
         phase: orbital phase (in orbital fraction; 0: companion 
             in front, 0.5: companion behind).
         gravscale (optional): gravitational scaling parameter.
-        a (optional): orbital separation. If not provided, derives it
-            from q and asini (provided when creating the instance of
-            the class).
+        proj (optional): projection effect to scale the flux to real flux
+            units. If None is provided, will call _Proj with the current
+            orbital separation as input parameter.
         atmo_grid (optional): atmosphere grid instance to work from to 
             calculate the flux.
         
@@ -499,15 +530,13 @@ class Star_base(object):
         """
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
-        if a is not None:
-            proj = self._Proj(a)
-        else:
+        if proj is None:
             proj = self._Proj(self.separation)
         if gravscale is None:
             gravscale = self._Gravscale()
-        return -2.5*np.log10(self.Flux(phase, gravscale=gravscale, atmo_grid=atmo_grid)*proj) + atmo_grid.meta['zp']
+        return -2.5*np.log10(self.Flux(phase, gravscale=gravscale, proj=proj, atmo_grid=atmo_grid)) + atmo_grid.meta['zp']
 
-    def Mag_flux_doppler(self, phase, gravscale=None, a=None, atmo_grid=None, velocity=0., atmo_doppler=None):
+    def Mag_flux_doppler(self, phase, gravscale=None, proj=None, atmo_grid=None, velocity=0., atmo_doppler=None):
         """
         Returns the magnitude interpolated from the atmosphere grid.
         Takes into account the Doppler shift of the different surface
@@ -516,9 +545,9 @@ class Star_base(object):
         phase: orbital phase (in orbital fraction; 0: companion 
             in front, 0.5: companion behind).
         gravscale (optional): gravitational scaling parameter.
-        a (optional): orbital separation. If not provided, derives it
-            from q and asini (provided when creating the instance of
-            the class).
+        proj (optional): projection effect to scale the flux to real flux
+            units. If None is provided, will call _Proj with the current
+            orbital separation as input parameter.
         atmo_grid (optional): atmosphere grid instance to work from to 
             calculate the flux.
         velocity (optional): extra velocity in m/s to be added.
@@ -532,13 +561,11 @@ class Star_base(object):
         """
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
-        if a is not None:
-            proj = self._Proj(a)
-        else:
+        if proj is None:
             proj = self._Proj(self.separation)
         if gravscale is None:
             gravscale = self._Gravscale()
-        return -2.5*np.log10(self.Flux_doppler(phase, gravscale=gravscale, atmo_grid=atmo_grid, velocity=velocity, atmo_doppler=atmo_doppler)*proj) + atmo_grid.meta['zp']
+        return -2.5*np.log10(self.Flux_doppler(phase, gravscale=gravscale, proj=proj, atmo_grid=atmo_grid, velocity=velocity, atmo_doppler=atmo_doppler)) + atmo_grid.meta['zp']
 
     def Make_surface(self, q=None, omega=None, filling=None, temp=None, tempgrav=None, tirr=None, porb=None, k1=None, incl=None):
         """Make_surface(q=None, omega=None, filling=None, temp=None, tempgrav=None, tirr=None, porb=None, k1=None, incl=None)
@@ -647,7 +674,7 @@ class Star_base(object):
         >>> self._Mu(phase)
         mu
         """
-        return -np.sin(self.incl)*(np.cos(cts.twopi*phase)*self.gradx+np.sin(cts.twopi*phase)*self.grady)+np.cos(self.incl)*self.gradz
+        return -np.sin(self.incl)*(np.cos(cts.TWOPI*phase)*self.gradx+np.sin(cts.TWOPI*phase)*self.grady)+np.cos(self.incl)*self.gradz
 
     def _Orbital_parameters(self):
         """_Orbital_parameters()
@@ -658,14 +685,14 @@ class Star_base(object):
         >>> self._Orbital_parameters()
         """
         # We calculate the projected semi-major axis
-        self.a1sini = self.k1 * self.porb / cts.twopi
+        self.a1sini = self.k1 * self.porb / cts.TWOPI
         self.a1 = self.a1sini / np.sin(self.incl)
         # We calculate the orbital separation
         # Note: (1+q)/q is the ratio of the separation to the semi-major axis
         self.separation = self.a1 * (1+self.q)/self.q
         # We calculate the mass of the primary using Kepler's 3rd law and convert to Msun
-        # Law: (Porb/cts.twopi)**2 = a**3/G/(M+m)
-        self.mass1 = (self.separation**3 / (cts.G * (self.porb/cts.twopi)**2 * (1+self.q))) / cts.Msun
+        # Law: (Porb/cts.TWOPI)**2 = a**3/G/(M+m)
+        self.mass1 = (self.separation**3 / (cts.G * (self.porb/cts.TWOPI)**2 * (1+self.q))) / cts.Msun
         self.mass2 = self.q*self.mass1
         return
 
@@ -751,15 +778,15 @@ class Star_base(object):
         >>> self.Radius()
         """
         logger.debug("start")
-        sindeltalfby2 = np.sin(cts.pibytwo/self.ndiv)
+        sindeltalfby2 = np.sin(cts.PIBYTWO/self.ndiv)
         solidangle = []
-        solidangle.append(cts.twopi*(1.-np.sqrt(1.-sindeltalfby2**2)))
-        solidangle_nbet = 4*cts.pi*np.sin(cts.pi*np.arange(1,self.ndiv)/self.ndiv)*sindeltalfby2/self.nbet
+        solidangle.append(cts.TWOPI*(1.-np.sqrt(1.-sindeltalfby2**2)))
+        solidangle_nbet = 4*cts.PI*np.sin(cts.PI*np.arange(1,self.ndiv)/self.ndiv)*sindeltalfby2/self.nbet
         [solidangle.extend(s.repeat(i)) for s,i in zip(solidangle_nbet,self.nbet)]
-        solidangle.append(cts.twopi*(1.-np.sqrt(1.-sindeltalfby2**2)))
+        solidangle.append(cts.TWOPI*(1.-np.sqrt(1.-sindeltalfby2**2)))
         vol = (self.rc**3*np.array(solidangle)).sum()/3
         logger.debug("end")
-        return (vol/(4*cts.pi/3))**(1./3.)
+        return (vol/(4*cts.PI/3))**(1./3.)
 
     def Roche(self):
         """Roche()
@@ -818,8 +845,8 @@ class Star_base(object):
 #        print( "Begin _Surface()" )
         # Calculate some quantities
         self._Calc_qp1by2om2()
-        sindeltalfby2 = np.sin(cts.pibytwo/self.ndiv)
-        arl1 = cts.twopi*(1.-np.sqrt(1.-sindeltalfby2**2)) # solid angle
+        sindeltalfby2 = np.sin(cts.PIBYTWO/self.ndiv)
+        arl1 = cts.TWOPI*(1.-np.sqrt(1.-sindeltalfby2**2)) # solid angle
         
 #        print 'Start surface'
         # Calculate the initial saddle point
@@ -881,7 +908,7 @@ class Star_base(object):
         
 #        print 'Start surface loop'
         # Calculate useful quantities for each slice of the surface
-        tcosx = np.cos(cts.pi*np.arange(1,self.ndiv)/self.ndiv)
+        tcosx = np.cos(cts.PI*np.arange(1,self.ndiv)/self.ndiv)
         tsinx = np.sqrt(1.-tcosx**2)
         #rl = self._Radius(tcosx, tsinx, np.zeros(self.ndiv, dtype=float), psil1, np.repeat(rl180,self.ndiv-1))
 #        print 'about to calculate rl'
@@ -889,13 +916,13 @@ class Star_base(object):
 #        print 'rl '#+str(rl)
         rtry = self._Radius(-1., 0., 0., psi0, rl180)
 #        print 'rtry '+str(rtry)
-        ar = 4*cts.pi*tsinx*sindeltalfby2
+        ar = 4*cts.PI*tsinx*sindeltalfby2
         nbet = np.round(ar/arl1*(rl/rl180)**2).astype(int)
         ar = ar/nbet
         # Define a function to calculate the quantities for each slice
         def get_slice(tcosx, tsinx, nbet, ar):
             tcosx = np.resize(tcosx,nbet)
-            bet = cts.twopi*(np.arange(1,nbet+1)-0.5)/nbet
+            bet = cts.TWOPI*(np.arange(1,nbet+1)-0.5)/nbet
             tcosy = tsinx*np.cos(bet)
             tcosz = tsinx*np.sin(bet)
             #r = self._Radius(tcosx, tcosy, tcosz, psi0, np.repeat(rl180,nbet))
@@ -972,7 +999,7 @@ class Star_base(object):
         
         >>> self._Velocity_surface(phase)
         """
-        phi = cts.twopi*phase
+        phi = cts.TWOPI*phase
 #        # vx = w*y
 #        # vy = w*(b-x) # b = semi-major axis
 #        # Vx = vx*cos(phi) + vx*sin(phi)

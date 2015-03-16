@@ -482,7 +482,7 @@ class Spectroscopy(object):
         Mns = self.star.mass2
         # below we transform sigma from W m^-2 K^-4 to erg s^-1 cm^-2 K^-4
         # below we transform the separation from m to cm
-        Lirr = tirr**4 * (cts.sigma*1e3) * (separation*100)**2 * 4*cts.pi
+        Lirr = tirr**4 * (cts.sigma*1e3) * (separation*100)**2 * 4*cts.PI
         # we convert Lirr in Lsun units
         Lirr /= 3.839e33
         if verbose:

@@ -23,7 +23,7 @@ temp = 5778.
 tempgrav = 0.25
 tirr = 0.
 porb = cts.SECPERJULYR # We use Earth as the binary companion so the orbital period is one year
-k1 = cts.twopi * cts.astronomical_unit / porb * q # The Sun orbital velocity is the Earth's multiplied by the mass ratio
+k1 = cts.TWOPI * cts.astronomical_unit / porb * q # The Sun orbital velocity is the Earth's multiplied by the mass ratio
 incl = 90.*cts.DEGTORAD
 
 star.Make_surface(q=q, omega=omega, filling=filling, temp=temp, tempgrav=tempgrav, tirr=tirr, porb=porb, k1=k1, incl=incl)

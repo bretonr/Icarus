@@ -163,9 +163,9 @@ class Photometry_disk(object):
         
         if offset_free == 0:
             pred_flux = self.Get_flux(par, flat=True, nsamples=nsamples, verbose=verbose)
-            ((par[7],par[8]), chi2_data, rank, s) = Utils.Misc.Fit_linear(self.mag-pred_flux, x=self.ext, err=self.err, b=par[7], m=par[8])
+            ((par[7],par[8]), chi2_data, rank, s) = Utils.Misc.Fit_linear(self.mag-pred_flux, x=self.ext, err=self.mag_err, b=par[7], m=par[8])
             if full_output:
-                residuals = ( (self.mag-pred_flux) - (self.ext*par[8] + par[7]) ) / self.err
+                residuals = ( (self.mag-pred_flux) - (self.ext*par[8] + par[7]) ) / self.mag_err
                 offset = np.zeros(self.ndataset)
             chi2_band = 0.
             chi2 = chi2_data + chi2_band
@@ -181,10 +181,10 @@ class Photometry_disk(object):
                     print( "Impossible to return proper residuals" )
                     residuals = None
             else: # Calculate the residuals in the magnitude domain
-                res1 = np.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in np.arange(self.ndataset) ])
+                res1 = np.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['mag_err'][i], m=0., inline=True) for i in np.arange(self.ndataset) ])
                 offset = res1[:,0]
                 if full_output:
-                    residuals = np.r_[ [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in np.arange(self.ndataset) ] ]
+                    residuals = np.r_[ [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['mag_err'][i] for i in np.arange(self.ndataset) ] ]
             chi2_data = res1[:,2].sum()
             # Fit for the best offset between the observed and theoretical flux given the DM and A_V
             res2 = Utils.Misc.Fit_linear(offset, x=self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
@@ -259,11 +259,11 @@ class Photometry_disk(object):
         # We fit the best fit for the disk contribution to the data
         def residuals(res_disk, i): # Add a constant disk contribution
             mag = -2.5*np.log10((pred_flux[i]+res_disk) * self.star._Proj(self.star.separation) / self.atmo_grid[i].flux0)
-            return ((mag + self.atmo_grid[i].ext*par[8] + par[7]) - self.data['mag'][i]) / self.data['err'][i]
+            return ((mag + self.atmo_grid[i].ext*par[8] + par[7]) - self.data['mag'][i]) / self.data['mag_err'][i]
         
         def residuals_special(res_disk, i): # Add a constant disk contribution that varies linearly as a function of orbital phase
             mag = -2.5*np.log10((pred_flux[i]+res_disk[0]+res_disk[1]*self.data['phase'][i]) * self.star._Proj(self.star.separation) / self.atmo_grid[i].flux0)
-            return ((mag + self.atmo_grid[i].ext*par[8] + par[7]) - self.data['mag'][i]) / self.data['err'][i]
+            return ((mag + self.atmo_grid[i].ext*par[8] + par[7]) - self.data['mag'][i]) / self.data['mag_err'][i]
         
         if len(par) > 10:
             disk = np.array(par[9:])
@@ -308,7 +308,7 @@ class Photometry_disk(object):
                 disk_str += str(d) + ", "
             disk_str = disk_str[:-2]
             for i in xrange(self.ndataset):
-                print( "chi2 (%i): %f,   d.o.f.: %i,   avg. companion flux: %.4e,   comp. flux/tot. flux: %.4f,   max. companion flux: %.4e,   max. comp. flux/tot. flux: %.4f,   avg. error: %.4f" %(i, chi2[i], self.data['mag'][i].size, pred_flux[i].mean(), pred_flux[i].mean()/(pred_flux[i].mean()+disk[i]), pred_flux[i].max(), pred_flux[i].max()/(pred_flux[i].max()+disk[i]), self.data['err'][i].mean()) )
+                print( "chi2 (%i): %f,   d.o.f.: %i,   avg. companion flux: %.4e,   comp. flux/tot. flux: %.4f,   max. companion flux: %.4e,   max. comp. flux/tot. flux: %.4f,   avg. error: %.4f" %(i, chi2[i], self.data['mag'][i].size, pred_flux[i].mean(), pred_flux[i].mean()/(pred_flux[i].mean()+disk[i]), pred_flux[i].max(), pred_flux[i].max()/(pred_flux[i].max()+disk[i]), self.data['mag_err'][i].mean()) )
             print( "chi2: " + str(chi2.sum()) + ", chi2DM: " + str(chi2DM) + ", chi2AV: " + str(chi2AV) + ", chi2Keff: " + str(chi2Keff) + "\n    Keff: " + str(pred_Keff) + ", disk: " + disk_str )
         
         if return_residuals:
@@ -481,9 +481,9 @@ class Photometry_disk(object):
         # Get the Keffs and fluxes
         phases = np.arange(nphases)/float(nphases)
         Keffs = np.array( [self.star.Flux_disk_Keff(phase, atmo_grid=atmo_grid, disk=0.) for phase in phases] )[:,1]
-        tmp = Utils.Misc.Fit_linear(-Keffs, np.sin(cts.twopi*(phases)), inline=True)
+        tmp = Utils.Misc.Fit_linear(-Keffs, np.sin(cts.TWOPI*(phases)), inline=True)
         if verbose:
-            plotxy(-tmp[1]*np.sin(np.linspace(0.,1.)*cts.twopi)+tmp[0], np.linspace(0.,1.))
+            plotxy(-tmp[1]*np.sin(np.linspace(0.,1.)*cts.TWOPI)+tmp[0], np.linspace(0.,1.))
             plotxy(Keffs, phases, line=None, symbol=2)
         Keff = tmp[1]
         return Keff
@@ -535,7 +535,7 @@ class Photometry_disk(object):
         # Loop over the data set and plot the flux, theoretical flux and offset theoretical flux
         rangey = [self.mag.max()+0.3*(self.mag.max()-self.mag.min()), self.mag.min()-0.3*(self.mag.max()-self.mag.min())]
         for i in np.arange(self.ndataset):
-            plotxy(self.data['mag'][i], self.data['phase'][i], erry=self.data['err'][i], line=None, symbol=i+2, color=1+i, rangey=rangey, rangex=[0.,1.], labx='Orbital Phase', laby='Magnitude', device=device)
+            plotxy(self.data['mag'][i], self.data['phase'][i], erry=self.data['mag_err'][i], line=None, symbol=i+2, color=1+i, rangey=rangey, rangex=[0.,1.], labx='Orbital Phase', laby='Magnitude', device=device)
             plotxy(pred_flux[i], phases[i], color=1+i, line=1)
         plotxy([0],[0], color=1)
         y0 = (self.mag.max()+self.mag.min())/2
@@ -635,7 +635,7 @@ class Photometry_disk(object):
         Mns = self.star.mass2
         # below we transform sigma from W m^-2 K^-4 to erg s^-1 cm^-2 K^-4
         # below we transform the separation from m to cm
-        Lirr = tirr**4 * (cts.sigma*1e3) * (separation*100)**2 * 4*cts.pi
+        Lirr = tirr**4 * (cts.sigma*1e3) * (separation*100)**2 * 4*cts.PI
         Lirr_comp = Lirr * self.star.Radius()**2
         eff = Lirr/self.edot
         # we convert Lirr in Lsun units
@@ -711,7 +711,7 @@ class Photometry_disk(object):
         """
         f = open(data_fln,'r')
         lines = f.readlines()
-        self.data = {'mag':[], 'phase':[], 'err':[], 'calib':[], 'fln':[], 'id':[]}
+        self.data = {'mag':[], 'phase':[], 'mag_err':[], 'calib':[], 'fln':[], 'id':[]}
         for line in lines:
             if (line[0] != '#') and (line[0] != '\n'):
                 tmp = line.split()
@@ -723,7 +723,7 @@ class Photometry_disk(object):
                 else:
                     self.data['phase'].append((d[0] - float(tmp[4])) % 1.)
                 self.data['mag'].append(d[1])
-                self.data['err'].append(d[2])
+                self.data['mag_err'].append(d[2])
                 self.data['calib'].append(float(tmp[5]))
                 self.data['fln'].append(tmp[6])
                 self.data['id'].append(tmp[0])
@@ -749,7 +749,7 @@ class Photometry_disk(object):
         self.data['calib'] = np.asarray(self.data['calib'])
         self.mag = np.hstack(self.data['mag'])
         self.phase = np.hstack(self.data['phase'])
-        self.err = np.hstack(self.data['err'])
+        self.mag_err = np.hstack(self.data['mag_err'])
         return
 
 ######################## class Photometry_disk ########################

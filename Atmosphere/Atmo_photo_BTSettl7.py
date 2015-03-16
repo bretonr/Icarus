@@ -112,9 +112,9 @@ class Atmo_phot_BTSettl7(Atmo_grid):
         grid = np.resize(flux, (n_mu, n_temp, n_logg))
         grid = grid.swapaxes(0, 1).swapaxes(1, 2) * mu_factor
         if AB:
-            grid = np.log(grid*4/cts.pi**2)
+            grid = np.log(grid*4/cts.PI**2)
         else:
-            grid = np.log(grid*4/cts.pi**2 / (cts.c*1e10) * (self.wav*1e8)**2)
+            grid = np.log(grid*4/cts.PI**2 / (cts.c*1e10) * (self.wav*1e8)**2)
         
         # Making class variables
         self.grid = grid.copy()

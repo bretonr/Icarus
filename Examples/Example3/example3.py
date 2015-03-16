@@ -24,7 +24,7 @@ tempgrav = 0.25
 tirr = 0.
 porb = cts.SECPERDAY
 k1 = 500e3
-incl = cts.pibytwo
+incl = cts.PIBYTWO
 
 star.Make_surface(q=q, omega=omega, filling=filling, temp=temp, tempgrav=tempgrav, tirr=tirr, porb=porb, k1=k1, incl=incl)
 

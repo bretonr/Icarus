@@ -107,7 +107,7 @@ class Photometry_legacy(object):
         # We read the atmosphere models with the atmo_grid class
         self._Read_atmo(atmo_fln)
         # We make sure that the length of data and atmo_dict are the same
-        if len(self.atmo_grid) != len(self.data['mag']):
+        if len(self.atmo_grid) != len(self.data['id']):
             print 'The number of atmosphere grids and data sets (i.e. photometric bands) do not match!!!'
             return
         else:
@@ -184,9 +184,9 @@ class Photometry_legacy(object):
         
         if offset_free == 0:
             pred_flux = self.Get_flux(par, flat=True, nsamples=nsamples, verbose=verbose)
-            ((par[7],par[8]), chi2_data, rank, s) = Utils.Misc.Fit_linear(self.mag-pred_flux, x=self.ext, err=self.err, b=par[7], m=par[8])
+            ((par[7],par[8]), chi2_data, rank, s) = Utils.Misc.Fit_linear(self.mag-pred_flux, x=self.ext, err=self.mag_err, b=par[7], m=par[8])
             if full_output:
-                residuals = ( (self.mag-pred_flux) - (self.ext*par[8] + par[7]) ) / self.err
+                residuals = ( (self.mag-pred_flux) - (self.ext*par[8] + par[7]) ) / self.mag_err
                 offset = np.zeros(self.ndataset)
             chi2_band = 0.
             chi2 = chi2_data + chi2_band
@@ -201,10 +201,10 @@ class Photometry_legacy(object):
                     print( "Impossible to return proper residuals" )
                     residuals = None
             else: # Calculate the residuals in the magnitude domain
-                res1 = np.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['err'][i], m=0., inline=True) for i in np.arange(self.ndataset) ])
+                res1 = np.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['mag_err'][i], m=0., inline=True) for i in np.arange(self.ndataset) ])
                 offset = res1[:,0]
                 if full_output:
-                    residuals = [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['err'][i] for i in np.arange(self.ndataset) ]
+                    residuals = [ ((self.data['mag'][i]-pred_flux[i]) - offset[i])/self.data['mag_err'][i] for i in np.arange(self.ndataset) ]
             chi2_data = res1[:,2].sum()
             # Fit for the best offset between the observed and theoretical flux given the DM and A_V
             res2 = Utils.Misc.Fit_linear(offset, x=self.data['ext'], err=self.data['calib'], b=par[7], m=par[8], inline=True)
@@ -395,9 +395,9 @@ class Photometry_legacy(object):
         # Get the Keffs and fluxes
         phases = np.arange(nphases)/float(nphases)
         Keffs = np.array( [self.star.Keff(phase, atmo_grid=atmo_grid) for phase in phases] )
-        tmp = Utils.Misc.Fit_linear(Keffs, np.sin(cts.twopi*(phases)), inline=True)
+        tmp = Utils.Misc.Fit_linear(Keffs, np.sin(cts.TWOPI*(phases)), inline=True)
         if verbose:
-            pylab.plot(np.linspace(0.,1.), tmp[1]*np.sin(np.linspace(0.,1.)*cts.twopi)+tmp[0])
+            pylab.plot(np.linspace(0.,1.), tmp[1]*np.sin(np.linspace(0.,1.)*cts.TWOPI)+tmp[0])
             pylab.scatter(phases, Keffs)
         Keff = tmp[1]
         return Keff
@@ -523,7 +523,7 @@ class Photometry_legacy(object):
             ncolors = 1
         for i in np.arange(self.ndataset):
             color = np.ones((self.data['mag'][i].size,1), dtype=float) * matplotlib.cm.jet(float(i)/ncolors)
-            ax.errorbar(self.data['phase'][i], self.data['mag'][i], yerr=self.data['err'][i], fmt='none', ecolor=color[0])
+            ax.errorbar(self.data['phase'][i], self.data['mag'][i], yerr=self.data['mag_err'][i], fmt='none', ecolor=color[0])
             ax.scatter(self.data['phase'][i], self.data['mag'][i], edgecolor=color, facecolor=color)
             ax.plot(phases[i], pred_flux[i], 'k--')
             ax.plot(phases[i], pred_flux[i]+offset[i], 'k-')
@@ -631,7 +631,7 @@ class Photometry_legacy(object):
         Mns = self.star.mass2
         # below we transform sigma from W m^-2 K^-4 to erg s^-1 cm^-2 K^-4
         # below we transform the separation from m to cm
-        Lirr = tirr**4 * (cts.sigma*1e3) * (separation*100)**2 * 4*cts.pi
+        Lirr = tirr**4 * (cts.sigma*1e3) * (separation*100)**2 * 4*cts.PI
         eff = Lirr/self.edot
         # we convert Lirr in Lsun units
         Lirr /= 3.839e33
@@ -737,7 +737,7 @@ class Photometry_legacy(object):
         """
         f = open(data_fln,'r')
         lines = f.readlines()
-        self.data = {'mag':[], 'phase':[], 'err':[], 'calib':[], 'fln':[], 'id':[], 'softening':[]}
+        self.data = {'phase':[], 'mag':[], 'mag_err':[], 'flux':[], 'flux_err':[], 'calib':[], 'fln':[], 'id':[], 'softening':[]}
         for line in lines:
             if (line[0] != '#') and (line[0] != '\n'):
                 tmp = line.split()
@@ -751,7 +751,7 @@ class Photometry_legacy(object):
                     else:
                         self.data['phase'].append( np.atleast_1d((d[0] - float(tmp[4]))%1.) )
                     self.data['mag'].append( np.atleast_1d(d[1]) )
-                    self.data['err'].append( np.atleast_1d(d[2]) )
+                    self.data['mag_err'].append( np.atleast_1d(d[2]) )
                     self.data['calib'].append( float(tmp[5]) )
                     self.data['fln'].append( tmp[-1] )
                     self.data['id'].append( tmp[0] )
@@ -766,7 +766,7 @@ class Photometry_legacy(object):
                     else:
                         self.data['phase'].append( np.atleast_1d((d[0] - float(tmp[4]))%1.) )
                     self.data['mag'].append( np.atleast_1d(d[1]) )
-                    self.data['err'].append( np.atleast_1d(d[2]) )
+                    self.data['mag_err'].append( np.atleast_1d(d[2]) )
                     self.data['calib'].append( float(tmp[5]) )
                     self.data['fln'].append( tmp[-1] )
                     self.data['id'].append( tmp[0] )
@@ -783,7 +783,7 @@ class Photometry_legacy(object):
                         else:
                             self.data['phase'].append( np.atleast_1d((d[0] - float(tmp[4]))%1.) )
                         self.data['mag'].append( np.atleast_1d(d[1]) )
-                        self.data['err'].append( np.atleast_1d(d[2]) )
+                        self.data['mag_err'].append( np.atleast_1d(d[2]) )
                         self.data['calib'].append( float(tmp[5]) )
                         self.data['fln'].append( tmp[-1] )
                         self.data['id'].append( tmp[0] )
@@ -821,14 +821,10 @@ class Photometry_legacy(object):
         ext = []
         self.data['ext'] = []
         # Converting magnitudes <-> fluxes in case this would be needed for upper limits
-        if self.data.has_key('mag'):
+        if len(self.data['flux']) == 0:
             has_mag = True
-            self.data['flux'] = []
-            self.data['flux_err'] = []
         else:
             has_mag = False
-            self.data['mag'] = []
-            self.data['err'] = []
         # The grouping will define datasets that are in the same band and can be evaluated only once in order to save on computation.
         grouping = np.arange(self.ndataset)
         for i in np.arange(self.ndataset):
@@ -837,12 +833,16 @@ class Photometry_legacy(object):
             if self.data['softening'][i] == 0:
                 if has_mag:
                     flux,flux_err = Utils.Flux.Mag_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].meta['zp'])
+                    self.data['flux'].append( flux )
+                    self.data['flux_err'].append( flux_err )
                 else:
-                    mag,err = Utils.Flux.Flux_to_mag(self.data['flux'][i], mag_err=self.data['flux_err'][i], flux0=self.atmo_grid[i].meta['zp'])
+                    mag,mag_err = Utils.Flux.Flux_to_mag(self.data['flux'][i], flux_err=self.data['flux_err'][i], flux0=self.atmo_grid[i].meta['zp'])
+                    self.data['mag'].append( mag )
+                    self.data['mag_err'].append( mag_err )
             else:
-                flux,flux_err = Utils.Flux.Asinh_to_flux(self.data['mag'][i], mag_err=self.data['err'][i], flux0=self.atmo_grid[i].meta['zp'], softening=self.data['softening'][i])
-            self.data['flux'].append( flux )
-            self.data['flux_err'].append( flux_err )
+                flux,flux_err = Utils.Flux.Asinh_to_flux(self.data['mag'][i], mag_err=self.data['mag_err'][i], flux0=self.atmo_grid[i].meta['zp'], softening=self.data['softening'][i])
+                self.data['flux'].append( flux )
+                self.data['flux_err'].append( flux_err )
             for j in np.arange(i+1):
                 if self.data['id'][i] == self.data['id'][j]:
                     grouping[i] = j
@@ -852,7 +852,7 @@ class Photometry_legacy(object):
         self.data['ext'] = np.asarray(self.data['ext'])
         self.data['calib'] = np.asarray(self.data['calib'])
         self.mag = np.hstack(self.data['mag'])
-        self.err = np.hstack(self.data['err'])
+        self.mag_err = np.hstack(self.data['mag_err'])
         self.phase = np.hstack(self.data['phase'])
         self.flux = np.hstack(self.data['flux'])
         self.flux_err = np.hstack(self.data['flux_err'])
