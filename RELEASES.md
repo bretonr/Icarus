@@ -2,7 +2,7 @@
 
 ## Release history
 
-### 2.1.x (2015-02-20)
+### 2.1.2 (2015-03-18)
 
 Features:
 
@@ -12,6 +12,7 @@ Bug fixes:
 
 - Fixed an issue with the conversion of mag to/from flux in the _Photometry_ module. The conversion was expecting to find a _flux0_ parameter, whereas the zeropoint is now incorporated as _zp_ in the atmosphere files.
 - The _Utils.import_modules_ has a set of constants defined under the _cts_ namespace. Converted some lower case constants into upper case.
+- Many changes made to the _Photometry_ module in order to handle working in the flux space properly (as opposed to the magnitude space). Now all the plotting can be done in the flux space. Also, everything related to dealing with the band offset has been rebrewed in order to simplify function calls and make everything more intuitive. This includes changes to the optional arguments and their names. Please make sure to look at the docstrings for _Calc_chi2_, _Get_flux_, _Get_flux_theoretical_, _Plot_.
 
 
 ### 2.1.1 (2015-02-20)

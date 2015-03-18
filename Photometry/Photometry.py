@@ -7,9 +7,20 @@ from .. import Utils
 from .. import Core
 from .. import Atmosphere
 
+import colorsys
+
 
 ######################## Plotting functions ########################
-def Prep_plot(ncolors=5, cmap="Paired_r"):
+def Prep_plot(ncolors=5, cmap=['jet',1.,1.,1.]):
+    """
+    Return : fig, ax, colors
+
+    ncolors : number of colors for the colormap
+    cmap : list of [colormap name,
+                    alpha value,
+                    luminosity boosting,
+                    saturation boosting]
+    """
     ## We retrieve the figure and axes
     try:
         fig = pylab.gcf()
@@ -20,10 +31,23 @@ def Prep_plot(ncolors=5, cmap="Paired_r"):
     except:
         fig, ax = pylab.subplots(nrows=1, ncols=1)
     ## We generate a list of colors
-    if HAS_SEABORN:
+    cmap, alpha, luminosity, saturation = cmap
+    if HAS_SEABORN and cmap != 'jet':
         colors = sns.color_palette(cmap, ncolors)
     else:
+        if cmap not in dir(pylab.cm):
+            cmap = 'jet'
         colors = pylab.get_cmap(cmap)(np.linspace(0,1,ncolors))
+    if alpha != 1:
+        colors[:,-1] = alpha
+    if luminosity != 1 or saturation != 1:
+        hls = np.array([colorsys.rgb_to_hls(*c[:-1]) for c in colors])
+        if luminosity != 1:
+            hls[:,1] *= luminosity
+        if saturation != 1:
+            hls[:,2] *= saturation
+        rgb = np.array([colorsys.hls_to_rgb(*c) for c in hls])
+        colors = np.c_[rgb,colors[:,-1]]
     return fig, ax, colors
 
 def Post_plot(influx=False):
@@ -144,30 +168,48 @@ class Photometry(object):
         self._Init_lightcurve(ndiv, read=read)
         self._Setup()
 
-    def Calc_chi2(self, par, offset_free=1, DM=0., AV=0., nsamples=None, influx=False, full_output=False, verbose=False):
+    def Calc_chi2(self, par, do_offset=True, nsamples=None, influx=False, full_output=False, verbose=False):
         """
         Returns the chi-square of the fit of the data to the model.
 
-        par (list/array): Parameter list as expected by the Make_surface function.
-        offset_free (int):
-            1) offset_free = 0:
-                If the offset is not free and the DM and A_V are specified, the chi2
-                is calculated directly without allowing an offset between the data and
+        par: Parameter list.
+            [0]: Mass ratio q = M2/M1, where M1 is the modelled star.
+            [1]: Orbital period in seconds.
+            [2]: Orbital inclination in radians.
+            [3]: K1 (projected velocity semi-amplitude) in m/s.
+            [4]: Corotation factor (Protation/Porbital).
+            [5]: Roche-lobe filling in fraction of x_nose/L1.
+            [6]: Gravity darkening coefficient.
+                Should be 0.25 for radiation envelopes, 0.08 for convective.
+            [7]: Star base temperature at the pole, before gravity darkening.
+            [8]: Irradiation temperature at the center of mass location.
+                The effective temperature is calculated as T^4 = Tbase^4+Tirr^4
+                and includes projection and distance effect.
+            [9]: Distance modulus.
+            [10]: V band extinction.
+
+            Note: Can also be a dictionary:
+                par.keys() = ['q','porb','incl','k1','omega','filling','tempgrav','temp','tirr','dm','av']
+
+        do_offset (bool):
+            1) do_offset = False:
+                If the offset is not free and the DM and Av are specified, the chi2
+                is calculated directly without allowing any offset between the data and
                 the bands.
-                The full chi2 should be:
-                    chi2 = sum[ w_i*(off_i-dm-av*C_i)**2]
-                        + w_dm*(dm-dm_obs)**2 
-                        + w_av*(av-av_obs)**2,     with w = 1/sigma**2
-                The extra terms (i.e. dm-dm_obs and av-av_obs) should be included
-                as priors.
-            1) offset_free = 1:
+                Given i the band and j the data point in band j.
+                The chi2 is then
+                    chi2 = sum_i[sum_j[ (((data_ij - (model_ij+dm+extinction_i))/data_err_ij)**2 ]]
+            2) offset_free = True:
                 The model light curves are fitted to the data with an arbitrary
                 offset for each band. After, a post-fit is performed in order to
                 adjust the offsets of the curves accounting for the fact that
                 the absolute calibration of the photometry may vary.
-                Note: The errors should be
-                err**2 = calib_err**2 + 1/sum(flux_err)**2
-                but we neglect the second term because it is negligeable.
+                Given i the band and j the data point in band j.
+                The chi2 is then
+                    chi2_data = sum_i[sum_j[ (((data_ij - (model_ij+bestoffset_i))/data_err_ij)**2 ]]
+                    chi2_band = sum_i[ (((bestoffset_i - (dm+extinction_i))/band_err_i)**2 ]
+                    chi2 = chi2_data + chi2_band
+
         DM (float): Distance modulus o apply to the data.
             It is possible to specify None in case one would like to allow for
             an arbitrary offset to be optimized for the offset_free = 1 case.
@@ -189,20 +231,33 @@ class Photometry(object):
 
         >>> self.Calc_chi2([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
         """
-        if offset_free == 0:
-            # Calculate the fluxes, directly applying the DM and AV
-            pred_flux = self.Get_flux(par, flat=True, nsamples=nsamples, verbose=verbose)
-            # Fit the data to the fluxes as they are
-            diff = self.mag-pred_flux
-            ((DM,AV), chi2_data, rank, s) = Utils.Misc.Fit_linear(diff, x=self.ext, err=self.mag_err, b=DM, m=AV)
-            residuals = ( diff - (self.ext*AV + DM) ) / self.mag_err
+        ## Extract the DM and AV from the parameter list.
+        if isinstance(par, dict):
+            DM = par['dm'] if 'dm' in par.keys() else 0.
+            AV = par['av'] if 'av' in par.keys() else 0.
+        else:
+            DM = par[-2] if len(par) == 10 else 0.
+            AV = par[-1] if len(par) == 10 else 0.
+
+        if not do_offset: # Calculate the flux/mag, directly applying the DM and AV
+            pred_flux = self.Get_flux(par, flat=True, nsamples=nsamples, influx=influx, verbose=verbose)
+            if influx: # Calculate the residuals in the flux domain
+                residuals = (self.flux-pred_flux)/self.flux_err
+                chi2 = (residuals**2).sum()
+            else: # Calculate the residuals in the magnitude domain
+                residuals = (self.mag-pred_flux)/self.mag_err
+                chi2 = (residuals**2).sum()
+                ## This is the old way
+                #diff = self.mag-pred_flux
+                #((DM,AV), chi2_data, rank, s) = Utils.Misc.Fit_linear(diff, x=self.ext, err=self.mag_err, b=DM, m=AV)
+                #if full_output:
+                    #residuals = ( diff - (self.ext*AV + DM) ) / self.mag_err
+                    #offset_band = np.zeros(self.ndataset)
             offset_band = np.zeros(self.ndataset)
             chi2_band = 0.
             chi2 = chi2_data + chi2_band
-        else:
-            # Calculate the theoretical flux
-            pred_flux = self.Get_flux(par, flat=False, nsamples=nsamples, influx=influx, verbose=verbose)
-            # Calculate the residuals between observed and theoretical flux
+        else: # Calculate the flux/mag, while attempting to optimise the offset between the bands
+            pred_flux = self.Get_flux(par, DM=0., AV=0., flat=False, nsamples=nsamples, influx=influx, verbose=verbose)
             if influx: # Calculate the residuals in the flux domain
                 res1 = np.array([ Utils.Misc.Fit_linear(self.data['flux'][i], x=pred_flux[i], err=self.data['flux_err'][i], b=0., inline=True) for i in np.arange(self.ndataset) ])
                 offset_band = res1[:,1]
@@ -224,6 +279,14 @@ class Photometry(object):
             # Update the offset to be the actual offset between the data and the band (i.e. minus the DM and A_V contribution)
             offset_band -= self.data['ext']*AV + DM
 
+        ## Putting back the updated DM and AV from the parameter list.
+        if isinstance(par, dict):
+            if 'dm' in par.keys(): par['dm'] = DM
+            if 'av' in par.keys(): par['av'] = AV
+        else:
+            if len(par) == 10: par[-2] = DM
+            if len(par) == 10: par[-1] = AV
+
         # Output results
         if verbose:
             print('chi2: {:.3f}, chi2 (data): {:.3f}, chi2 (band offset): {:.3f}, DM: {:.3f}, AV: {:.3f}'.format(chi2, chi2_data, chi2_band, DM, AV))
@@ -232,16 +295,37 @@ class Photometry(object):
         else:
             return chi2
 
-    def Get_flux(self, par, flat=False, DM=0., AV=0., nsamples=None, influx=False, verbose=False):
+    def Get_flux(self, par, DM=None, AV=None, flat=False, nsamples=None, influx=False, verbose=False):
         """
         Returns the predicted flux (in magnitude) by the model evaluated
         at the observed values in the data set.
 
-        par (list/array): Parameter list as expected by the Make_surface function.
+        par: Parameter list.
+            [0]: Mass ratio q = M2/M1, where M1 is the modelled star.
+            [1]: Orbital period in seconds.
+            [2]: Orbital inclination in radians.
+            [3]: K1 (projected velocity semi-amplitude) in m/s.
+            [4]: Corotation factor (Protation/Porbital).
+            [5]: Roche-lobe filling in fraction of x_nose/L1.
+            [6]: Gravity darkening coefficient.
+                Should be 0.25 for radiation envelopes, 0.08 for convective.
+            [7]: Star base temperature at the pole, before gravity darkening.
+            [8]: Irradiation temperature at the center of mass location.
+                The effective temperature is calculated as T^4 = Tbase^4+Tirr^4
+                and includes projection and distance effect.
+            The following are optional, set to 0. if not provided.
+            [9]: Distance modulus.
+            [10]: V band extinction.
+
+            Note: Can also be a dictionary:
+                par.keys() = ['q','porb','incl','k1','omega','filling','tempgrav','temp','tirr','dm','av']
+
+        DM (float): Distance modulus.
+            If provided override that of the parameter list.
+        AV (float): V band extinction.
+            If provided override that of the parameter list.
         flat (False): If True, the values are returned in a 1D vector.
             If False, predicted values are grouped by data set left in a list.
-        DM (float): Distance modulus o apply to the data.
-        AV (float): V band extinction.
         nsamples (None): Number of points for the lightcurve sampling.
             If None, the lightcurve will be sampled at the observed data
             points.
@@ -260,9 +344,17 @@ class Photometry(object):
         else:
             phases = (np.arange(nsamples, dtype=float)/nsamples).repeat(self.ndataset).reshape((nsamples,self.ndataset)).T
 
-        # We take into account flux offset due to the DM and AV.
-        if DM is None: DM = 0.
-        if AV is None: AV = 0.
+        ## Extract the DM and AV from the parameter list.
+        if DM is None:
+            if isinstance(par, dict):
+                DM = par['dm'] if 'dm' in par.keys() else 0.
+            else:
+                DM = par[-2] if len(par) == 10 else 0.
+        if AV is None:
+            if isinstance(par, dict):
+                AV = par['av'] if 'av' in par.keys() else 0.
+            else:
+                AV = par[-1] if len(par) == 10 else 0.
         offsets = self.data['ext']*AV + DM
         if influx:
             offsets = 10**(-0.4*offsets)
@@ -292,17 +384,38 @@ class Photometry(object):
         else:
             return flux
 
-    def Get_flux_theoretical(self, par, phases, DM=0., AV=0., influx=False, verbose=False):
+    def Get_flux_theoretical(self, par, phases, DM=None, AV=None, influx=False, verbose=False):
         """
         Returns the predicted flux (in magnitude) by the model evaluated at the
         observed values in the data set.
 
-        par (list/array): Parameter list as expected by the Make_surface function.
+        par: Parameter list.
+            [0]: Mass ratio q = M2/M1, where M1 is the modelled star.
+            [1]: Orbital period in seconds.
+            [2]: Orbital inclination in radians.
+            [3]: K1 (projected velocity semi-amplitude) in m/s.
+            [4]: Corotation factor (Protation/Porbital).
+            [5]: Roche-lobe filling in fraction of x_nose/L1.
+            [6]: Gravity darkening coefficient.
+                Should be 0.25 for radiation envelopes, 0.08 for convective.
+            [7]: Star base temperature at the pole, before gravity darkening.
+            [8]: Irradiation temperature at the center of mass location.
+                The effective temperature is calculated as T^4 = Tbase^4+Tirr^4
+                and includes projection and distance effect.
+            The following are optional, set to 0. if not provided.
+            [9]: Distance modulus.
+            [10]: V band extinction.
+
+            Note: Can also be a dictionary:
+                par.keys() = ['q','porb','incl','k1','omega','filling','tempgrav','temp','tirr','dm','av']
+
         phases: A list of orbital phases at which the model should be
             evaluated. The list must have the same length as the
             number of data sets, each element can contain many phases.
-        DM (float): Distance modulus o apply to the data.
+        DM (float): Distance modulus.
+            If provided override that of the parameter list.
         AV (float): V band extinction.
+            If provided override that of the parameter list.
         influx (bool): If true, will return flux instead of magnitude.
         verbose (False): Print some info.
 
@@ -315,9 +428,17 @@ class Photometry(object):
         # We call Make_surface to make the companion's surface.
         self.Make_surface(par, verbose=verbose)
 
-        # We take into account flux offset due to the DM and AV.
-        if DM is None: DM = 0.
-        if AV is None: AV = 0.
+        ## Extract the DM and AV from the parameter list.
+        if DM is None:
+            if isinstance(par, dict):
+                DM = par['dm'] if 'dm' in par.keys() else 0.
+            else:
+                DM = par[-2] if len(par) == 10 else 0.
+        if AV is None:
+            if isinstance(par, dict):
+                AV = par['av'] if 'av' in par.keys() else 0.
+            else:
+                AV = par[-1] if len(par) == 10 else 0.
         offsets = self.data['ext']*AV + DM
         if influx:
             offsets = 10**(-0.4*offsets)
@@ -341,7 +462,23 @@ class Photometry(object):
         The luminosity-weighted average velocity of the star is returned for
         nphases, for the specified dataset, and a sin wave is fitted to them.
 
-        par (list/array): Parameter list as expected by the Make_surface function.
+        par: Parameter list.
+            [0]: Mass ratio q = M2/M1, where M1 is the modelled star.
+            [1]: Orbital period in seconds.
+            [2]: Orbital inclination in radians.
+            [3]: K1 (projected velocity semi-amplitude) in m/s.
+            [4]: Corotation factor (Protation/Porbital).
+            [5]: Roche-lobe filling in fraction of x_nose/L1.
+            [6]: Gravity darkening coefficient.
+                Should be 0.25 for radiation envelopes, 0.08 for convective.
+            [7]: Star base temperature at the pole, before gravity darkening.
+            [8]: Irradiation temperature at the center of mass location.
+                The effective temperature is calculated as T^4 = Tbase^4+Tirr^4
+                and includes projection and distance effect.
+
+            Note: Can also be a dictionary:
+                par.keys() = ['q','porb','incl','k1','omega','filling','tempgrav','temp','tirr']
+
         nphases (int): Number of phases to evaluate the velocity at.
         atmo_grid (int, AtmoGridPhot): The atmosphere grid to use for the velocity
             calculation. Can be an integer that represents the index of the atmosphere
@@ -378,7 +515,7 @@ class Photometry(object):
         return
 
     def Make_surface(self, par, verbose=False):
-        """Make_surface(par, func_par=None, verbose=False)
+        """
         This function gets the parameters to construct to companion
         surface model and calls the Make_surface function from the
         Lightcurve object.
@@ -434,111 +571,128 @@ class Photometry(object):
 
         return
 
-    def Plot(self, par, nphases=51, DM=0., AV=0., do_offset=1, offset_free=1, offsets=None, verbose=False, output=False, cmap="Paired_r", errors=True, influx=False):
+    def Plot(self, par, nphases=51, show_preoffset=False, do_offset=True, offset_list=None, verbose=False, full_output=False, cmap=None, errors=True, influx=False):
         """
         Plot the predicted light curves.
 
         par (list/array): Parameter list as expected by the Make_surface function.
         nphases (int): Orbital phase resolution of the model light curve.
-        DM (float): Distance modulus o apply to the data.
-        AV (float): V band extinction.
-        do_offset (int/bool): If true will calculate the offset of the model to
-            the data.
-            If 2, will plot both the non-offset curves and the offset curves.
-            If 1, will plot only the offset curves.
-            If 0, does not apply any offset.
-        offset_free (int): The type of offset calculation, according to
-            Calc_chi2
-        offsets (list/array): The list of offset to apply. If provided, the offset
-            calculation is not performed, which voids the previous two keywords.
+        show_preoffset (bool): If true shows the pre-offset model as a dash curve.
+        do_offset (bool): Whether an adjustment offset should be computed or not.
+        offset_list (list/array): The list of offsets to apply. If provided, the
+            offset calculation is not performed, which voids the previous keyword.
         verbose (False): verbosity.
-        output (False): If true, will return the model flux values and the offsets.
-        cmap : The name of the colormap to use for the lightcurve colors.
+        full_output (False): If true, will return the model flux values and the offsets.
+        cmap : Colormap definition for the plot. Can be one for both data and model
+        or one for each. Hence:
+            None
+            [colormap name, alpha value, luminosity boosting, saturation boosting]
+            [[cmap,alpha,lum,sat],[cmap,alpha,lum,sat]]
+
+            example : 
+                cmap = ['jet', 1., 0.5, 1.0]
+                cmap = [['jet', 0.3, 1.0, 1.0], ['jet', 1., 0.5, 1.0]]
+                cmap = None -> (which defaults to ['jet',1.,1.,1.])
+
         errors : Whether to show error bars or not.
         influx : Whether to show the data in flux instead of magnitude.
 
         >>> self.Plot_model([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
         """
-        self.Plot_data(cmap=cmap, errors=errors, influx=influx)
-        results = self.Plot_model(par, nphases=nphases, DM=DM, AV=AV, do_offset=do_offset, offset_free=offset_free, offsets=offsets, verbose=verbose, output=output, cmap=cmap, influx=influx)
+        if cmap is None:
+            cmap = [['jet',1.,1.,1.],['jet',1.,0.5,1.]]
+        if isinstance(cmap[0], str):
+            cmap = [cmap]*2
+        self.Plot_data(cmap=cmap[0], errors=errors, influx=influx)
+        results = self.Plot_model(par, nphases=nphases, show_preoffset=show_preoffset, do_offset=do_offset, offset_list=offset_list, verbose=verbose, full_output=full_output, cmap=cmap[1], influx=influx)
         return results
 
-    def Plot_data(self, cmap="Paired_r", errors=True, influx=False):
+    def Plot_data(self, cmap=None, errors=True, influx=False):
         """
         Plots the observed data.
 
-        cmap : The name of the colormap to use for the lightcurve colors.
+        cmap : Colormap definition for the plot. Can be one of the following:
+            None
+            [colormap name, alpha value, luminosity boosting, saturation boosting]
+
+            example : 
+                cmap = ['jet', 1., 0.5, 1.0]
+                cmap = None -> (which defaults to ['jet',1.,1.,1.])
+
         errors : Whether to show error bars or not.
         influx : Whether to show the data in flux instead of magnitude.
 
         >>> self.Plot_data()
         """
-        ncolors = max(self.ndataset,4)
+        #ncolors = max(self.ndataset,4)
+        ncolors = self.ndataset
+        if cmap is None:
+            cmap = ['jet',1.,1.,1.]
         fig, ax, colors = Prep_plot(ncolors=ncolors, cmap=cmap)
         for i in np.arange(self.ndataset):
             if influx:
                 if errors:
                     ax.errorbar(self.data['phase'][i], self.data['flux'][i], yerr=self.data['flux_err'][i], fmt='none', ecolor=colors[i])
-                ax.plot(self.data['phase'][i], self.data['flux'][i], linestyle='None', marker='o', markersize=3, markeredgecolor=colors[i], markerfacecolor=colors[i], label=self.data['id'][i])
+                ax.plot(self.data['phase'][i], self.data['flux'][i], linestyle='None', marker='o', markersize=4, markeredgecolor=colors[i], markerfacecolor=colors[i], label=self.data['id'][i])
             else:
                 if errors:
                     ax.errorbar(self.data['phase'][i], self.data['mag'][i], yerr=self.data['mag_err'][i], fmt='none', ecolor=colors[i])
-                ax.plot(self.data['phase'][i], self.data['mag'][i], linestyle='None', marker='o', markersize=3, markeredgecolor=colors[i], markerfacecolor=colors[i], label=self.data['id'][i])
+                ax.plot(self.data['phase'][i], self.data['mag'][i], linestyle='None', marker='o', markersize=4, markeredgecolor=colors[i], markerfacecolor=colors[i], label=self.data['id'][i])
         Post_plot(influx=influx)
         return
 
-    def Plot_model(self, par, nphases=51, DM=0., AV=0., do_offset=1, offset_free=1, offsets=None, verbose=False, output=False, cmap="Paired_r", influx=False):
+    def Plot_model(self, par, nphases=51, show_preoffset=False, do_offset=True, offset_list=None, verbose=False, full_output=False, cmap=None, influx=False):
         """
         Plot the predicted light curves.
 
         par (list/array): Parameter list as expected by the Make_surface function.
         nphases (int): Orbital phase resolution of the model light curve.
-        DM (float): Distance modulus o apply to the data.
-        AV (float): V band extinction.
-        do_offset (int/bool): If true will calculate the offset of the model to
-            the data.
-            If 2, will plot both the non-offset curves and the offset curves.
-            If 1, will plot only the offset curves.
-            If 0, does not apply any offset.
-        offset_free (int): The type of offset calculation, according to
-            Calc_chi2
-        offsets (list/array): The list of offset to apply. If provided, the offset
-            calculation is not performed, which voids the previous two keywords.
+        show_preoffset (bool): If true shows the pre-offset model as a dash curve.
+        do_offset (bool): Whether an adjustment offset should be computed or not.
+        offset_list (list/array): The list of offsets to apply. If provided, the
+            offset calculation is not performed, which voids the previous keyword.
         verbose (False): verbosity.
-        output (False): If true, will return the model flux values and the offsets.
-        cmap : The name of the colormap to use for the lightcurve colors.
+        full_output (False): If true, will return the model flux values and the offsets.
+        cmap : Colormap definition for the plot. Can be one of the following:
+            None
+            [colormap name, alpha value, luminosity boosting, saturation boosting]
+
+            example : 
+                cmap = ['jet', 1., 0.5, 1.0]
+                cmap = None -> (which defaults to ['jet',1.,1.,1.])
+
         influx : Whether to show the data in flux instead of magnitude.
 
+        Example :
         >>> self.Plot_model([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
         """
         ## Calculate the orbital phases at which the flux will be evaluated
         phases = np.resize(np.linspace(0.,1.,nphases), (self.ndataset, nphases))
         ## Calculate the theoretical flux at the orbital phases
-        pred_flux = self.Get_flux_theoretical(par, phases, DM=DM, AV=AV, influx=influx)
+        pred_flux = self.Get_flux_theoretical(par, phases, influx=influx)
 
-        ## if do_offset is true, we calculate the offset of the model to the data
-        if offsets is None:
+        ## If offsets are not provided, we calculate the offsets of the model to the data
+        if offset_list is None:
             if do_offset:
-                chi2, extras = self.Calc_chi2(par, offset_free=offset_free, DM=DM, AV=AV, verbose=verbose, full_output=True, influx=influx)
-                offsets = extras['offset']
+                chi2, extras = self.Calc_chi2(par, do_offset=do_offset, verbose=verbose, full_output=True, influx=influx)
+                offset_list = extras['offset']
                 par = extras['par']
             else:
-                offsets = np.zeros(self.ndataset)
+                offset_list = np.zeros(self.ndataset)
 
-        ncolors = max(self.ndataset,4)
+        ncolors = self.ndataset
+        if cmap is None:
+            cmap = ['jet',1.,1.,1.]
         fig, ax, colors = Prep_plot(ncolors=ncolors, cmap=cmap)
         for i in np.arange(self.ndataset):
-            if do_offset == 2:
+            if show_preoffset:
                 ax.plot(phases[i], pred_flux[i], ls='--', color=colors[i])
-            if do_offset:
-                if influx:
-                    ax.plot(phases[i], pred_flux[i]*10**(-0.4*offsets[i]), ls='-', color=colors[i])
-                else:
-                    ax.plot(phases[i], pred_flux[i]+offsets[i], ls='-', color=colors[i])
+            if influx:
+                ax.plot(phases[i], pred_flux[i]*10**(-0.4*offset_list[i]), ls='-', color=colors[i])
             else:
-                ax.plot(phases[i], pred_flux[i], ls='-', color=colors[i])
+                ax.plot(phases[i], pred_flux[i]+offset_list[i], ls='-', color=colors[i])
         Post_plot(influx=influx)
-        if output:
+        if full_output:
             return pred_flux, offsets
         return
 
