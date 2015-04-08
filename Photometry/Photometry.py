@@ -651,6 +651,8 @@ class Photometry(object):
         do_offset (bool): Whether an adjustment offset should be computed or not.
         offset_list (list/array): The list of offsets to apply. If provided, the
             offset calculation is not performed, which voids the previous keyword.
+            The offsets must be in magnitude space so for flux plots, 10**(-0.4*offset)
+                will be computed.
         verbose (False): verbosity.
         full_output (False): If true, will return the model flux values and the offsets.
         cmap : Colormap definition for the plot. Can be one of the following:
