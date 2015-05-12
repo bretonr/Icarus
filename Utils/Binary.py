@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def Err_velocity(chi2, vels, dof, clip=None, normalize=False, redchi2_unity=False, verbose=False):
-    """Err_velocity(chi2, vels, dof, clip=None, normalize=False, redchi2_unity=False, verbose=False)
+    """
     Given a vector of chi2 values and associated velocity shifts,
     will return the best chi2, the best velocity shift and the
     1sigma error bar by approximating the region near the minimum
@@ -86,37 +86,58 @@ def Get_saddle(x, q, omega=1.):
     x = x+dx
     return dx/x
 
-def Get_K_to_q(porb, xsini):
-    """Get_K_to_q(porb, xsini)
+def Get_K_to_q(porb, asini):
+    """
     Returns the K_to_q conversion factor given an
-    orbital period and an observed xsini.
-    The K is for the "primary" whereas xsini is that
+    orbital period and an observed asini.
+    The K is for the "primary" whereas asini is that
     of the "secondary" star.
     
     porb: Orbital period in seconds.
-    xsini: Projected semi-major axis in light-second.
+    asini: Projected semi-major axis in lt-s.
     
-    >>> K_to_q = Get_K_to_q(porb, xsini)
+    >>> K_to_q = Get_K_to_q(porb, asini)
     """
-    return porb / (cts.TWOPI * xsini * cts.c)
+    return porb / (cts.TWOPI * asini * cts.c)
 
 def Mass_companion(mass_function, q, incl):
     """
     Returns the mass of the neutron star companion.
     
     mass_function: Mass function of the neutron star.
-    q: Mass ratio (q = M_ns/M_wd)
+    q: Mass ratio (q = M_ns/M_comp)
     incl: Orbital inclination in radians.
     
     >>> Mass_companion(mass_function, q, incl)
     """
     return mass_function * (1+q)**2 / np.sin(incl)**3
 
+def Mass_function(asini, porb):
+    """
+    Returns the mass function of an orbit.
+
+    asini: Projected semi-major axis in lt-s.
+    porb: Orbital period in s.
+    """
+    mfunc = 8015123.37129 * asini**3 / porb**2
+    return mfunc
+
+def Mass_function2(M_ns, M_comp, incl):
+    """
+    Returns the mass function of an orbit.
+
+    M_ns: Mass of the neutron star in solar mass.
+    M_comp: Mass of the companion in solar mass.
+    incl: Orbital inclination in radians.
+    """
+    mfunc = 8015123.37129 * asini**3 / porb**2
+    return mfunc
+
 def Mass_ratio(mass_function, M_ns, incl):
-    """Mass_ratio(mass_function, M_ns, incl)
-    Returns the mass ratio of a binary (q = M_ns/M_wd).
+    """
+    Returns the mass ratio of a binary (q = M_ns/M_comp).
     
-    mass_function: Mass function of the binary.
+    mass_function: Mass function of the neutron star.
     M_ns: Neutron star mass in solar mass.
     incl: Orbital inclination in radians.
     
@@ -128,17 +149,46 @@ def Mass_ratio(mass_function, M_ns, incl):
     t = (r - np.sqrt(q**3+r**2))**(1./3)
     return s+t-2./3
 
+def Mass_ratio2(M_ns, porb, incl, k1):
+    """
+    Returns the mass ratio of a binary (q = M_ns/M_comp).
+
+    M_ns: Neutron star mass in solar mass.
+    porb: Orbital period in s.
+    incl: Orbital inclination in radians.
+    k1: Projected orbital velocity in m/s.
+
+
+    Note: From Kepler's law
+    M2 = \frac{P}{2\pi G} (\frac{1+q}{q})^2 \frac{K1^3}{\sin^3 i}
+    with q = M2/M1
+
+    Solve q from the equation:
+    (A-1)q^2 + 2Aq +A = 0
+    with A = \frac{P}{2\pi G} \frac{K1^3}{M2 \sin^3 i}
+
+    q = (-A \pm \sqrt(A)) / (A-1) = (-A - \sqrt(A)) / (A-1)
+    but only the negative solution is possible given than A > 0.
+    Also, q is positive only for A < 1.
+    """
+    ## Calculate the right-hand side value
+    A = porb / (cts.TWOPI*cts.G*cts.Msun * M2) * k1**3 / np.sin(incl)**3
+    if A >= 1:
+        print("No valid solution for q!")
+    q = (-A - np.sqrt(A)) / (A-1)
+    return q
+
 def Orbital_separation(asini, q, incl):
-    """Orbital_separation(asini, q, incl)
-    Returns the orbital separation in centimeters.
+    """
+    Returns the orbital separation in m.
     
-    asini: Measured a_ns*sin(incl), in light-seconds.
-    q: Mass ratio of the binary (q = M_ns/M_wd).
+    asini: Projected semi-major axis of the neutron star in lt-s.
+    q: Mass ratio of the binary (q = M_ns/M_comp).
     incl: Orbital inclination in radians.
     
     >>> Orbital_separation(asini, q, incl)
     """
-    return asini*(1+q)/np.sin(incl)*C*100
+    return asini*(1+q)/np.sin(incl)*cts.c
 
 def Potential(x, y, z, q, qp1by2om2):
     """
@@ -162,7 +212,7 @@ def Potential(x, y, z, q, qp1by2om2):
     return rc, rx, dpsi, dpsidx, dpsidy, dpsidz, psi
 
 def Radius(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
-    """Radius(cosx, cosy, cosz, psi0, r, q, qp1by2om2)
+    """
     >>>Radius(-1., 0., 0., 5454., 0.14, 56., 57./2)
     """
     logger.debug("start")
@@ -219,7 +269,7 @@ def Radius(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
     return r
 
 def Radii(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
-    """Radii(cosx, cosy, cosz, psi0, r, q, qp1by2om2)
+    """
     >>>Radii(np.array([-1.,0.,0.]), np.array([0.,0.1,0.1]), np.array([0.,0.,0.1]), 5454., 0.14, 56., 57./2)
     """
     logger.debug("start")
@@ -285,7 +335,7 @@ def Radii(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
     return rout
 
 def Saddle(x, q, qp1by2om2):
-    """Saddle(x, q, qp1by2om2)
+    """
     >>>Saddle(0.5, 56., 57./2)
     """
     logger.debug("start")
