@@ -20,7 +20,7 @@ Bug fixes:
 
 - _Core/Star.py/Make_surface_
 
-    - Changed the way that coschi -- angle between the irradiation source and the normal to the surface -- is calculated. It used to be computed using the spherical approximation (i.e that the normal to the surface was roughly the same as the vector direction from the centre of mass of the star to the surface). This worked well for low filling factors, but breaks down at larger filling factor. It is better to use the exact value of the normal to the surface, which is the gradient vector (already calculated to solve the equipotential surface). Because the irradiation source is along the x-direction, coschi simply corresponds to the x-component of the gradient vector.
+    - Changed the way that coschi -- angle between the irradiation source and the normal to the surface -- is calculated. It used to be computed using the spherical approximation (i.e that the normal to the surface was roughly the same as the vector direction from the centre of mass of the star to the surface). This worked well for low filling factors, but breaks down at larger filling factor. It is better to use the exact value of the normal to the surface, which is the gradient vector (already calculated to solve the equipotential surface). Because the irradiation source is along the x-direction, coschi simply corresponds to the x-component of the gradient vector. __Many thanks to Roger Romani and Nicholas Sanchez at Stanford University for highlighting this issue and providing pieces of codes.__
 
 - Small bug fix in _Photometry/Photometry.py_ regarding a typo in a variable name for the _full_output_ option in the _Plot_model_ function.
 
