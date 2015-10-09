@@ -72,12 +72,15 @@ class Atmo_AGSS_spectro(Atmo_grid):
         ## Reading the parameter information about the spectra
         lst = []
         for i in np.arange(len(flns)):
+            print(flns[i])
             ## Get the logg and temp value from the filename
             hdr = pyfits.getheader(flns[i], ext=0)
             temp = hdr['PHXTEFF']
             logg = hdr['PHXLOGG']
             if temp_cut is None or (temp >= temp_cut[0] and temp <= temp_cut[1]):
+                print('  temp_cut')
                 if logg_cut is None or (logg >= logg_cut[0] and logg <= logg_cut[1]):
+                    print('    logg_cut')
                     lst.append( [i, logg, temp] )
 
         ## Reading the mu values
@@ -85,8 +88,10 @@ class Atmo_AGSS_spectro(Atmo_grid):
         n_mu = self.mu.size
 
         ## Sorting the grid by temperature and then logg
+        print(lst)
         Utils.Misc.Sort_list(lst, [2,1])
         lst = np.array(lst)
+        print(lst)
 
         ## Extracting the temperature values
         self.logtemp = np.log(np.unique(lst[:,2]))

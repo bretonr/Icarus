@@ -334,6 +334,27 @@ def Radii(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
     logger.debug("end")
     return rout
 
+def Roche_lobe(q):
+    """
+    Calculates the volume-averaged Roche lobe radius using the Eggleton
+    approximation.
+
+    RL = 0.49*q**(2./3) / (0.6*q**(2./3) + ln(1+q**(1./3)))
+
+    Parameters
+    ----------
+    q : float, array
+        Mass ratio of the system, q=M1/M2, where source 1 is the one under
+        consideration.
+
+    Outputs
+    -------
+    RL : float, array
+        Roche lobe radius in units in orbital separation.
+    """
+    RL = 0.49*q**(2./3) / (0.6*q**(2./3) + np.log(1+q**(1./3)))
+    return RL
+
 def Saddle(x, q, qp1by2om2):
     """
     >>>Saddle(0.5, 56., 57./2)

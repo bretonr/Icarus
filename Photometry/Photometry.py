@@ -210,7 +210,7 @@ class Photometry(object):
                     chi2_band = sum_i[ (((bestoffset_i - (dm+extinction_i))/band_err_i)**2 ]
                     chi2 = chi2_data + chi2_band
 
-        DM (float): Distance modulus o apply to the data.
+        DM (float): Distance modulus to apply to the data.
             It is possible to specify None in case one would like to allow for
             an arbitrary offset to be optimized for the offset_free = 1 case.
         AV (float): V band extinction.
@@ -695,7 +695,7 @@ class Photometry(object):
                 ax.plot(phases[i], pred_flux[i]+offset_list[i], ls='-', color=colors[i])
         Post_plot(influx=influx)
         if full_output:
-            return pred_flux, offsets
+            return pred_flux, offset_list
         return
 
     def Pretty_print(self, par, make_surface=True, DM=0., AV=0., verbose=True):
@@ -706,7 +706,7 @@ class Photometry(object):
         par (list/array): Parameter list as expected by the Make_surface function.
         make_surface (True): Whether to recalculate the 
             surface of the star or not.
-        DM (float): Distance modulus o apply to the data.
+        DM (float): Distance modulus to apply to the data.
         AV (float): V band extinction.
         verbose (True): Output the nice representation
             of the important parameters or just return them

@@ -581,7 +581,7 @@ class Star_base(object):
         omega (None): co-rotation factor (Protation/Porbital).
         filling (None): Roche-lobe filling factor (x_nose/L1).
         temp (None): surface temperature of the star.
-            The temperature is define at the pole of the star, before 
+            The temperature is defined at the pole of the star, before 
             irradiation and gravity darkening.
         tempgrav (None): gravity darkening coefficient.
             The gravity darkening is accounted as follow:

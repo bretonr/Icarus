@@ -124,7 +124,7 @@ class AtmoGrid(Column):
 
         return self.__class__(name=self.name, data=data, unit=self.unit, format=self.format, description=self.description, meta=deepcopy(self.meta), cols=self.cols)
 
-    def Fill_nan(self, axis=0, method='spline', bounds_error=False, fill_value=np.nan, k=1, s=1):
+    def Fill_nan_old(self, axis=0, method='spline', bounds_error=False, fill_value=np.nan, k=1, s=1):
         """
         Fill the empty grid cells (marked as np.nan) with interpolated values
         along a given axis (i.e. interpolation is done in 1D).
@@ -187,6 +187,7 @@ class AtmoGrid(Column):
         inds = [ind.flatten() for ind in inds_tmp]
         niter = len(inds[0])
         inds.insert(axis, [slice(None)]*niter)
+        print(inds)
         for ind in zip(*inds):
             col = self.__getitem__(ind)
             inds_good = np.isfinite(col)
@@ -198,6 +199,116 @@ class AtmoGrid(Column):
                 elif method == 'spline':
                     tck = scipy.interpolate.splrep(self.cols[axis][inds_good], col[inds_good], k=k, s=s)
                     col[inds_bad] = scipy.interpolate.splev(self.cols[axis][inds_bad], tck)
+
+    def Fill_nan(self, axis=0, inds_fill=None, method='spline', bounds_error=False, fill_value=np.nan, k=1, s=0, extrapolate=True):
+        """
+        Fill the empty grid cells (marked as np.nan) with interpolated values
+        along a given axis (i.e. interpolation is done in 1D).
+
+        Parameters
+        ----------
+        axis : interpolate
+            Axis along which the interpolation should be performed.
+        inds_fill : tuple(ndarray)
+            Tuple/list containing the list of pixels to interpolate for.
+        method : str
+            Interpolation method to use. Possible choices are 'spline', 
+            'interp1d' and 'pchip'.
+            'spline' allows for the use of optional keywords k (the order) and
+            s (the smoothing parameter). See scipy.interpolate.splrep.
+            'interp1d' allows for the use of optional keywords bounds_error and
+            fill_value. See scipy.interpolate.interp1d.
+            'pchip' allows to interpolate out of bound, or set NaNs.
+        bounds_error : bool
+            Whether to raise an error when attempting to extrapolate out of
+            bounds.
+            Only works with 'interp1d'.
+        fill_value : float
+            Value to use when bounds_error is False.
+            Only works with 'interp1d'.
+        k : int
+            Order of the spline to use. We recommend 1.
+            Only works with 'spline'.
+        s : int
+            Smoothing parameter for the spline. We recommend 0 (exact
+            interpolation).
+            Only works with 'spline'.
+        extrapolate : bool
+            Whether to extrapolate out of bound or set NaNs.
+            Only works with 'pchip'.
+
+        Examples
+        ----------
+          Examples::
+            atmo.Fill_nan(axis=0, method='interp1d', bounds_error=False, fill_value=np.nan)
+        
+        This would fill in the value that are not out of bound with a linear fit. Values
+        out of bound would be np.nan.
+
+            atmo.Fill_nan(axis=0, method='spline', k=1, s=0)
+
+        This would produce exactly the same interpolation as above, except that values
+        out of bound would be extrapolated.
+
+        Notes
+        ----------
+        From our experience, it is recommended to first fill the values within
+        the bounds using 'interp1d' with bounds_error=False and fill_value=np.nan,
+        and then use 'spline' with k=1 and s=1 in order to extrapolate outside
+        the bounds. To interpolate within the bounds, the temperature axis
+        (i.e. 0) is generally best and more smooth, whereas the logg axis (i.e. 1)
+        works better to extrapolate outside.
+
+
+          Examples::
+            atmo.Fill_nan(axis=0, method='interp1d', bounds_error=False, fill_value=np.nan)
+            atmo.Fill_nan(axis=1, method='spline', k=1, s=1)
+        """
+        if method not in ['interp1d','spline','pchip']:
+            raise Exception('Wrong method input! Must be either interp1d, spline or grid.')
+        if inds_fill is None:
+            inds_fill = np.isnan(self.data).nonzero()
+        else:
+            assert len(inds_fill) == self.ndim, "The shape must be (ndim, nfill)."
+
+        vals_fill = []
+        for inds_fill_ in zip(*inds_fill):
+            #print(inds_fill_)
+            inds = list(inds_fill_)
+            inds[axis] = slice(None)
+            inds = tuple(inds)
+            y = self.data[inds]
+            x = self.cols[axis]
+            x_interp = x[inds_fill_[axis]]
+            #print(x)
+            #print(y)
+            #print(x_interp)
+            inds_bad = np.isnan(y)
+            inds_bad[x_interp] = True
+            inds_good = ~inds_bad
+            #print(inds_bad)
+            #print(inds_good)
+            if np.any(inds_good):
+                #print(x[inds_good])
+                #print(y[inds_good])
+                #print(x_interp)
+                if method == 'interp1d':
+                    interpolator = scipy.interpolate.interp1d(x[inds_good], y[inds_good], assume_sorted=True, bounds_error=bounds_error, fill_value=fill_value)
+                    y_interp = interpolator(x_interp)
+                elif method == 'spline':
+                    tck = scipy.interpolate.splrep(x[inds_good], y[inds_good], k=k, s=s)
+                    y_interp = scipy.interpolate.splev(x_interp, tck)
+                elif method == 'pchip':
+                    interpolator = scipy.interpolate.PchipInterpolator(x[inds_good], y[inds_good], axis=0, extrapolate=extrapolate)
+                    y_interp = interpolator(x_interp)
+                #print(y_interp)
+                vals_fill.append(y_interp)
+            else:
+                #print('y_interp -> nan')
+                vals_fill.append(np.nan)
+            #print('x_interp', x_interp)
+            #print('y_interp', y_interp)
+        self.data[inds_fill] = vals_fill
 
     def Getaxispos(self, colname, x):
         """
@@ -221,6 +332,10 @@ class AtmoGrid(Column):
             return Utils.Series.Getaxispos_vector(self.cols[colname], x)
         else:
             return Utils.Series.Getaxispos_scalar(self.cols[colname], x)
+
+    @property
+    def IsFinite(self):
+        return np.isfinite(self.data).astype(int)
 
     def Pprint(self, slices):
         """
@@ -287,6 +402,34 @@ class AtmoGrid(Column):
 
         f.close()
         return cls(data=flux, name=name, description=description, meta=meta, cols=cols)
+
+    def SubGrid(self, *args):
+        """
+        Return a sub-grid of the atmosphere grid.
+
+        Parameters
+        ----------
+        slices : slice
+            Slice/sliceable object for each dimension of the atmosphere grid.
+
+        Examples
+        ----------
+          Examples::
+            This would extract atmo[:,1:4,:]
+            new_atmo = atmo.SubGrid(slice(None),slice(1,4),slice(None))
+        """
+        assert len(args) == self.ndim, "The number of slices must match the dimension of the atmosphere grid."
+        slices = []
+        for s in args:
+            if isinstance(s,int):
+                slices.append(slice(s,s+1))
+            else:
+                slices.append(s)
+        data = self.data[slices]
+        cols = []
+        for c,s in zip(self.cols,slices):
+            cols.append( (c, np.atleast_1d(self.cols[c][s])) )
+        return self.__class__(name=self.name, data=data, unit=self.unit, format=self.format, description=self.description, meta=self.meta, cols=cols)
 
     def Trim(self, colname, low=None, high=None):
         """

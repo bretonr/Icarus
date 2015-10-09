@@ -192,58 +192,62 @@ class Star(Star_base):
         """
         logger.debug("start")
         if debug: print( 'Begin _Surface()' )
-        # Calculate some quantities
+        ## Calculate some quantities
         self._Calc_qp1by2om2()
         
-        # Saddle point, i.e. the Roche-lobe radius at L1 (on the near side)
+        ## Saddle point, i.e. the Roche-lobe radius at L1 (on the near side)
         xl1 = self._Saddle(0.5)
         self.L1 = xl1
         if debug: print( 'Saddle %f' %xl1 )
-        # Potential at the saddle point, L1
+        ## Potential at the saddle point, L1
         psil1 = self._Potential(xl1, 0., 0.)[-1]
         if debug: print( 'Potential psil1 %f' %psil1 )
         
-        # rc_l1 is the stellar radius on the near side, i.e. the nose of the star
+        ## rc_l1 is the stellar radius on the near side, i.e. the nose of the star
         self.rc_l1 = self.filling*xl1
         if debug: print( 'rc_l1 %f' %self.rc_l1 )
-        # Potential at rc_l1, the nose of the star
+        ## Potential at rc_l1, the nose of the star
         trc, trx, dpsi, dpsidx, dpsidy, dpsidz, psi0 = self._Potential(self.rc_l1, 0., 0.)
         self.psi0 = psi0
         if debug: print( 'Potential psi0\n trc: %f, trx %f, dpsi %f, dpsidx %f, dpsidy %f, dpsidz %f, psi0 %f' % (trc, trx, dpsi, dpsidx, dpsidy, dpsidz, self.psi0) )
         
-        # rc_pole is stellar radius at 90 degrees, i.e. at the pole, which is perpendicular to the line separating the two stars and the orbital plane
+        ## rc_pole is stellar radius at 90 degrees, i.e. at the pole, which is perpendicular to the line separating the two stars and the orbital plane
         if debug: print( 'psi0,r '+str(self.psi0)+' '+str(r) )
         self.rc_pole = self._Radius(0.,0.,1.,self.psi0,self.rc_l1)
         trc, trx, dpsi, dpsidx, dpsidy, dpsidz, psi = self._Potential(0.,0.,self.rc_pole)
-        # log surface gravity at the pole of the star
+        ## log surface gravity at the pole of the star
         self.logg_pole = np.log10(np.sqrt(dpsidx**2+dpsidy**2+dpsidz**2))
         
-        # rc_eq is stellar radius at 90 degrees in the orbital plane, i.e. at the equator, but not in the direction of the companion
+        ## rc_eq is stellar radius at 90 degrees in the orbital plane, i.e. at the equator, but not in the direction of the companion
         self.rc_eq = self._Radius(0.,1.,0.,self.psi0,self.rc_l1)
         trc, trx, dpsi, dpsidx, dpsidy, dpsidz, psi = self._Potential(0.,self.rc_eq,0.)
-        # log surface gravity at the pole of the star
+        ## log surface gravity at the pole of the star
         self.logg_eq = np.log10(np.sqrt(dpsidx**2+dpsidy**2+dpsidz**2))
         
-        # r_vertices are the radii of the vertices. shape = n_vertices
+        ## r_vertices are the radii of the vertices. shape = n_vertices
         self.r_vertices = self._Radius(self.vertices[:,0], self.vertices[:,1], self.vertices[:,2], self.psi0, self.rc_l1)
         
         ### Calculate useful quantities for all surface elements
-        # rc corresponds to r1 from Tjemkes et al., the distance from the center of mass of the pulsar companion. shape = n_faces
+        ## rc corresponds to r1 from Tjemkes et al., the distance from the center of mass of the pulsar companion. shape = n_faces
         self.rc = self._Radius(self.cosx, self.cosy, self.cosz, self.psi0, self.rc_l1)
-        # rx corresponds to r2 from Tjemkes et al., the distance from the center of mass of the pulsar. shape = n_faces
+        ## rx corresponds to r2 from Tjemkes et al., the distance from the center of mass of the pulsar. shape = n_faces
         trc, self.rx, dpsi, dpsidx, dpsidy, dpsidz, psi = self._Potential(self.rc*self.cosx,self.rc*self.cosy,self.rc*self.cosz)
-        # log surface gravity. shape = n_faces
+        ## log surface gravity. shape = n_faces
         geff = self._Geff(dpsidx, dpsidy, dpsidz)
         self.logg = np.log10(geff)
-        # coschi is the cosine angle between the rx and the surface element. shape = n_faces
-        # A value of 1 means that the companion's surface element is directly facing the pulsar, 0 is at the limb and -1 on the back.
-        self.coschi = -(self.rc-self.cosx)/self.rx
-        # gradient of the gravitational potential in x,y,z. shape = n_faces
+        ## gradient of the gravitational potential in x,y,z. shape = n_faces
         self.gradx = -dpsidx/geff
         self.grady = -dpsidy/geff
         self.gradz = -dpsidz/geff
-        
-        # surface area. shape = n_faces
+        ## coschi is the cosine angle between the rx and the surface element. shape = n_faces
+        ## A value of 1 means that the companion's surface element is directly facing the pulsar, 0 is at the limb and -1 on the back.
+        ## The following is the old way, which is derived from the spherical approximation, i.e. that the normal to the surface is approximately the same as the radial position 
+        #self.coschi = -(self.rc-self.cosx)/self.rx
+        ## The better calculation should use the gradient as the normal vector, and the direction to the pulsar as positive x.
+        ## This implies that the angle coschi is simply the x component of the gradient.
+        self.coschi = self.gradx.copy()
+    
+        ## surface area. shape = n_faces
         self.area = self.rc**2 * self.pre_area
         logger.debug("end")
         return

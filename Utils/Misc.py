@@ -64,7 +64,7 @@ def Fit_linear(y, x=None, err=1.0, m=None, b=None, output=None, inline=False):
     else:
         return (sol, res, rank, s)
 
-def Pprint(arr, show_index=False):
+def Pprint(arr, show_index=False, max_lines=None):
     arr = np.atleast_2d(arr)
     if show_index:
         cols = np.arange(arr.shape[1]).astype(str)
@@ -74,7 +74,7 @@ def Pprint(arr, show_index=False):
         t.add_column(Column(data=rows, name=' '), index=0)
     else:
         t = Table(data=arr, copy=True)
-    t.pprint(show_name=show_index)
+    t.pprint(show_name=show_index, max_lines=max_lines)
 
 def Sort_list(lst, cols):
     """Sort_list(lst, cols)

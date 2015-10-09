@@ -2,6 +2,28 @@
 
 ## Release history
 
+### 2.2.0 (2015-10-09)
+
+Features:
+
+- _Atmosphere/Atmosphere.py/AtmoGrid_
+
+    - New _Fill_nan_ function to fill non-existing values.
+    - New _SubGrid_ function to return a sub-grid of the atmosphere grid.
+    - New _IsFinite_ function to return a boolean view of existing values
+
+- _Utils/Binary.py_: New function to calculate the approximate Roche lobe radius using the Eggleton formula.
+- _Utils/Filter.py/Load_filter_: New option that can also return the min/max bounds of the filter, in addition to the filter interpolator.
+
+
+Bug fixes:
+
+- _Core/Star.py/Make_surface_
+
+    - Changed the way that coschi -- angle between the irradiation source and the normal to the surface -- is calculated. It used to be computed using the spherical approximation (i.e that the normal to the surface was roughly the same as the vector direction from the centre of mass of the star to the surface). This worked well for low filling factors, but breaks down at larger filling factor. It is better to use the exact value of the normal to the surface, which is the gradient vector (already calculated to solve the equipotential surface). Because the irradiation source is along the x-direction, coschi simply corresponds to the x-component of the gradient vector.
+
+- Small bug fix in _Photometry/Photometry.py_ regarding a typo in a variable name for the _full_output_ option in the _Plot_model_ function.
+
 ### 2.1.2 (2015-03-18)
 
 Features:
