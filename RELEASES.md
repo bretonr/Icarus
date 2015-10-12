@@ -2,11 +2,18 @@
 
 ## Release history
 
+### 2.2.1 (2015-10-12)
+
+Features:
+
+- _Atmosphere/Atmo.py/AtmoGridSpec_ is a new class to handle atmosphere grids in the spectral domain.
+
+
 ### 2.2.0 (2015-10-09)
 
 Features:
 
-- _Atmosphere/Atmosphere.py/AtmoGrid_
+- _Atmosphere/Atmo.py/AtmoGrid_
 
     - New _Fill_nan_ function to fill non-existing values.
     - New _SubGrid_ function to return a sub-grid of the atmosphere grid.
@@ -23,6 +30,7 @@ Bug fixes:
     - Changed the way that coschi -- angle between the irradiation source and the normal to the surface -- is calculated. It used to be computed using the spherical approximation (i.e that the normal to the surface was roughly the same as the vector direction from the centre of mass of the star to the surface). This worked well for low filling factors, but breaks down at larger filling factor. It is better to use the exact value of the normal to the surface, which is the gradient vector (already calculated to solve the equipotential surface). Because the irradiation source is along the x-direction, coschi simply corresponds to the x-component of the gradient vector. __Many thanks to Roger Romani and Nicholas Sanchez at Stanford University for highlighting this issue and providing pieces of codes.__
 
 - Small bug fix in _Photometry/Photometry.py_ regarding a typo in a variable name for the _full_output_ option in the _Plot_model_ function.
+
 
 ### 2.1.2 (2015-03-18)
 

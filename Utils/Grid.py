@@ -69,6 +69,28 @@ def Interp_3Dgrid(grid, wx, wy, wz, jx, jy, jz):
 
 def Interp_photometry(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu):
     """
+    Simple interpolation of an atmosphere grid having axes (logtemp, logg, mu).
+
+    The interpolation takes a set of points to be interpolated and summed 
+    together.
+
+    Parameters
+    ----------
+    grid : ndarray
+        Atmosphere grid, with dimensions (logtemp, logg, mu, wav).
+    wteff, wlogg, wmu : ndarray
+        Weights of the temperature, logg, mu.
+    jteff, jlogg, jmu : ndarray
+        Fractional position of the temperature, logg, mu.
+    area : ndarray
+        Area (i.e. weight) of each surface element for the summation.
+    val_mu : ndarray
+        Value of the cross-section visible to us.
+
+    Returns
+    -------
+    flux : scalar
+        Flux integrated over the surface.
     """
     code = """
     double fl = 0.;
@@ -122,6 +144,32 @@ def Interp_photometry(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu):
 
 def Interp_photometry_doppler(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, val_vel, grid_doppler):
     """
+    Simple interpolation of an atmosphere grid having axes (logtemp, logg, mu),
+    which also takes into account Doppler boosting using coefficients stored in
+    a dedicated grid.
+
+    Parameters
+    ----------
+    The interpolation takes a set of points to be interpolated and summed together.
+    grid : ndarray
+        Atmosphere grid, with dimensions (logtemp, logg, mu, wav).
+    wteff, wlogg, wmu : ndarray
+        Weights of the temperature, logg, mu.
+    jteff, jlogg, jmu : ndarray
+        Fractional position of the temperature, logg, mu.
+    area : ndarray
+        Area (i.e. weight) of each surface element for the summation.
+    val_mu : ndarray
+        Value of the cross-section visible to us.
+    val_vel : ndarray
+        Value of the velocity, in v/c units.
+    grid_doppler : ndarray
+        Doppler boosting coefficients, with dimensions similar to grid.
+
+    Returns
+    -------
+    flux : scalar
+        Flux integrated over the surface, with Doppler boosting.
     """
     code = """
     double fl = 0.;
@@ -181,6 +229,35 @@ def Interp_photometry_doppler(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, 
 
 def Interp_photometry_doppler_nosum(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, val_vel, grid_doppler):
     """
+    Simple interpolation of an atmosphere grid having axes (logtemp, logg, mu),
+    which also takes into account Doppler boosting using coefficients stored in
+    a dedicated grid.
+
+    Note: As opposed to Interp_photometry_doppler, this function does not sum
+    the surface elements.
+
+    Parameters
+    ----------
+    The interpolation takes a set of points to be interpolated.
+    grid : ndarray
+        Atmosphere grid, with dimensions (logtemp, logg, mu, wav).
+    wteff, wlogg, wmu : ndarray
+        Weights of the temperature, logg, mu.
+    jteff, jlogg, jmu : ndarray
+        Fractional position of the temperature, logg, mu.
+    area : ndarray
+        Area (i.e. weight) of each surface element for the summation.
+    val_mu : ndarray
+        Value of the cross-section visible to us.
+    val_vel : ndarray
+        Value of the velocity, in v/c units.
+    grid_doppler : ndarray
+        Doppler boosting coefficients, with dimensions similar to grid.
+
+    Returns
+    -------
+    flux : ndarray
+        Flux _not_ integrated over the surface.
     """
     code = """
     #pragma omp parallel shared(grid,wteff,wlogg,wmu,jteff,jlogg,jmu,area,val_mu,nsurf,val_vel,grid_doppler,fl) default(none)
@@ -239,6 +316,41 @@ def Interp_photometry_doppler_nosum(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, 
 
 def Interp_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, v, val_teff):
     """
+    Simple interpolation of an atmosphere grid having axes (logtemp, logg, mu),
+    which also takes into account Doppler boosting using coefficients stored in
+    a dedicated grid.
+
+    Note: Some additional quantities are calculated, such as the flux-weighted
+    velocity, temperature and vsini.
+
+    Parameters
+    ----------
+    The interpolation takes a set of points to be interpolated and summed together.
+    grid : ndarray
+        Atmosphere grid, with dimensions (logtemp, logg, mu, wav).
+    wteff, wlogg, wmu : ndarray
+        Weights of the temperature, logg, mu.
+    jteff, jlogg, jmu : ndarray
+        Fractional position of the temperature, logg, mu.
+    area : ndarray
+        Area (i.e. weight) of each surface element for the summation.
+    val_mu : ndarray
+        Value of the cross-section visible to us.
+    val_vel : ndarray
+        Value of the velocity, in v/c units.
+    val_teff : ndarray
+        Value of the temperatures.
+
+    Returns
+    -------
+    flux : scalar
+        Flux integrated over the surface.
+    Keff : scalar
+        Flux-weighted radial velocity.
+    vsini : scalar
+        Estimated vsini.
+    Teff : scalar
+        Flux-weighted temperature.
     """
     code = """
     double fl = 0.;
@@ -310,6 +422,34 @@ def Interp_photometry_details(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, 
 
 def Interp_photometry_Keff(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu, v):
     """
+    Simple interpolation of an atmosphere grid having axes (logtemp, logg, mu),
+    which also takes into account Doppler boosting using coefficients stored in
+    a dedicated grid.
+
+    Note: The flux-weighted velocity is also returned.
+
+    Parameters
+    ----------
+    The interpolation takes a set of points to be interpolated and summed together.
+    grid : ndarray
+        Atmosphere grid, with dimensions (logtemp, logg, mu, wav).
+    wteff, wlogg, wmu : ndarray
+        Weights of the temperature, logg, mu.
+    jteff, jlogg, jmu : ndarray
+        Fractional position of the temperature, logg, mu.
+    area : ndarray
+        Area (i.e. weight) of each surface element for the summation.
+    val_mu : ndarray
+        Value of the cross-section visible to us.
+    val_vel : ndarray
+        Value of the velocity, in v/c units.
+
+    Returns
+    -------
+    flux : scalar
+        Flux integrated over the surface.
+    Keff : scalar
+        Flux-weighted radial velocity.
     """
     code = """
     double fl = 0.;
@@ -370,6 +510,29 @@ def Interp_photometry_Keff(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val
 
 def Interp_photometry_nosum(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu):
     """
+    Simple interpolation of an atmosphere grid having axes (logtemp, logg, mu).
+
+    Note: As opposed to Interp_photometry, this function does not sum
+    the surface elements.
+
+    Parameters
+    ----------
+    The interpolation takes a set of points to be interpolated.
+    grid : ndarray
+        Atmosphere grid, with dimensions (logtemp, logg, mu, wav).
+    wteff, wlogg, wmu : ndarray
+        Weights of the temperature, logg, mu.
+    jteff, jlogg, jmu : ndarray
+        Fractional position of the temperature, logg, mu.
+    area : ndarray
+        Area (i.e. weight) of each surface element for the summation.
+    val_mu : ndarray
+        Value of the cross-section visible to us.
+
+    Returns
+    -------
+    flux : ndarray
+        Flux _not_ integrated over the surface.
     """
     code = """
     #pragma omp parallel shared(grid,wteff,wlogg,wmu,jteff,jlogg,jmu,area,val_mu,nsurf,fl) default(none)
@@ -422,6 +585,8 @@ def Interp_photometry_nosum(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, va
 
 def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area, val_mu):
     """
+    Simple interpolation of an atmosphere grid having axes (logtemp, logg, mu, wav).
+
     This grid interpolation is made for a grid which is linear in the velocity
     or redshift space, e.g. log lambda.
 
@@ -429,6 +594,25 @@ def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
         will necessarily go out of bound, on the lower or upper range. We 
         assume that the atmosphere grid has a broader spectral coverage than
         the data.
+
+    Parameters
+    ----------
+    The interpolation takes a set of points to be interpolated.
+    grid : ndarray
+        Atmosphere grid, with dimensions (logtemp, logg, mu, wav).
+    wteff, wlogg, wmu, wwav : ndarray
+        Weights of the temperature, logg, mu, wav.
+    jteff, jlogg, jmu, jwav : ndarray
+        Fractional position of the temperature, logg, mu, wav.
+    area : ndarray
+        Area (i.e. weight) of each surface element for the summation.
+    val_mu : ndarray
+        Value of the cross-section visible to us.
+
+    Returns
+    -------
+    spectrum : ndarray
+        Spectrum integrated over the surface.
     """
     logger.debug("start")
     code = """
@@ -527,13 +711,41 @@ def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
 
 def Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, mu_grid, area, val_mu):
     """
+    Simple interpolation of an atmosphere grid having axes (logtemp, logg, wav).
+
     This grid interpolation is made for a grid which is linear in the velocity
     or redshift space, e.g. log lambda.
-    
+
+    The limb darkening is implement by sourcing values from an external grid
+    containing limb darkening coefficients.
+
     Note: Because of the Doppler shift, the interpolation on the wavelength
         will necessarily go out of bound, on the lower or upper range. We 
         assume that the atmosphere grid has a broader spectral coverage than
         the data.
+
+    Parameters
+    ----------
+    The interpolation takes a set of points to be interpolated.
+    grid : ndarray
+        Atmosphere grid, with dimensions (logtemp, logg, mu, wav).
+    wteff, wlogg, wmu, wwav : ndarray
+        Weights of the temperature, logg, mu, wav.
+    jteff, jlogg, jmu, jwav : ndarray
+        Fractional position of the temperature, logg, mu, wav.
+    area : ndarray
+        Area (i.e. weight) of each surface element for the summation.
+    val_mu : ndarray
+        Value of the cross-section visible to us.
+    mu_grid : ndarray
+        Grid of limb darkening having axes (mu, wav).
+
+    Returns
+    -------
+    spectrum : ndarray
+        Spectrum integrated over the surface.
+
+    NOTE: This is becoming obsolete.
     """
     logger.debug("start")
     code = """
@@ -614,32 +826,45 @@ def Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, 
 
 def Interp_doppler_savememory_linear(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, mu_grid, area, val_mu, val_vel, z0):
     """
-    This grid interpolation is made for a grid which is linear in lambda.
-    
-    Parameters starting with a 'w' and the weights for interpolation.
-    Parameters starting with a 'j' and the indices for interpolation.
-    
-    teff: temperature
-    logg: log gravity
-    mu: log emission angle
-    
-    mu_grid: Grid of intensity for mu and lambda values; shape = n_mu, n_lambda.
-    area: Surface area values.
-    val_mu: Mu value of each surface area.
-    val_vel: Velocity of each surface element.
+    Simple interpolation of an atmosphere grid having axes (logtemp, logg, wav).
+
+    This grid interpolation is made for a grid which is linear in lambda space.
+
+    The limb darkening is implement by sourcing values from an external grid
+    containing limb darkening coefficients.
+
+    Note: Because of the Doppler shift, the interpolation on the wavelength
+        will necessarily go out of bound, on the lower or upper range. We 
+        assume that the atmosphere grid has a broader spectral coverage than
+        the data.
+
+    Parameters
+    ----------
+    The interpolation takes a set of points to be interpolated.
+    grid : ndarray
+        Atmosphere grid, with dimensions (logtemp, logg, mu, wav).
+    wteff, wlogg, wmu, wwav : ndarray
+        Weights of the temperature, logg, mu, wav.
+    jteff, jlogg, jmu, jwav : ndarray
+        Fractional position of the temperature, logg, mu, wav.
+    area : ndarray
+        Area (i.e. weight) of each surface element for the summation.
+    val_mu : ndarray
+        Value of the cross-section visible to us.
+    mu_grid : ndarray
+        Grid of limb darkening having axes (mu, wav).
     z0: delta_lambda / lambda0 of the grid.
         Interpolated lambda bin is: k' = (z+1)*k + z/z0
         Derivation: z+1 = lambda'/lambda
                         = (k'*delta_lambda+lambda0) / (k*delta_lambda+lambda0)
             ... which is solved for n'.
-    
-    For a surface element, the flux is: flux interpolated * area * mu.
-    The interpolated flux takes into account the mu factor and Doppler shift.
-    
-    Note: Because of the Doppler shift, the interpolation on the wavelength
-        will necessarily go out of bound, on the lower or upper range. We 
-        assume that the atmosphere grid has a broader spectral coverage than
-        the data.
+
+    Returns
+    -------
+    spectrum : ndarray
+        Spectrum integrated over the surface.
+
+    NOTE: This is becoming obsolete.
     """
     code = """
     #pragma omp parallel shared(grid,wteff,wlogg,wmu,jteff,jlogg,jmu,mu_grid,area,val_mu,val_vel,z0,nsurf,nwav,fl) default(none)
@@ -720,12 +945,41 @@ def Interp_doppler_savememory_linear(grid, wteff, wlogg, wmu, jteff, jlogg, jmu,
 
 def Interp_doppler_nomu(grid, wteff, wlogg, wwav, jteff, jlogg, jwav, area, val_mu):
     """
+    Simple interpolation of an atmosphere grid having axes (logtemp, logg, wav).
+
+    This grid interpolation is made for a grid which is linear in the velocity
+    or redshift space, e.g. log lambda.
+
     Note: Because of the Doppler shift, the interpolation on the wavelength
         will necessarily go out of bound, on the lower or upper range. We 
         assume that the atmosphere grid has a broader spectral coverage than
         the data.
-        
-        ### Check the fl(k) += foo
+
+    Parameters
+    ----------
+    The interpolation takes a set of points to be interpolated.
+    grid : ndarray
+        Atmosphere grid, with dimensions (logtemp, logg, mu, wav).
+    wteff, wlogg, wmu, wwav : ndarray
+        Weights of the temperature, logg, mu, wav.
+    jteff, jlogg, jmu, jwav : ndarray
+        Fractional position of the temperature, logg, mu, wav.
+    area : ndarray
+        Area (i.e. weight) of each surface element for the summation.
+    val_mu : ndarray
+        Value of the cross-section visible to us.
+    mu_grid : ndarray
+        Grid of limb darkening having axes (mu, wav).
+    z0: delta_lambda / lambda0 of the grid.
+        Interpolated lambda bin is: k' = (z+1)*k + z/z0
+        Derivation: z+1 = lambda'/lambda
+                        = (k'*delta_lambda+lambda0) / (k*delta_lambda+lambda0)
+            ... which is solved for n'.
+
+    Returns
+    -------
+    spectrum : ndarray
+        Spectrum integrated over the surface.
     """
     code = """
     #pragma omp parallel shared(grid,wteff,wlogg,wwav,jteff,jlogg,jwav,area,val_mu,nsurf,nwav,fl) default(none)
@@ -734,18 +988,18 @@ def Interp_doppler_nomu(grid, wteff, wlogg, wwav, jteff, jlogg, jwav, area, val_
     int j0teff, j1teff, j0logg, j1logg, j0wav, j1wav, j0wavk, j1wavk;
     #pragma omp for
     for (int i=0; i<nsurf; i++) {
-            w1teff = wteff(i);
-            w0teff = 1.-w1teff;
-            j0teff = jteff(i);
-            j1teff = 1.+j0teff;
-            w1logg = wlogg(i);
-            w0logg = 1.-w1logg;
-            j0logg = jlogg(i);
-            j1logg = 1.+j0logg;
-            w1wav = wwav(i);
-            w0wav = 1.-w1wav;
-            j0wav = jwav(i);
-            j1wav = 1.+j0wav;
+        w1teff = wteff(i);
+        w0teff = 1.-w1teff;
+        j0teff = jteff(i);
+        j1teff = 1.+j0teff;
+        w1logg = wlogg(i);
+        w0logg = 1.-w1logg;
+        j0logg = jlogg(i);
+        j1logg = 1.+j0logg;
+        w1wav = wwav(i);
+        w0wav = 1.-w1wav;
+        j0wav = jwav(i);
+        j1wav = 1.+j0wav;
         for (int k=0; k<nwav; k++) {
             j0wavk = j0wav+k;
             j1wavk = j1wav+k;

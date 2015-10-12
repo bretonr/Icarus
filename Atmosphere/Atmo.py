@@ -1,8 +1,9 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 
-__all__ = ["AtmoGrid", "AtmoGridPhot", "AtmoGridDoppler", "Atmo_grid"]
+__all__ = ["AtmoGrid", "AtmoGridPhot", "AtmoGridDoppler", "AtmoGridSpec", "Vstack", "Atmo_grid"]
 
 import os
+import sys
 from copy import deepcopy
 
 from astropy.table import TableColumns, Column, MaskedColumn, Table
@@ -14,7 +15,8 @@ from ..Utils.import_modules import *
 from .. import Utils
 
 
-######################## class AtmoGrid ########################
+##-----------------------------------------------------------------------------
+## class AtmoGrid
 class AtmoGrid(Column):
     """
     Define the base atmosphere grid structure.
@@ -55,7 +57,7 @@ class AtmoGrid(Column):
 
       Examples::
 
-        logtemp = np.exp(np.arange(3000.,10001.,250.))
+        logtemp = np.log(np.arange(3000.,10001.,250.))
         logg = np.arange(2.0, 5.6, 0.5)
         mu = np.arange(0.,1.01,0.02)
         logflux = np.random.normal(size=(logtemp.size,logg.size,mu.size))
@@ -498,6 +500,8 @@ class AtmoGrid(Column):
         f.close()
 
 
+##-----------------------------------------------------------------------------
+## class AtmoGridDoppler
 class AtmoGridDoppler(AtmoGrid):
     """
     Define a subclass of AtmoGrid dedicated to storing the Doppler boosting
@@ -511,7 +515,7 @@ class AtmoGridDoppler(AtmoGrid):
 
       Examples::
 
-        logtemp = np.exp(np.arange(3000.,10001.,250.))
+        logtemp = np.log(np.arange(3000.,10001.,250.))
         logg = np.arange(2.0, 5.6, 0.5)
         mu = np.arange(0.,1.01,0.02)
         boost = np.random.normal(size=(logtemp.size,logg.size,mu.size))
@@ -552,12 +556,14 @@ class AtmoGridDoppler(AtmoGrid):
         return boost
 
 
+##-----------------------------------------------------------------------------
+## class AtmoGridPhot
 class AtmoGridPhot(AtmoGrid):
     """
-    Define a subclass of AtmoGrid dedicated to Interp_photometry
+    Define a subclass of AtmoGrid dedicated to Photometry
 
     This class is exactly like AtmoGrid, except for the fact that it is
-    required to contain a seta of meta data describing the filter. For
+    required to contain a set of meta data describing the filter. For
     instance meta should contain:
 
     Parameters
@@ -587,7 +593,7 @@ class AtmoGridPhot(AtmoGrid):
 
       Examples::
 
-        logtemp = np.exp(np.arange(3000.,10001.,250.))
+        logtemp = np.log(np.arange(3000.,10001.,250.))
         logg = np.arange(2.0, 5.6, 0.5)
         mu = np.arange(0.,1.01,0.02)
         logflux = np.random.normal(size=(logtemp.size,logg.size,mu.size))
@@ -759,6 +765,192 @@ class AtmoGridPhot(AtmoGrid):
         return flux
 
 
+##-----------------------------------------------------------------------------
+## class AtmoGridSpec
+class AtmoGridSpec(AtmoGrid):
+    """
+    Define a subclass of AtmoGrid dedicated to Spectroscopy
+
+    This class is exactly like AtmoGrid, except for the fact that it is
+    required to contain a set of meta data describing the spectrum. For
+    instance meta should contain:
+
+    In principle, nothing prevents the wavelength to have any format. However,
+    it is VERY recommended to use a linear spacing in log(wav), i.e. constant
+    in velocity offset. The Get_flux method assumes that this is the case.
+
+    Parameters
+    ----------
+    zp : float
+        The zeropoint of the band for conversion from flux to mag
+    delta_v : float
+        Spacing between wavelength points in v/c units. The assumption is that
+        it is constant throughout the array (in log(wav) space). If not
+        provided, will use (wav[1]-wav[0])/wav[0].
+
+    Also recommended would be:
+    units: str
+        Description of the flux units
+    magsys: str
+        Magnitude system
+
+    Examples
+    --------
+    A AtmoGridSpec can be created like this:
+
+      Examples::
+
+        logtemp = np.log(np.arange(3000.,10001.,250.))
+        logg = np.arange(2.0, 5.6, 0.5)
+        mu = np.arange(0.,1.01,0.02)
+        wav = np.arange(3000.,10000.5,1.)
+        logflux = np.random.normal(size=(logtemp.size,logg.size,mu.size,wav.size))
+        atmo = AtmoGridSpec(data=logflux, cols=[('logtemp',logtemp), ('logg',logg), ('mu',mu), ('wav',wav)])
+
+    Note that in principle the axis and data could be any format. However, we recommend using
+    log(flux) and log(temperature) because the linear interpolation of such a grid would make
+    more sense (say, from the blackbody $F \propto sigma T^4$).
+
+    To read/save a file:
+
+        atmo = AtmoGridPhot.ReadHDF5('spectrum.h5')
+        atmo.WriteHDF5('spectrum_new.h5')
+    """
+    def __new__(cls, *args, **kwargs):
+        self = super(AtmoGridSpec, cls).__new__(cls, *args, **kwargs)
+
+        ## This class requires a certain number of keywords in the meta field
+        if 'zp' not in self.meta:
+            self.meta['zp'] = 0.0
+        if 'delta_v' not in self.meta:
+            self.meta['delta_v'] = (self.cols['wav'][1]-self.cols['wav'][0]) / self.cols['wav'][0]
+
+        return self
+
+    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel):
+        """
+        Return the spectrum interpolated from the atmosphere grid.
+
+        The returned spectrum remains on the same wavelength axis as the grid's
+        wavelength axis.
+
+        Parameters
+        ----------
+        val_logtemp: log effective temperature
+        val_logg: log surface gravity
+        val_mu: cos(angle) of angle of emission
+        val_area: area of the surface element
+        val_vel: velocity in v/c units.
+
+        Examples
+        ----------
+          Examples::
+            spectrum = Get_flux(val_logtemp, val_logg, val_mu, val_area, val_wav)
+        """
+        w1logtemp, jlogtemp = self.Getaxispos('logtemp', val_logtemp)
+        w1logg, jlogg = self.Getaxispos('logg', val_logg)
+        w1mu, jmu = self.Getaxispos('mu', val_mu)
+        w1wav, jwav = self.Getaxispos('wav', val_vel/self.meta['delta_v'])
+
+        spectrum = Utils.Grid.Interp_doppler(self.data, w1logtemp, w1logg, w1mu, w1wav, jlogtemp, jlogg, jmu, jwav, val_area, val_mu)
+
+        return spectrum
+
+    @classmethod
+    def ReadHDF5(cls, flns, verbose=True):
+        if isinstance(flns, str):
+            return super(AtmoGridSpec, cls).ReadHDF5(flns)
+
+        try:
+            import h5py
+        except ImportError:
+            raise Exception("h5py is needed for ReadHDF5")
+
+        atmo = []
+        logtemp = []
+        logg = []
+        for fln in flns:
+            if verbose:
+                sys.stdout.write('Loading {}\r'.format(fln.split('/')[-1]))
+                sys.stdout.flush()
+            atmo.append( cls.ReadHDF5(fln) )
+            logtemp.append( atmo[-1]['logtemp'].data )
+            logg.append( atmo[-1]['logg'].data )
+
+        logtemp = np.unique(logtemp)
+        logg = np.unique(logg)
+
+        shape = [logtemp.size, logg.size, atmo[-1]['mu'].size, atmo[-1]['wav'].size]
+        cols = [
+            Column(data=logtemp, name='logtemp', meta=atmo[-1].cols['logtemp'].meta),
+            Column(data=logg, name='logg', meta=atmo[-1].cols['logg'].meta),
+            atmo[-1].cols['mu'],
+            atmo[-1].cols['wav']
+            ]
+        meta = atmo[-1].meta
+        description = atmo[-1].description
+        name = atmo[-1].name
+
+        if verbose:
+            print("")
+            print("Combining the grids")
+        flux = np.full(shape, np.nan)
+        for i,logtemp_ in enumerate(logtemp):
+            for j,logg_ in enumerate(logg):
+                for atmo_ in atmo:
+                    if (logtemp_ in atmo_['logtemp']) and (logg_ in atmo_['logg']):
+                        flux[i,j] = atmo_.data
+
+        return cls(data=flux, name=name, description=description, meta=meta, cols=cols)
+
+
+##-----------------------------------------------------------------------------
+## Vstack function
+def Vstack(grids, verbose=False):
+    """
+    Merges multiple atmosphere grids into a single grid.
+    """
+    ## Asserting that all grids have the same number of dimensions
+    ndim = grids[0].ndim
+    colnames = grids[0].colnames
+    meta = grids[0].meta
+    for grid in grids[1:]:
+        if grid.ndim != ndim:
+            raise Exception("Grids must all have the number of dimensions")
+        if grid.colnames != colnames:
+            raise Exception("Grids must all have the same dimension quantities")
+        if grid.meta != meta:
+            print("Caution: all the meta data are not the same.")
+
+    ## Working out the columns of the new grid
+    cols = []
+    shape = []
+    for i in range(ndim):
+        vals = np.unique( np.hstack([g.cols[i] for g in grids]) )
+        cols.append( (colnames[i], vals) )
+        shape.append( vals.size )
+
+    if verbose:
+        print("The new grid will have a shape {}".format(shape))
+
+    data = np.full(shape, np.nan, dtype=float)
+    for i,grid in enumerate(grids):
+        if verbose:
+            print("Processing grid {}".format(i))
+        inds = [ (grid.cols[j].data[:,None] == cols[j][1]).nonzero()[1] for j in range(ndim) ]
+        inds = np.meshgrid(*inds, indexing='ij')
+        data[inds] = grid
+
+    new_grid = grids[0].__class__(data=data, cols=cols, meta=meta)
+    return new_grid
+
+def Quick_vstack(grids):
+    """
+    """
+
+
+##-----------------------------------------------------------------------------
+## class Atmo_Grid
 class Atmo_grid:
     """
     This class handles the atmosphere grid.
@@ -964,6 +1156,4 @@ class Atmo_grid:
                             +w1mu*grid[jtemp+1,jlogg+1,jmu+1]))
         flux = np.exp(fl)*val_mu
         return flux
-
-######################## class Atmo_grid ########################
 
