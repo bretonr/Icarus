@@ -82,7 +82,7 @@ class Photometry(object):
     calculate the predicted flux of the model at every data point (i.e.
     for a given orbital phase).
     """
-    def __init__(self, atmo_fln, data_fln, ndiv, read=True):
+    def __init__(self, atmo_fln, data_fln, ndiv, read=True, oldchi=False):
         """__init__(atmo_fln, data_fln, ndiv, read=True)
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
@@ -165,7 +165,7 @@ class Photometry(object):
             # We keep in mind the number of datasets
             self.ndataset = len(self.atmo_grid)
         # We initialize some important class attributes.
-        self._Init_lightcurve(ndiv, read=read)
+        self._Init_lightcurve(ndiv, read=read, oldchi=oldchi)
         self._Setup()
 
     def Calc_chi2(self, par, do_offset=True, nsamples=None, influx=False, full_output=False, verbose=False):
@@ -504,14 +504,14 @@ class Photometry(object):
         Keff = tmp[1]
         return Keff
 
-    def _Init_lightcurve(self, ndiv, read=False):
+    def _Init_lightcurve(self, ndiv, read=False, oldchi=False):
         """_Init_lightcurve(ndiv, read=False)
         Call the appropriate Lightcurve class and initialize
         the stellar array.
 
         >>> self._Init_lightcurve(ndiv)
         """
-        self.star = Core.Star(ndiv, read=read)
+        self.star = Core.Star(ndiv, read=read, oldchi=oldchi)
         return
 
     def Make_surface(self, par, verbose=False):

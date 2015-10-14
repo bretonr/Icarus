@@ -25,12 +25,13 @@ class Star(Star_base):
         y: Along the orbital plane along the orbital motion.
         z: Along the orbital angular momentum.
     """
-    def __init__(self, ndiv, atmo_grid=None, read=False):
+    def __init__(self, ndiv, atmo_grid=None, read=False, oldchi=False):
         Star_base.__init__(self, ndiv, atmo_grid=atmo_grid)
         if read:
             self._Read_geodesic()
         else:
             self._New_Initialization()
+        self.oldchi = oldchi
 
     def _New_Initialization(self):
         """Initialization(self)
@@ -242,10 +243,12 @@ class Star(Star_base):
         ## coschi is the cosine angle between the rx and the surface element. shape = n_faces
         ## A value of 1 means that the companion's surface element is directly facing the pulsar, 0 is at the limb and -1 on the back.
         ## The following is the old way, which is derived from the spherical approximation, i.e. that the normal to the surface is approximately the same as the radial position 
-        #self.coschi = -(self.rc-self.cosx)/self.rx
+        if self.oldchi:
+            self.coschi = -(self.rc-self.cosx)/self.rx
         ## The better calculation should use the gradient as the normal vector, and the direction to the pulsar as positive x.
         ## This implies that the angle coschi is simply the x component of the gradient.
-        self.coschi = self.gradx.copy()
+        else:
+            self.coschi = self.gradx.copy()
     
         ## surface area. shape = n_faces
         self.area = self.rc**2 * self.pre_area

@@ -25,7 +25,7 @@ class Spectroscopy(object):
     calculate the predicted flux of the model at every data point (i.e.
     for a given orbital phase).
     """
-    def __init__(self, atmo_grid, data_fln, ndiv, porb, x2sini, phase_offset=-0.25, seeing=-1, read=True):
+    def __init__(self, atmo_grid, data_fln, ndiv, porb, x2sini, phase_offset=-0.25, seeing=-1, read=True, oldchi=False):
         """
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
@@ -90,7 +90,7 @@ class Spectroscopy(object):
         self.ndataset = len(self.data['phase'])
         # We initialize some important class attributes.
         print( 'Initializing the lightcurve attribute' )
-        self.star = Core.Star(ndiv, atmo_grid=self.atmo_grid, read=read)
+        self.star = Core.Star(ndiv, atmo_grid=self.atmo_grid, read=read, oldchi=oldchi)
         print( 'Performing some more initialization' )
         self.Initialize(seeing=seeing)
         print( 'Done. Play and have fun...' )
