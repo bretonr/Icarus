@@ -618,7 +618,7 @@ def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
     code = """
     #pragma omp parallel shared(grid,wteff,wlogg,wmu,wwav,jteff,jlogg,jmu,jwav,area,val_mu,nsurf,nwav,fl) default(none)
     {
-    double w1teff, w0teff, w1logg, w0logg, w1mu, w0mu, w1wav, w0wav;
+    double w1teff, w0teff, w1logg, w0logg, w1mu, w0mu, w1wav, w0wav, tmp_fl;
     int j0teff, j1teff, j0logg, j1logg, j0mu, j1mu, j0wav, j1wav, j0wavk, j1wavk;
     #pragma omp for
     for (int i=0; i<nsurf; i++) {
@@ -650,7 +650,7 @@ def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
                 j0wavk = nwav-1;
                 j1wavk = nwav-1;
             }
-            fl(k) += \
+            tmp_fl = \
                 ( w1mu * \
                     ( w0wav * \
                         ( w0logg * \
@@ -679,7 +679,8 @@ def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
                             ( w0teff * grid(j0teff,j1logg,j0mu,j1wavk) + w1teff * grid(j1teff,j1logg,j0mu,j1wavk) ) \
                         ) \
                     ) \
-                ) * area(i) * val_mu(i);
+                );
+            fl(k) += exp(tmp_fl) * area(i) * val_mu(i);
                 //);
         }
     }
@@ -751,7 +752,7 @@ def Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, 
     code = """
     #pragma omp parallel shared(grid,wteff,wlogg,wmu,wwav,jteff,jlogg,jmu,jwav,mu_grid,area,val_mu,nsurf,nwav,fl) default(none)
     {
-    double w1teff, w0teff, w1logg, w0logg, w1mu, w0mu, w1wav, w0wav;
+    double w1teff, w0teff, w1logg, w0logg, w1mu, w0mu, w1wav, w0wav, tmp_fl;
     int j0teff, j1teff, j0logg, j1logg, j0mu, j1mu, j0wav, j1wav, j0wavk, j1wavk;
     #pragma omp for
     for (int i=0; i<nsurf; i++) {
@@ -781,7 +782,7 @@ def Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, 
                 j0wavk = nwav-1;
                 j1wavk = nwav-1;
             }
-            fl(k) += \
+            tmp_fl = \
                 ( \
                     w0wav * ( w0mu * mu_grid(j0mu,j0wavk) + w1mu * mu_grid(j1mu,j0wavk) ) * \
                         ( \
@@ -793,7 +794,8 @@ def Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, 
                         w0logg * ( w0teff * grid(j0teff,j0logg,j1wavk) + w1teff * grid(j1teff,j0logg,j1wavk) ) + \
                         w1logg * ( w0teff * grid(j0teff,j1logg,j1wavk) + w1teff * grid(j1teff,j1logg,j1wavk) ) \
                         ) \
-                ) * area(i) * val_mu(i);
+                );
+            fl(k) += exp(tmp_fl) * area(i) * val_mu(i);
         }
     }
     }

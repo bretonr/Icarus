@@ -8,6 +8,8 @@ Bug fixes:
 
 - _Atmosphere/Atmo.py/AtmoGridSpec.Get_flux_doppler_: There was an issue with the interpolation along the wavelength axis which has now been resolved. It was simply not computed correctly.
 - _Core/Star_base_: Fixed a problem in the Velocity_surface function which calculates the surface velocity.
+- _Atmosphere/Atmo_spectro_IRTF.py_: Fixed the conversion of the fluxes, which must be stored in the grid and log(F_lambda), but the grid fluxes store them at log10(F_lambda).
+- _Utils/Grid.py_: _Interp_doppler_savememory_ and _Inter_doppler_ were both not exponentiating the fluxes before summing them over the surface elements. One needs to bear in mind that the grid values are log(F_lambda).
 
 
 ### 2.2.1 (2015-10-12)
