@@ -392,7 +392,7 @@ class Star_base(object):
         if inds is None:
             inds = mu > 0
 
-        v = self._Velocity_surface(phase, velocity=velocity) - 1000e3/cts.c
+        v = self._Velocity_surface(phase, velocity=velocity)
 
         if atmo_doppler is not None:
             if nosum:
