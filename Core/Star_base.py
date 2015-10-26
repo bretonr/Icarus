@@ -350,7 +350,7 @@ class Star_base(object):
         logger.debug("end")
         return
 
-    def Flux_doppler(self, phase, atmo_grid=None, gravscale=None, proj=None, nosum=False, mu=None, inds=None, velocity=0., atmo_doppler=None):
+    def Flux_doppler(self, phase, atmo_grid=None, gravscale=None, proj=None, nosum=False, mu=None, inds=None, velocity=0., atmo_doppler=None, debug=False):
         """
         Return the flux interpolated from the atmosphere grid.
         Takes into account the Doppler shift of the different surface
@@ -375,6 +375,7 @@ class Star_base(object):
             boosting factors. Must be the same dimensions as the atmosphere grid.
             This is needed for the photometry atmosphere grid, but not for the
             spectroscopy.
+        debug (optional): whether to print extra debugging information or not
 
         >>> self.Flux_doppler(phase)
         flux
@@ -391,7 +392,7 @@ class Star_base(object):
         if inds is None:
             inds = mu > 0
 
-        v = self._Velocity_surface(phase, velocity=velocity)
+        v = self._Velocity_surface(phase, velocity=velocity) - 1000e3/cts.c
 
         if atmo_doppler is not None:
             if nosum:
@@ -402,7 +403,24 @@ class Star_base(object):
             if nosum:
                 fsum = atmo_grid.Get_flux_doppler_nosum(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds])
             else:
-                fsum = atmo_grid.Get_flux_doppler(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds])
+                if debug > 0:
+                    print('-'*20)
+                    print('logteff')
+                    print(self.logteff[inds])
+                    print('-'*20)
+                    print('logg')
+                    print(self.logg[inds]+gravscale)
+                    print('-'*20)
+                    print('mu')
+                    print(mu[inds])
+                    print('-'*20)
+                    print('area')
+                    print(self.area[inds])
+                    print('-'*20)
+                    print('v')
+                    print(v[inds])
+                    print('-'*20)
+                fsum = atmo_grid.Get_flux_doppler(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds], debug=debug-1)
 
         if proj != 1:
             fsum *= proj
@@ -1011,7 +1029,10 @@ class Star_base(object):
 #        Kbary = -self.k1 / cts.c
 #        Vx = Kbary * (self.rc*self.cosy*np.cos(phi) + (Rbary - self.rc*self.cosx)*np.sin(phi))
 #        #print( Vx.min()*cts.c, Vx.max()*cts.c, Vx.mean()*cts.c, (Vx-Vx.mean()).min()*cts.c, (Vx-Vx.mean()).max()*cts.c )
-        Vx = (-self.k1+velocity)/cts.c * ( self.omega*self.rc*(1+self.q)/self.q * (-np.cos(phi)*self.cosy + np.sin(phi)*self.cosx) - np.sin(phi) )
+        ## This is the old way
+        #Vx = (-self.k1+velocity)/cts.c * ( self.omega*self.rc*(1+self.q)/self.q * (-np.cos(phi)*self.cosy + np.sin(phi)*self.cosx) - np.sin(phi) )
+        ## This is the new way
+        Vx = (self.k1*np.sin(phi)+velocity)/cts.c - self.omega*self.k1*self.rc*(1+self.q)/self.q/cts.c * (np.sin(phi)*self.cosx + np.cos(phi)*self.cosy)
         return Vx
 
 ######################## class Star_base ########################

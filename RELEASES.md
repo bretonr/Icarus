@@ -2,6 +2,14 @@
 
 ## Release history
 
+### 2.2.2 (2015-10-12)
+
+Bug fixes:
+
+- _Atmosphere/Atmo.py/AtmoGridSpec.Get_flux_doppler_: There was an issue with the interpolation along the wavelength axis which has now been resolved. It was simply not computed correctly.
+- _Core/Star_base_: Fixed a problem in the Velocity_surface function which calculates the surface velocity.
+
+
 ### 2.2.1 (2015-10-12)
 
 Features:

@@ -105,7 +105,17 @@ class AtmoGrid(Column):
 
     def __getitem__(self, item):
         if isinstance(item, six.string_types):
-            return self.cols[item]
+            if item not in self.colnames:
+                if 'log'+item in self.colnames:
+                    return np.exp(self.cols['log'+item])
+                elif 'log'+item[2:] in self.colnames:
+                    return 10**(self.cols['log'+item[2:]])
+                elif 'log10'+item in self.colnames:
+                    return 10**(self.cols['log10'+item])
+                else:
+                    raise Exception('The provided column name is cannot be found.')
+            else:
+                return self.cols[item]
         else:
             #return super(AtmoGrid, self).__getitem__(item)
             return self.view(np.ndarray)[item]
@@ -827,7 +837,7 @@ class AtmoGridSpec(AtmoGrid):
 
         return self
 
-    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel):
+    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel, debug=True):
         """
         Return the spectrum interpolated from the atmosphere grid.
 
@@ -850,7 +860,35 @@ class AtmoGridSpec(AtmoGrid):
         w1logtemp, jlogtemp = self.Getaxispos('logtemp', val_logtemp)
         w1logg, jlogg = self.Getaxispos('logg', val_logg)
         w1mu, jmu = self.Getaxispos('mu', val_mu)
-        w1wav, jwav = self.Getaxispos('wav', val_vel/self.meta['delta_v'])
+        #w1wav, jwav = self.Getaxispos('wav', val_vel/self.meta['delta_v'])
+        w1wav, jwav = np.modf(val_vel/self.meta['delta_v'])
+        jwav = jwav.astype(int)
+        if debug > 0:
+            print('-'*20)
+            print('w1logtemp')
+            print(w1logtemp)
+            print('-'*20)
+            print('jlogtemp')
+            print(jlogtemp)
+            print('-'*20)
+            print('w1logg')
+            print(w1logg)
+            print('-'*20)
+            print('jlogg')
+            print(jlogg)
+            print('-'*20)
+            print('w1mu')
+            print(w1mu)
+            print('-'*20)
+            print('jmu')
+            print(jmu)
+            print('-'*20)
+            print('w1wav')
+            print(w1wav)
+            print('-'*20)
+            print('jwav')
+            print(jwav)
+            print('-'*20)
 
         spectrum = Utils.Grid.Interp_doppler(self.data, w1logtemp, w1logg, w1mu, w1wav, jlogtemp, jlogg, jmu, jwav, val_area, val_mu)
 
