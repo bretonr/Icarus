@@ -629,7 +629,7 @@ class AtmoGridPhot(AtmoGrid):
 
         return self
 
-    def Get_flux(self, val_logtemp, val_logg, val_mu, val_area):
+    def Get_flux(self, val_logtemp, val_logg, val_mu, val_area, **kwargs):
         """
         Return the flux interpolated from the atmosphere grid.
         
@@ -651,7 +651,7 @@ class AtmoGridPhot(AtmoGrid):
         flux = Utils.Grid.Interp_photometry(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu)
         return flux
 
-    def Get_flux_details(self, val_logtemp, val_logg, val_mu, val_area, val_v):
+    def Get_flux_details(self, val_logtemp, val_logg, val_mu, val_area, val_v, **kwargs):
         """
         Returns the flux interpolated from the atmosphere grid.
 
@@ -674,7 +674,7 @@ class AtmoGridPhot(AtmoGrid):
         flux, Keff, vsini, temp = Utils.Grid.Interp_photometry_details(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu, val_v, val_logtemp)
         return flux, Keff, vsini, temp
 
-    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel, atmo_doppler):
+    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel, atmo_doppler, **kwargs):
         """
         Return the flux interpolated from the atmosphere grid.
         Each surface element is multiplied by the appropriate Doppler boosting
@@ -701,7 +701,7 @@ class AtmoGridPhot(AtmoGrid):
         flux = Utils.Grid.Interp_photometry_doppler(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu, val_vel, atmo_doppler.data)
         return flux
 
-    def Get_flux_doppler_nosum(self, val_logtemp, val_logg, val_mu, val_area, val_vel, atmo_doppler):
+    def Get_flux_doppler_nosum(self, val_logtemp, val_logg, val_mu, val_area, val_vel, atmo_doppler, **kwargs):
         """
         Return the flux interpolated from the atmosphere grid.
         Each surface element is multiplied by the appropriate Doppler boosting
@@ -729,7 +729,7 @@ class AtmoGridPhot(AtmoGrid):
         flux = Utils.Grid.Interp_photometry_doppler_nosum(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu, val_vel, atmo_doppler.data)
         return flux
 
-    def Get_flux_Keff(self, val_logtemp, val_logg, val_mu, val_area, val_v):
+    def Get_flux_Keff(self, val_logtemp, val_logg, val_mu, val_area, val_v, **kwargs):
         """
         Returns the flux interpolated from the atmosphere grid.
 
@@ -752,7 +752,7 @@ class AtmoGridPhot(AtmoGrid):
         flux, Keff = Utils.Grid.Interp_photometry_Keff(self.data, w1logtemp, w1logg, w1mu, jlogtemp, jlogg, jmu, val_area, val_mu, val_v)
         return flux, Keff
 
-    def Get_flux_nosum(self, val_logtemp, val_logg, val_mu, val_area):
+    def Get_flux_nosum(self, val_logtemp, val_logg, val_mu, val_area, **kwargs):
         """
         Returns the flux interpolated from the atmosphere grid.
 
@@ -837,7 +837,7 @@ class AtmoGridSpec(AtmoGrid):
 
         return self
 
-    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel, debug=True):
+    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel, debug=True, **kwargs):
         """
         Return the spectrum interpolated from the atmosphere grid.
 
@@ -1056,7 +1056,7 @@ class Atmo_grid:
         self.h = h
         return
 
-    def Get_flux(self, val_logtemp, val_logg, val_mu, val_area):
+    def Get_flux(self, val_logtemp, val_logg, val_mu, val_area, **kwargs):
         """
         Returns the flux interpolated from the atmosphere grid.
         val_logtemp: log of effective temperature
@@ -1077,7 +1077,7 @@ class Atmo_grid:
         flux = Utils.Grid.Interp_photometry(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu)
         return flux
 
-    def Get_flux_details(self, val_logtemp, val_logg, val_mu, val_area, val_v):
+    def Get_flux_details(self, val_logtemp, val_logg, val_mu, val_area, val_v, **kwargs):
         """
         Returns the flux interpolated from the atmosphere grid.
         val_logtemp: log of effective temperature
@@ -1099,7 +1099,7 @@ class Atmo_grid:
         flux, Keff, vsini, temp = Utils.Grid.Interp_photometry_details(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu, val_v, val_logtemp)
         return flux, Keff, vsini, temp
 
-    def Get_flux_Keff(self, val_logtemp, val_logg, val_mu, val_area, val_v):
+    def Get_flux_Keff(self, val_logtemp, val_logg, val_mu, val_area, val_v, **kwargs):
         """
         Returns the flux interpolated from the atmosphere grid.
         val_logtemp: log of effective temperature
@@ -1121,7 +1121,7 @@ class Atmo_grid:
         flux, Keff = Utils.Grid.Interp_photometry_Keff(grid, w1temp, w1logg, w1mu, jtemp, jlogg, jmu, val_area, val_mu, val_v)
         return flux, Keff
 
-    def Get_flux_nosum(self, val_logtemp, val_logg, val_mu, val_area):
+    def Get_flux_nosum(self, val_logtemp, val_logg, val_mu, val_area, **kwargs):
         """
         Returns the flux interpolated from the atmosphere grid.
         val_logtemp: log of effective temperature

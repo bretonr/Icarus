@@ -25,7 +25,7 @@ class Atmo_grid_lithium_doppler(Atmo_grid_lithium):
         #print( 'Rebinning to linear in logarithmic spacing' )
         #self.__Make_log()
     
-    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel):
+    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel, **kwargs):
         """
         Returns the flux interpolated from the atmosphere grid.
         val_logtemp: log of effective temperature
@@ -60,7 +60,7 @@ class Atmo_grid_lithium_doppler(Atmo_grid_lithium):
             flux = Utils.Grid.Interp_doppler(grid, wtemp, wlogg, wmu, wwav, jtemp, jlogg, jmu, jwav, val_area, val_mu)
         return flux
     
-    def Get_flux_doppler_nomu(self, val_logtemp, val_logg, val_mu, val_area, val_vel):
+    def Get_flux_doppler_nomu(self, val_logtemp, val_logg, val_mu, val_area, val_vel, **kwargs):
         """
         Returns the flux interpolated from the atmosphere grid.
         val_logtemp: log of effective temperature

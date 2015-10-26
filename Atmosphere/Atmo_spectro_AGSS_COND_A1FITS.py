@@ -156,7 +156,7 @@ class Atmo_AGSS_spectro(Atmo_grid):
             self.wav_frac, self.wav_inds = Utils.Series.Getaxispos_vector(self.wav, self.wav_linear)
         return
 
-    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel):
+    def Get_flux_doppler(self, val_logtemp, val_logg, val_mu, val_area, val_vel, **kwargs):
         """
         Returns the flux interpolated from the atmosphere grid.
         val_logtemp: log of effective temperature
