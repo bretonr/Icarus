@@ -680,6 +680,10 @@ def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
                         ) \
                     ) \
                 );
+            //std::cout << "tmp_fl " << tmp_fl << std::endl;
+            //std::cout << "area*val_mu " << area(i) * val_mu(i) << std::endl;
+            //std::cout << "fl " << tmp_fl * area(i) * val_mu(i) << std::endl;
+            //fl(k) += tmp_fl * area(i) * val_mu(i);
             fl(k) += exp(tmp_fl) * area(i) * val_mu(i);
                 //);
         }
@@ -699,7 +703,7 @@ def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
     val_mu = np.ascontiguousarray(val_mu)
     nsurf = jteff.size
     nwav = grid.shape[-1]
-    fl = np.ones(nwav, dtype=float)
+    fl = np.zeros(nwav, dtype=float)
     if os.uname()[0] == 'Darwin':
         #extra_compile_args = extra_link_args = ['-O3']
         extra_compile_args = extra_link_args = ['-Ofast']
@@ -785,17 +789,17 @@ def Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, 
             tmp_fl = \
                 ( \
                     w0wav * ( w0mu * mu_grid(j0mu,j0wavk) + w1mu * mu_grid(j1mu,j0wavk) ) * \
-                        ( \
+                        exp( \
                         w0logg * ( w0teff * grid(j0teff,j0logg,j0wavk) + w1teff * grid(j1teff,j0logg,j0wavk) ) + \
                         w1logg * ( w0teff * grid(j0teff,j1logg,j0wavk) + w1teff * grid(j1teff,j1logg,j0wavk) ) \
                         ) + \
                     w1wav * ( w0mu * mu_grid(j0mu,j1wavk) + w1mu * mu_grid(j1mu,j1wavk) ) * \
-                        ( \
+                        exp( \
                         w0logg * ( w0teff * grid(j0teff,j0logg,j1wavk) + w1teff * grid(j1teff,j0logg,j1wavk) ) + \
                         w1logg * ( w0teff * grid(j0teff,j1logg,j1wavk) + w1teff * grid(j1teff,j1logg,j1wavk) ) \
                         ) \
                 );
-            fl(k) += exp(tmp_fl) * area(i) * val_mu(i);
+            fl(k) += tmp_fl * area(i) * val_mu(i);
         }
     }
     }
@@ -936,7 +940,7 @@ def Interp_doppler_savememory_linear(grid, wteff, wlogg, wmu, jteff, jlogg, jmu,
     val_mu = np.ascontiguousarray(val_mu)
     nsurf = jteff.size
     nwav = grid.shape[-1]
-    fl = np.ones(nwav, dtype=float)
+    fl = np.zeros(nwav, dtype=float)
     if os.uname()[0] == 'Darwin':
         extra_compile_args = extra_link_args = ['-O3']
     else:
@@ -1032,7 +1036,7 @@ def Interp_doppler_nomu(grid, wteff, wlogg, wwav, jteff, jlogg, jwav, area, val_
     val_mu = np.ascontiguousarray(val_mu)
     nsurf = jteff.size
     nwav = grid.shape[-1]
-    fl = np.ones(nwav, dtype=float)
+    fl = np.zeros(nwav, dtype=float)
     if os.uname()[0] == 'Darwin':
         extra_compile_args = extra_link_args = ['-O3']
     else:

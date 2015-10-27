@@ -350,7 +350,7 @@ class Star_base(object):
         logger.debug("end")
         return
 
-    def Flux_doppler(self, phase, atmo_grid=None, gravscale=None, proj=None, nosum=False, mu=None, inds=None, velocity=0., atmo_doppler=None, debug=False):
+    def Flux_doppler(self, phase, atmo_grid=None, gravscale=None, proj=None, nosum=False, mu=None, inds=None, velocity=0., atmo_doppler=None):
         """
         Return the flux interpolated from the atmosphere grid.
         Takes into account the Doppler shift of the different surface
@@ -403,24 +403,23 @@ class Star_base(object):
             if nosum:
                 fsum = atmo_grid.Get_flux_doppler_nosum(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds])
             else:
-                if debug > 0:
-                    print('-'*20)
-                    print('logteff')
-                    print(self.logteff[inds])
-                    print('-'*20)
-                    print('logg')
-                    print(self.logg[inds]+gravscale)
-                    print('-'*20)
-                    print('mu')
-                    print(mu[inds])
-                    print('-'*20)
-                    print('area')
-                    print(self.area[inds])
-                    print('-'*20)
-                    print('v')
-                    print(v[inds])
-                    print('-'*20)
-                fsum = atmo_grid.Get_flux_doppler(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds], debug=debug-1)
+                logger.log(5, '-'*20)
+                logger.log(5, 'logteff yo')
+                logger.log(5, self.logteff[inds])
+                logger.log(5, '-'*20)
+                logger.log(5, 'logg')
+                logger.log(5, self.logg[inds]+gravscale)
+                logger.log(5, '-'*20)
+                logger.log(5, 'mu')
+                logger.log(5, mu[inds])
+                logger.log(5, '-'*20)
+                logger.log(5, 'area')
+                logger.log(5, self.area[inds])
+                logger.log(5, '-'*20)
+                logger.log(5, 'v')
+                logger.log(5, v[inds])
+                logger.log(5, '-'*20)
+                fsum = atmo_grid.Get_flux_doppler(self.logteff[inds], self.logg[inds]+gravscale, mu[inds], self.area[inds], v[inds])
 
         if proj != 1:
             fsum *= proj

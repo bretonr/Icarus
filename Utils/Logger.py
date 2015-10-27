@@ -6,6 +6,7 @@ import logging
 ## Possible levels are 'INFO', 'DEBUG', a numeral between 5-9.
 LEVEL = 'INFO'
 #LEVEL = 'DEBUG'
+#LEVEL = 5
 
 for i in xrange(5,9):
     logging.addLevelName(i, "DEBUG{}".format(i))

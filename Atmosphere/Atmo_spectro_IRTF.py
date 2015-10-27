@@ -248,7 +248,7 @@ class Atmo_spectro_IRTF(Atmo_grid):
         logger.log(9, "Getting mu indices")
         wmu, jmu = self.Getaxispos(mu,val_mu)
         if self.savememory:
-            grid_mu = self.grid_mu
+            grid_mu = self.grid_mu.copy()
             if self.z0:
                 val_vel = val_vel/(-self.z0)
                 wwav = np.remainder(val_vel, 1)
@@ -333,7 +333,7 @@ def Read_IRTF(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut
     ## The wavelength is contained in the first column and the flux in the second.
     wav, grid = np.loadtxt(fln, usecols=(0,1), unpack=True)
 
-    ## Data file values are stored in F_lambda [cgs]
+    ## Data file values are stored in F_lambda [cgs] -> erg/s/cm^2/A
     ## For the grid, we store values in log(F_lambda) [log(cgs)] -- natural log -- and then the interpolator interpolates and exponentiates them because summing over the surface elements.
     grid = np.log(grid)
 
