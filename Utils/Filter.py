@@ -10,7 +10,7 @@ from . import Grid, Misc, Series
 ##----- ----- ----- ----- ----- ----- ----- ----- ----- -----##
 
 
-def Band_integration(band_func, w, f, input_nu=False, AB=True):
+def Band_integration(band_func, w, f, input_nu=False, AB=True, mask=None, method='simps'):
     """
     Integrate a spectrum over a filter response curve.
     
@@ -27,40 +27,59 @@ def Band_integration(band_func, w, f, input_nu=False, AB=True):
     AB: Whether the integration should be performed in the STMAG system
         or the ABMAG system.
         (see equation 5,6 from Linnell, DeStefano & Hubeny, ApJ, 146, 68)
-    
+    mask: if a mask is provided, values that are non-zero will be masked from
+        the integration.
+    method: the integration method. Can be 'simps' for Simpson's rule or
+        'trapz' for simple trapezoid. Defaults to 'simps'.
+
     See The Alhambra Photometric System (doi:10.1088/0004-6256/139/3/1242) for more details.
     See also The Mauna Kea Observatories Near-Infrared Filter Set. III. Isophotal Wavelengths and Absolute Calibration (doi:10.1086/429382).
     """
+    ## Evaluate the band transmission at the given frequency/wavelength
     f_band = band_func(w)
-    #if input_nu:
-    #    nu, f_nu = w, f
-    #else:
-    #    ## Make units m instead of A to simplify calculations
-    #    wav, f_wav = w*1e-10, f*1e10
     ## Check if we work in the AB system (F_nu)
     if AB:
         ## The following equation is from Bessell & Murphy 2012 (eq. A12a)
         ## <f_nu> from f_nu, S_nu and nu
         if input_nu:
-            f_int = scipy.integrate.simps(f*f_band/w, w) / scipy.integrate.simps(f_band/w, w)
+            val_nominator = f*f_band/w
+            val_denominator = f_band/w
+            #f_int = scipy.integrate.simps(f*f_band/w, w) / scipy.integrate.simps(f_band/w, w)
         ## The following equation is from Bessell & Murphy 2012 (eq. A12b)
         ## <f_nu> from f_lambda, S_lambda and lambda
         ## Note that in order to balance, we must use the speed of light in A/s
         else:
-            f_int = scipy.integrate.simps(f*f_band*w, w) / scipy.integrate.simps(f_band*(cts.c*1e10)/w, w)
+            val_nominator = f*f_band*w
+            val_denominator = f_band*(cts.c*1e10)/w
+            #f_int = scipy.integrate.simps(f*f_band*w, w) / scipy.integrate.simps(f_band*(cts.c*1e10)/w, w)
     ## If not we work in the ST system (F_lambda)
     else:
         ## The following has not been implemented
         if input_nu:
         ## The following equation is inferred from Bessell & Murphy 2012 (eq. A11)
         ## <f_lambda> from f_nu, S_nu and nu
-            f_int = scipy.integrate.simps(f*f_band/w, w) / scipy.integrate.simps(f_band*cts.c/w**3, w)
+            val_nominator = f*f_band/w
+            val_denominator = f_band*cts.c/w**3
+            #f_int = scipy.integrate.simps(f*f_band/w, w) / scipy.integrate.simps(f_band*cts.c/w**3, w)
         ## The following equation is from Bessell & Murphy 2012 (eq. A11)
         ## <f_lambda> from f_lambda, S_lambda and lambda
         else:
-            f_int = scipy.integrate.simps(f*f_band*w, w) / scipy.integrate.simps(f_band*w, w)
+            val_nominator = f*f_band*w
+            val_denominator = f_band*w
+            #f_int = scipy.integrate.simps(f*f_band*w, w) / scipy.integrate.simps(f_band*w, w)
         ## For the ST system (F_lambda), we convert back from m to A
         #f_int = f_int * 1e-10
+    ## Determine if a mask is necessary
+    if mask is not None:
+        mask = np.asarray(mask, dtype=bool)
+        val_nominator[mask] = 0.
+        val_denominator[mask] = 0.
+    ## Set the integration method
+    if method is 'trapz':
+        dw = np.gradient(w)
+        f_int = (val_nominator*dw).sum() / (val_denominator*dw).sum()
+    else:
+        f_int = scipy.integrate.simps(val_nominator, w) / scipy.integrate.simps(val_denominator, w)
     return f_int
 
 def Doppler_boosting_factor(band_func, w, f, velocities, input_nu=False, AB=True):

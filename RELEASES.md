@@ -18,6 +18,7 @@ Features:
 
 - _Atmosphere/Atmo.py/AtmoGridSpec_ is a new class to handle atmosphere grids in the spectral domain.
 
+- _Utils/Filter.py/Band_integration_ is modified in order to handle masking parts of the spectral range. The default method is Simpson's rule, but trapezoid is also implemented and recommended for the masking.
 
 ### 2.2.0 (2015-10-09)
 

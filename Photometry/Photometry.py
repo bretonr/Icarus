@@ -50,12 +50,12 @@ def Prep_plot(ncolors=5, cmap=['jet',1.,1.,1.]):
         colors = np.c_[rgb,colors[:,-1]]
     return fig, ax, colors
 
-def Post_plot(influx=False):
+def Post_plot(influx=False, ncol=1):
     ## Capture figure, axes
     fig, ax, colors = Prep_plot()
     ## Display legend if hasn't been done before
     if ax.legend_ is None:
-        ax.legend(loc='upper left')
+        ax.legend(loc='best', ncol=ncol)
     ## Set the axis limits
     ax.set_xlim([0,1])
     bbox = ax.dataLim.expanded(1., 1.2)
@@ -638,7 +638,7 @@ class Photometry(object):
                 if errors:
                     ax.errorbar(self.data['phase'][i], self.data['mag'][i], yerr=self.data['mag_err'][i], fmt='none', ecolor=colors[i])
                 ax.plot(self.data['phase'][i], self.data['mag'][i], linestyle='None', marker='o', markersize=4, markeredgecolor=colors[i], markerfacecolor=colors[i], label=self.data['id'][i])
-        Post_plot(influx=influx)
+        Post_plot(influx=influx, ncol=np.clip(self.ndataset/3,1,4))
         return
 
     def Plot_model(self, par, nphases=51, show_preoffset=False, do_offset=True, offset_list=None, verbose=False, full_output=False, cmap=None, influx=False):
@@ -693,7 +693,7 @@ class Photometry(object):
                 ax.plot(phases[i], pred_flux[i]*10**(-0.4*offset_list[i]), ls='-', color=colors[i])
             else:
                 ax.plot(phases[i], pred_flux[i]+offset_list[i], ls='-', color=colors[i])
-        Post_plot(influx=influx)
+        Post_plot(influx=influx, ncol=np.clip(self.ndataset/3,1,4))
         if full_output:
             return pred_flux, offset_list
         return
