@@ -34,3 +34,8 @@ cover
 
 # Mac OSX
 .DS_Store
+
+# Ignore the Local directory
+Local/*
+# Except the __init__.py file
+!Local/__init__.py

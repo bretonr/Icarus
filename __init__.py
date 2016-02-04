@@ -7,6 +7,7 @@ from . import CoreBinary
 from . import Photometry
 from . import Spectroscopy
 from . import Utils
+from . import Local
 
 ## The release version
 __version__ = "2.1.2"

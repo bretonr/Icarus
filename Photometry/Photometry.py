@@ -227,6 +227,7 @@ class Photometry(object):
             'res' (array): the fit residuals.
             'dm' (float): value of the DM.
             'av' (float): value of AV.
+            'model_flux' (list of arrays): the model fluxes.
         verbose (bool): If true will display the list of parameters and fit information.
 
         >>> self.Calc_chi2([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
@@ -291,7 +292,7 @@ class Photometry(object):
         if verbose:
             print('chi2: {:.3f}, chi2 (data): {:.3f}, chi2 (band offset): {:.3f}, DM: {:.3f}, AV: {:.3f}'.format(chi2, chi2_data, chi2_band, DM, AV))
         if full_output:
-            return chi2, {'offset':offset_band, 'par':par, 'res':residuals, 'dm':DM, 'av':AV}
+            return chi2, {'offset':offset_band, 'par':par, 'res':residuals, 'dm':DM, 'av':AV, 'model_flux':pred_flux}
         else:
             return chi2
 

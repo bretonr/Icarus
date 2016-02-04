@@ -24,7 +24,7 @@ try:
         import seaborn as sns
         HAS_SEABORN = True
         sns.set_style('ticks')
-        sns.set_context(rc={'lines.markeredgewidth': 1.0})
+        sns.set_context(font_scale=1.0, rc={'lines.markeredgewidth': 1.0})
     except:
         HAS_SEABORN = False
         print( "Cannot import seaborn. This is not a critical error, but you might want to consider in order to have nicer plots." )
