@@ -94,7 +94,7 @@ class Photometry_temperature(Photometry):
         >>> fit = Photometry_temperature(atmo_fln, data_fln, ndiv, read=True)
         """
         # Calling the parent class
-        Photometry.__init__(self, atmo_fln, data_fln, ndiv, read=read, oldchi=oldchi)
+        Photometry.__init__(self, atmo_fln, data_fln, ndiv, read=read,)
         #self._Init_lightcurve(ndiv)
         
     def _Init_lightcurve(self, ndiv, read=True):
