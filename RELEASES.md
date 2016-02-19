@@ -2,6 +2,13 @@
 
 ## Release history
 
+### 2.2.x (2016-??-??)
+
+Bug fixes:
+
+- _Photometry/Photometry.py/Photometry_temperature_: Updated the class so is now compatible with the new version of the _Photometry_ class.
+
+
 ### 2.2.2 (2015-10-12)
 
 Bug fixes:
