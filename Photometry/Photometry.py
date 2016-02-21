@@ -263,13 +263,13 @@ class Photometry(object):
                 res1 = np.array([ Utils.Misc.Fit_linear(self.data['flux'][i], x=pred_flux[i], err=self.data['flux_err'][i], b=0., inline=True) for i in np.arange(self.ndataset) ])
                 offset_band = res1[:,1]
                 if full_output:
-                    residuals = [ (self.data['flux'][i] - pred_flux[i]*offset_band[i]) / self.data['flux_err'][i] initfor i in np.arange(self.ndataset) ]
+                    residuals = [ (self.data['flux'][i] - pred_flux[i]*offset_band[i]) / self.data['flux_err'][i] for i in np.arange(self.ndataset) ]
                 offset_band = -2.5*np.log10(offset_band)
             else: # Calculate the residuals in the magnitude domain
                 res1 = np.array([ Utils.Misc.Fit_linear(self.data['mag'][i]-pred_flux[i], err=self.data['mag_err'][i], m=0., inline=True) for i in np.arange(self.ndataset) ])
                 offset_band = res1[:,0]
                 if full_output:
-                    residuals = [ ((self.data['mag'][i]-pred_flux[i]) - offset_band[i])/self.data['mag_err'][i] for i in np.arange(self.ndataset) ]
+                    residuals = [ ((self.data['mag'][i] - pred_flux[i]) - offset_band[i])/self.data['mag_err'][i] for i in np.arange(self.ndataset) ]
             chi2_data = res1[:,2].sum()
             # Fit for the best offset between the observed and theoretical flux given the DM and A_V
             res2 = Utils.Misc.Fit_linear(offset_band, x=self.data['ext'], err=self.data['calib'], b=DM, m=AV, inline=True)
