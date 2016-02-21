@@ -234,7 +234,7 @@ class Atmo_spectro_IRTF(Atmo_grid):
         
         >>> flux = self.Get_flux_doppler(val_logtemp, val_logg, val_mu, val_area, val_vel)
         """
-        logger.debug("start")
+        logger.log(9, "start")
         grid = self.grid
         logtemp = self.logtemp
         logg = self.logg
@@ -260,7 +260,7 @@ class Atmo_spectro_IRTF(Atmo_grid):
             print( 'This option (savememory=False) is not available at the moment!' )
             #flux = Utils.Grid.Interp_doppler(grid, wtemp, wlogg, wmu, wwav, jtemp, jlogg, jmu, jwav, val_area, val_mu)
         #return flux, wtemp, wlogg, wmu, wwav, jtemp, jlogg, jmu, jwav, grid_mu, val_area, val_mu
-        logger.debug("end")
+        logger.log(9, "end")
         return flux
 
     def Limb_darkening(self, mu):
@@ -357,7 +357,7 @@ def Read_IRTF(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut
         grid = interp(wav)
 
     ## Smooth the spectrum if requested
-    logger.log(6,"Original: sigma {}, tophat {}".format(sigma,tophat))
+    logger.log(6, "Original: sigma {}, tophat {}".format(sigma,tophat))
     if sigma is not None or tophat is not None:
         bin = wav[1]-wav[0]
         ## We have to convert values to bin units
@@ -370,7 +370,7 @@ def Read_IRTF(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut
         else:
             tophat = int(tophat/bin + 0.5)
             tophat = 1 if tophat < 1 else tophat
-        logger.log(6,"Bin converted: bin {}, sigma {}, tophat {}".format(bin,sigma,tophat))
+        logger.log(6, "Bin converted: bin {}, sigma {}, tophat {}".format(bin,sigma,tophat))
         grid = Utils.Series.Convolve_gaussian_tophat(grid, sigma=sigma, top=tophat)
 
     ## Thin the spectrum if requested

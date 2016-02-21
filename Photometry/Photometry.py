@@ -514,9 +514,9 @@ class Photometry(object):
 
         >>> self._Init_lightcurve(ndiv)
         """
-        logger.debug("start")
+        logger.log(9, "start")
         self.star = Core.Star(ndiv, read=read, oldchi=oldchi)
-        logger.debug("end")
+        logger.log(9, "end")
         return
 
     def Make_surface(self, par, verbose=False):

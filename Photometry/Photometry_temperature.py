@@ -106,9 +106,9 @@ class Photometry_temperature(Photometry):
         
         >>> self._Init_lightcurve(ndiv)
         """
-        logger.debug("start")
+        logger.log(9, "start")
         self.star = Core.Star_temperature(ndiv)
-        logger.debug("end")
+        logger.log(9, "end")
         return
 
     def Make_surface(self, par, verbose=False):

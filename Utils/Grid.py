@@ -614,7 +614,7 @@ def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
     spectrum : ndarray
         Spectrum integrated over the surface.
     """
-    logger.debug("start")
+    logger.log(9, "start")
     code = """
     #pragma omp parallel shared(grid,wteff,wlogg,wmu,wwav,jteff,jlogg,jmu,jwav,area,val_mu,nsurf,nwav,fl) default(none)
     {
@@ -711,7 +711,7 @@ def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
         extra_compile_args = extra_link_args = ['-O3 -fopenmp']
     get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'wwav', 'jteff', 'jlogg', 'jmu', 'jwav', 'area', 'val_mu', 'nsurf', 'nwav', 'fl'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>','<cmath>'], libraries=['m'], verbose=2)
     tmp = get_flux
-    logger.debug("end")
+    logger.log(9, "end")
     return fl
 
 def Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, mu_grid, area, val_mu):
@@ -752,7 +752,7 @@ def Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, 
 
     NOTE: This is becoming obsolete.
     """
-    logger.debug("start")
+    logger.log(9, "start")
     code = """
     #pragma omp parallel shared(grid,wteff,wlogg,wmu,wwav,jteff,jlogg,jmu,jwav,mu_grid,area,val_mu,nsurf,nwav,fl) default(none)
     {
@@ -827,7 +827,7 @@ def Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, 
         headers = ['<omp.h>','<cmath>']
     get_flux = scipy.weave.inline(code, ['grid', 'wteff', 'wlogg', 'wmu', 'wwav', 'jteff', 'jlogg', 'jmu', 'jwav','mu_grid', 'area', 'val_mu', 'nsurf', 'nwav', 'fl'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=headers, libraries=['m'], verbose=2)
     tmp = get_flux
-    logger.debug("end")
+    logger.log(9, "end")
     return fl
 
 def Interp_doppler_savememory_linear(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, mu_grid, area, val_mu, val_vel, z0):

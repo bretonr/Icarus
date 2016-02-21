@@ -191,7 +191,7 @@ class Star(Star_base):
         
         >>> self._Surface()
         """
-        logger.debug("start")
+        logger.log(9, "start")
         if debug: print( 'Begin _Surface()' )
         ## Calculate some quantities
         self._Calc_qp1by2om2()
@@ -252,7 +252,7 @@ class Star(Star_base):
     
         ## surface area. shape = n_faces
         self.area = self.rc**2 * self.pre_area
-        logger.debug("end")
+        logger.log(9, "end")
         return
 
 ######################## class Star ########################

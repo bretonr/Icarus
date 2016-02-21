@@ -40,7 +40,7 @@ class Star_base(object):
         
         >>> star = Star_base(nafl)
         """
-        logger.debug("start")
+        logger.log(9, "start")
         # We define some useful quantities.
         # We set the class attributes
         if atmo_grid is not None:
@@ -56,7 +56,7 @@ class Star_base(object):
         self.porb = None
         self.k1 = None
         self.incl = None
-        logger.debug("end")
+        logger.log(9, "end")
 
     def _Area(self, arl, r):
         """_Area(arl, r)
@@ -313,7 +313,7 @@ class Star_base(object):
         >>> self.Flux(phase)
         flux
         """
-        logger.debug("start")
+        logger.log(9, "start")
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
         if gravscale is None:
@@ -347,7 +347,7 @@ class Star_base(object):
                 fsum *= proj
             return fsum
 
-        logger.debug("end")
+        logger.log(9, "end")
         return
 
     def Flux_doppler(self, phase, atmo_grid=None, gravscale=None, proj=None, nosum=False, mu=None, inds=None, velocity=0., atmo_doppler=None):
@@ -380,7 +380,7 @@ class Star_base(object):
         >>> self.Flux_doppler(phase)
         flux
         """
-        logger.debug("start")
+        logger.log(9, "start")
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
         if gravscale is None:
@@ -423,7 +423,7 @@ class Star_base(object):
 
         if proj != 1:
             fsum *= proj
-        logger.debug("stop")
+        logger.log(9, "stop")
         return fsum
 
     def _Geff(self, dpsidx, dpsidy, dpsidz):
@@ -618,7 +618,7 @@ class Star_base(object):
         
         >>> self.Make_surface(q, omega, filling, temp, tempgrav, tirr, porb, k1, incl)
         """
-        logger.debug("start")
+        logger.log(9, "start")
         #print 'Begin Make_surface'
         #print q, omega, filling, temp, tempgrav, tirr
         redo_surface = False
@@ -677,7 +677,7 @@ class Star_base(object):
             #print 'Going to _Orbital_parameters()'
             self._Orbital_parameters()
         #print 'End Make_surface'
-        logger.debug("end")
+        logger.log(9, "end")
         return
 
     def _Mu(self, phase):
@@ -722,9 +722,9 @@ class Star_base(object):
         >>> self._Potential(x, y, z)
         rc, rx, dpsi, dpsidx, dpsidy, dpsidz, psi
         """
-        logger.debug("start")
+        logger.log(9, "start")
         rc, rx, dpsi, dpsidx, dpsidy, dpsidz, psi = Utils.Binary.Potential(x, y, z, self.q, self.qp1by2om2)
-        logger.debug("end")
+        logger.log(9, "end")
         return rc, rx, dpsi, dpsidx, dpsidy, dpsidz, psi
 
     def _Proj(self, r):
@@ -752,12 +752,12 @@ class Star_base(object):
         >>> self._Radius(cosx, cosy, cosz, psi0, rtry)
         radius
         """
-        logger.debug("start")
+        logger.log(9, "start")
         if isinstance(cosx, np.ndarray):
             radius = Utils.Binary.Radii(cosx, cosy, cosz, psi0, rtry, self.q, self.qp1by2om2)
         else:
             radius = Utils.Binary.Radius(cosx, cosy, cosz, psi0, rtry, self.q, self.qp1by2om2)
-        logger.debug("end")
+        logger.log(9, "end")
         return radius
 
     def _Radius_slow(self, cosx, cosy, cosz, psi0, rtry):
@@ -794,7 +794,7 @@ class Star_base(object):
         
         >>> self.Radius()
         """
-        logger.debug("start")
+        logger.log(9, "start")
         sindeltalfby2 = np.sin(cts.PIBYTWO/self.ndiv)
         solidangle = []
         solidangle.append(cts.TWOPI*(1.-np.sqrt(1.-sindeltalfby2**2)))
@@ -802,7 +802,7 @@ class Star_base(object):
         [solidangle.extend(s.repeat(i)) for s,i in zip(solidangle_nbet,self.nbet)]
         solidangle.append(cts.TWOPI*(1.-np.sqrt(1.-sindeltalfby2**2)))
         vol = (self.rc**3*np.array(solidangle)).sum()/3
-        logger.debug("end")
+        logger.log(9, "end")
         return (vol/(4*cts.PI/3))**(1./3.)
 
     def Roche(self):
@@ -812,12 +812,12 @@ class Star_base(object):
         
         >>> self.Roche()
         """
-        logger.debug("start")
+        logger.log(9, "start")
         filling = self.filling
         self.Make_surface(filling=1.)
         radius = self.Radius()
         self.Make_surface(filling=filling)
-        logger.debug("end")
+        logger.log(9, "end")
         return radius
 
     def _Saddle(self, xtry):
@@ -829,7 +829,7 @@ class Star_base(object):
         >>> self._Saddle(0.5)
         saddle
         """
-        logger.debug("call")
+        logger.log(9, "call")
         return Utils.Binary.Saddle(xtry, self.q, self.qp1by2om2)
 
     def _Saddle_old(self, xtry):
@@ -858,7 +858,7 @@ class Star_base(object):
         
         >>> self._Surface()
         """
-        logger.debug("start")
+        logger.log(9, "start")
 #        print( "Begin _Surface()" )
         # Calculate some quantities
         self._Calc_qp1by2om2()
@@ -999,7 +999,7 @@ class Star_base(object):
         self.gradx = np.ascontiguousarray(gradx)
         self.grady = np.ascontiguousarray(grady)
         self.gradz = np.ascontiguousarray(gradz)
-        logger.debug("end")
+        logger.log(9, "end")
         return
 
     def _Velocity_surface(self, phase, velocity=0.):

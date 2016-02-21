@@ -110,7 +110,7 @@ def Getaxispos_vector(xold, xnew):
     
     weights,indices = Getaxispos_scalar(xold, xnew)
     """
-    logger.debug("start")
+    logger.log(5, "start")
     xold = np.ascontiguousarray(xold)
     xnew = np.ascontiguousarray(xnew)
     n = xold.shape[0]
@@ -155,7 +155,7 @@ def Getaxispos_vector(xold, xnew):
     except:
         get_axispos = scipy.weave.inline(code, ['xold', 'xnew', 'n', 'm', 'j', 'w'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], verbose=2)
     tmp = get_axispos
-    logger.debug("end")
+    logger.log(5, "end")
     return w,j
 
 def GPolynomial_fit(y, x=None, err=None, coeff=1, Xfnct=None, Xfnct_offset=False, chi2=True):

@@ -215,7 +215,7 @@ def Radius(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
     """
     >>>Radius(-1., 0., 0., 5454., 0.14, 56., 57./2)
     """
-    logger.debug("start")
+    logger.log(9, "start")
     code = """
     double x, y, z, rc2, rc, rx, rx3, psi, dpsi, dpsidx, dpsidy, dpsidz, dpsidr, dr;
     #line 100
@@ -265,14 +265,14 @@ def Radius(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
     qp1by2om2 = np.float(qp1by2om2)
     get_radius = scipy.weave.inline(code, ['r', 'cosx', 'cosy', 'cosz', 'psi0', 'q', 'qp1by2om2'], type_converters=scipy.weave.converters.blitz, compiler='gcc', verbose=2)
     r = get_radius
-    logger.debug("end")
+    logger.log(9, "end")
     return r
 
 def Radii(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
     """
     >>>Radii(np.array([-1.,0.,0.]), np.array([0.,0.1,0.1]), np.array([0.,0.,0.1]), 5454., 0.14, 56., 57./2)
     """
-    logger.debug("start")
+    logger.log(9, "start")
     code = """
     #pragma omp parallel shared(r,cosx,cosy,cosz,psi0,q,qp1by2om2,rout,n) default(none)
     {
@@ -331,7 +331,7 @@ def Radii(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
     except:
         get_radius = scipy.weave.inline(code, ['r', 'cosx', 'cosy', 'cosz', 'psi0', 'q', 'qp1by2om2', 'rout', 'n'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], verbose=2)
     r = get_radius
-    logger.debug("end")
+    logger.log(9, "end")
     return rout
 
 def Roche_lobe(q):
@@ -359,7 +359,7 @@ def Saddle(x, q, qp1by2om2):
     """
     >>>Saddle(0.5, 56., 57./2)
     """
-    logger.debug("start")
+    logger.log(9, "start")
     code = """
         double rc, rx, rx3, dpsi, dpsidx, d2psidx2, dx;
         do {
@@ -378,7 +378,7 @@ def Saddle(x, q, qp1by2om2):
     qp1by2om2 = np.float(qp1by2om2)
     get_saddle = scipy.weave.inline(code, ['x', 'q', 'qp1by2om2'], type_converters=scipy.weave.converters.blitz, compiler='gcc', verbose=2)
     x = get_saddle
-    logger.debug("end")
+    logger.log(9, "end")
     return x
 
 

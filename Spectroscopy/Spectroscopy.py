@@ -148,7 +148,7 @@ class Spectroscopy(object):
         
         >>> self.Get_flux([PIBYTWO,1.,0.9,4000.,0.08,300e3,6000.,50e3])
         """
-        logger.debug("start")
+        logger.log(9, "start")
         ## Check if we are dealing with a dictionary
         if isinstance(par, dict):
             par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['vsys']]
@@ -168,7 +168,7 @@ class Spectroscopy(object):
 
         self.star.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
         flux = [self.star.Flux_doppler(phs, velocity=velocity, gravscale=gravscale, atmo_grid=atmo_grid) for phs,velocity in zip(orbph,velocities)]
-        logger.debug("end")
+        logger.log(9, "end")
         return flux
 
     def Initialize(self, seeing=-1):
