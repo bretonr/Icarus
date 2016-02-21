@@ -6,6 +6,8 @@ from ..Utils.import_modules import *
 from .. import Core
 from .Photometry import Photometry
 
+logger = logging.getLogger(__name__)
+
 
 ######################## class Photometry_temperature ########################
 class Photometry_temperature(Photometry):

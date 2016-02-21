@@ -9,6 +9,8 @@ from .. import Atmosphere
 
 import colorsys
 
+logger = logging.getLogger(__name__)
+
 
 ######################## Plotting functions ########################
 def Prep_plot(ncolors=5, cmap=['jet',1.,1.,1.]):
