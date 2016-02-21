@@ -94,17 +94,19 @@ class Photometry_temperature(Photometry):
         >>> fit = Photometry_temperature(atmo_fln, data_fln, ndiv, read=True)
         """
         # Calling the parent class
-        Photometry.__init__(self, atmo_fln, data_fln, ndiv, read=read,)
+        Photometry.__init__(self, atmo_fln, data_fln, ndiv, read=read)
         #self._Init_lightcurve(ndiv)
         
-    def _Init_lightcurve(self, ndiv, read=True):
+    def _Init_lightcurve(self, ndiv, read=True, oldchi=False):
         """_Init_lightcurve(ndiv, read=True)
         Call the appropriate Lightcurve class and initialize
         the stellar array.
         
         >>> self._Init_lightcurve(ndiv)
         """
+        logger.debug("start")
         self.star = Core.Star_temperature(ndiv)
+        logger.debug("end")
         return
 
     def Make_surface(self, par, verbose=False):
