@@ -1,0 +1,10 @@
+include README.md
+include setup.cfg
+
+# Include the license files
+recursive-include licenses *
+
+# Include the data files
+recursive-include geodesic *
+recursive-include Icarus/geodesic *
+

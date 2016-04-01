@@ -24,6 +24,8 @@ sdist
 develop-eggs
 .installed.cfg
 distribute-*.tar.gz
+.idea
+Icarus.egg-info
 
 # Other
 .tox
