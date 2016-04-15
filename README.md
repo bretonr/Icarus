@@ -1,7 +1,6 @@
 # Icarus
 
-.. image:: https://img.shields.io/pypi/v/Icarus.svg
-    :target: https://pypi.python.org/pypi/Icarus
+[![Latest release](https://img.shields.io/pypi/v/Icarus.svg)](https://pypi.python.org/pypi/Icarus)
 
 **Icarus** is a stellar binary light curve synthesis tool initially developed by [Rene Breton](http://www.renebreton.org) while being a postdoctoral fellow at the University of Toronto in the research group of [Marten van Kerkwijk](http://www.astro.utoronto.ca/~mhvk/).
 
