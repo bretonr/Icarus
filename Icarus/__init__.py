@@ -10,5 +10,5 @@ from . import Utils
 from . import Local
 
 ## The release version
-__version__ = "2.1.2"
+__version__ = "2.3.0"
 

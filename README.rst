@@ -1,6 +1,9 @@
 # Icarus
 
-**Icarus** is a stellar binary light curve synthesis tool initially developed by [Rene Breton](http://www.astro.soton.ac.uk/people/rene_breton.html) while being a postdoctoral fellow at the University of Toronto in the research group of [Marten van Kerkwijk](http://www.astro.utoronto.ca/~mhvk/).
+.. image:: https://img.shields.io/pypi/v/Icarus.svg
+    :target: https://pypi.python.org/pypi/Icarus
+
+**Icarus** is a stellar binary light curve synthesis tool initially developed by [Rene Breton](http://www.renebreton.org) while being a postdoctoral fellow at the University of Toronto in the research group of [Marten van Kerkwijk](http://www.astro.utoronto.ca/~mhvk/).
 
 **Icarus** provides a set of basic tools that:
 
@@ -43,7 +46,23 @@ Here are a short, non-exhaustive list of publications related to the binary ligh
 
 ## Installation
 
-1. Download the **Icarus** package from the github repository (<https://github.com/bretonr/Icarus>).
+### Method 1: PyPI
+
+1. **Icarus** is now distributed through PyPI. It sources the latest stable release. Simply do the following:
+
+    ```
+    pip install Icarus
+    ```
+
+    This will install **Icarus** into your current Python distribution tree. Note that you may need to use _'sudo'_ before the command in order to write into the destination directory. On the other hand, you may install **Icarus** locally into your _$HOME/.local_ by doing the following:
+
+    ```
+    pip install --user Icarus
+    ```
+
+### Method 2: GitHub
+
+1. In order to fetch the bleading edge version of Icarus, please download it from the GitHub repository (<http://icarus.renebreton.org>).
 
     1.1. You may download the package as a zip/tarball file.
 
@@ -51,21 +70,33 @@ Here are a short, non-exhaustive list of publications related to the binary ligh
 
     ```
     git clone git://github.com/bretonr/Icarus.git
+    cd Icarus
     ```
 
-    To update it from the latest github version afterwards, you can type:
+    To update you version to the latest GitHub version afterwards, go to the **Icarus** folder and type:
 
     ```
     git pull
     ```
 
-2. Get yourself some atmosphere models or write your own atmosphere backend (e.g., to generate a blackbody function). I cannot be of much help here unfortunately. I might try to write a basic blackbody backend eventually but I do not have time for now.
+2. From the **Icarus** folder, install **Icarus** by doing:
 
-3. Install the required packages (see Requirements section below).
+    ```
+    python setup.py install
+    ```
 
-4. Make sure to add the path to **Icarus** in your `PYTHONPATH` shell environment variable. If you use bash, you should add a line like that to your `.bashrc` file: `export PYTHONPATH=$PYTHONPATH:/home/breton/local/python/Icarus`. Here I have been assuming that you installed **Icarus** in `/home/breton/local/python/Icarus`. With that you should be able to load the **Icarus** module from anywhere. Make sure you test it: start a python prompt from your home directory and type `import Icarus`. If the package does not load, you have made a mistake somewhere.
+    This will install **Icarus** into your standard Python library directory. You may need to use _'sudo'_ in order to do so. On the other hand, you may install **Icarus** locally into your _$HOME/.local_ by doing the following:
 
-5. Do some cool light curves!
+    ```
+    python setup.py install --user
+    ```
+
+    Another option would be to simply add the _build_ **Icarus** sub-folder to your _$PYTHONPATH_ or copy it in a suitable location.
+
+
+## Atmosphere grids
+
+You will need to source some atmosphere models or write your own atmosphere backend (e.g., to generate a blackbody SED). I cannot be of much help here unfortunately. I might try to write a basic blackbody backend eventually but I do not have time for now.
 
 
 ## Requirements
@@ -81,11 +112,11 @@ I usually keep my packages up-to-date using Macport (on Mac) and Synoptic (on Ub
 4. [astropy](http://www.astropy.org)
 
 
-## Optional
+## Optional requirements
 
 1. [Matplotlib](http://matplotlib.org) (version > 1.1.0)
 
-2. [PyGTS](http://pygts.sourceforge.net) to generate surface geodesic primitives instead of reading the pre-generated one. Also useful for calculating occulations and transits in eclipsing binaries.
+2. [PyGTS](http://pygts.sourceforge.net) to generate surface geodesic primitives instead of reading the pre-generated ones. Also useful for calculating occulations and transits in eclipsing binaries.
 
 
 ## If you use it
@@ -94,7 +125,7 @@ If you intend to use the code, please cite the paper in which it was first intro
 
 Also, please provide a link to the [Icarus](https://github.com/bretonr/Icarus) webpage.
 
-The author, [Rene Breton](http://www.astro.soton.ac.uk/people/rene_breton.html) (<superluminique+icarus@gmail.com>), would be happy to receive feedback, constructive comments, bug fixes, etc., from people using **Icarus**. Unfortunately, only very limited support can be provided due to the author's busy research schedule.
+The author, [Rene Breton](http://www.renebreton.org) (<superluminique+icarus@gmail.com>), would be happy to receive feedback, constructive comments, bug fixes, etc., from people using **Icarus**. Unfortunately, only very limited support can be provided due to the author's busy research schedule.
 
 
 ## Acknowledgements
@@ -104,4 +135,4 @@ Note that the author would like to acknowledge the immense help of [Marten van K
 
 ## License
 
-Please note that this project is protected against a 3-clause BSD license. Please see the content of the folder "licenses" for more information.
+Please note that this project is protected against a 3-clause BSD license. Please see the content of the folder ``licenses/LICENSE.rst`` for more information.

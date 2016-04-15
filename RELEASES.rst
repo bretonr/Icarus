@@ -2,7 +2,12 @@
 
 ## Release history
 
-### 2.2.x (2016-??-??)
+### 2.3.0 (2016-04-15)
+
+Features:
+
+- This major release has now changed the directory structure to be in line with the standard Python packaging. It includes a ``setup.py`` to enable the installation of the package to the standard Python library. There is also a PyPI distribution now. Many thanks to **@muddassir235** for the pull request!
+
 
 Bug fixes:
 

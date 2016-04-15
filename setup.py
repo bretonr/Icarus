@@ -5,14 +5,17 @@ from setuptools import find_packages
 setup(
     name='Icarus',
 
-    version='2.2.3',
+    version='2.3.0',
 
     # description
     description='Icarus is a stellar binary light curve synthesis tool initially developed by Rene Breton',
-    long_description=open('README.md').read(),
+    long_description=open('README.rst').read(),
 
     # The project's main homepage.
     url='https://github.com/bretonr/Icarus',
+
+    # The project's download url.
+    download_url='https://github.com/bretonr/Icarus/tarball/2.3.0',
 
     # Author details
     author='Dr Rene Breton',
@@ -22,9 +25,9 @@ setup(
     license='BSD',
 
     classifiers=[
-        
-        'Development Status :: 5 - Production/Stable',
 
+        'Operating System :: OS Independent',
+        'Development Status :: 5 - Production/Stable',
 
         'Intended Audience :: Science/Research',
 
