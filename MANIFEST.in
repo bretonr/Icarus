@@ -1,5 +1,5 @@
-include README.rst
-include RELEASES.rst
+include README.md
+include RELEASES.md
 include setup.cfg
 
 # Include the license files
