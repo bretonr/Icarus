@@ -102,20 +102,16 @@ You will need to source some atmosphere models or write your own atmosphere back
 
 I usually keep my packages up-to-date using Macport (on Mac) and Synoptic (on Ubuntu). Versions are provided for indicative purposes.
 
-1. [Python](http://www.python.org) (version > 2.7)
-
-2. [Scipy](http://scipy.org)
-
-3. [Numpy](http://numpy.scipy.org)
-
-4. [astropy](http://www.astropy.org)
+* [Python](http://www.python.org) (version > 2.7)
+* [Scipy](http://scipy.org)
+* [Numpy](http://numpy.scipy.org)
+* [astropy](http://www.astropy.org)
 
 
 ## Optional requirements
 
-1. [Matplotlib](http://matplotlib.org) (version > 1.1.0)
-
-2. [PyGTS](http://pygts.sourceforge.net) to generate surface geodesic primitives instead of reading the pre-generated ones. Also useful for calculating occulations and transits in eclipsing binaries.
+* [Matplotlib](http://matplotlib.org) (version > 1.1.0)
+* [PyGTS](http://pygts.sourceforge.net) to generate surface geodesic primitives instead of reading the pre-generated ones. Also useful for calculating occulations and transits in eclipsing binaries.
 
 
 ## If you use it
