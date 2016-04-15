@@ -9,7 +9,7 @@ setup(
 
     # description
     description='Icarus is a stellar binary light curve synthesis tool initially developed by Rene Breton',
-    long_description=open('README.rst').read(),
+    long_description=open('README.md').read(),
 
     # The project's main homepage.
     url='https://github.com/bretonr/Icarus',
@@ -40,7 +40,6 @@ setup(
 
         # python versions this library supports
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
