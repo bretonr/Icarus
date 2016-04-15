@@ -9,5 +9,5 @@ from . import Spectroscopy
 from . import Utils
 
 ## The release version
-__version__ = "2.3.0"
+__version__ = "2.3.1"
 

@@ -5,7 +5,7 @@ from setuptools import find_packages
 setup(
     name='Icarus',
 
-    version='2.3.0',
+    version='2.3.1',
 
     # description
     description='Icarus is a stellar binary light curve synthesis tool initially developed by Rene Breton',
