@@ -39,3 +39,7 @@ cover
 Local/*
 # Except the __init__.py file
 !Local/__init__.py
+
+*.sublime-project
+
+*.sublime-workspace
