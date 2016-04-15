@@ -15,7 +15,7 @@ setup(
     url='https://github.com/bretonr/Icarus',
 
     # The project's download url.
-    download_url='https://github.com/bretonr/Icarus/tarball/2.3.0',
+    download_url='https://github.com/bretonr/Icarus/tarball/v2.3.0',
 
     # Author details
     author='Dr Rene Breton',
