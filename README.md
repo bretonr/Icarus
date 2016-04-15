@@ -102,7 +102,7 @@ You will need to source some atmosphere models or write your own atmosphere back
 
 I usually keep my packages up-to-date using Macport (on Mac) and Synoptic (on Ubuntu). Versions are provided for indicative purposes.
 
-1. [Python](http://www.python.org) (version > 2.6)
+1. [Python](http://www.python.org) (version > 2.7)
 
 2. [Scipy](http://scipy.org)
 
@@ -134,4 +134,4 @@ Note that the author would like to acknowledge the immense help of [Marten van K
 
 ## License
 
-Please note that this project is protected against a 3-clause BSD license. Please see the content of the folder ``licenses/LICENSE.rst`` for more information.
+Please note that this project is protected against a 3-clause BSD license. Please see the content of the folder ``licenses/LICENSE.md`` for more information.
