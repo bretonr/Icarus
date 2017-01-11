@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 import os
 import logging
@@ -35,7 +36,3 @@ if False:
 else:
     ## Configurating the logger for console output only
     logging.basicConfig(level=LEVEL, format='%(name)-30s %(funcName)-25s: %(levelname)-6s %(message)s', datefmt='%m-%d %H:%M')
-
-
-
-

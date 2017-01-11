@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 from .import_modules import *
 
@@ -16,7 +17,7 @@ def Alm(l,m,phi,theta,f):
     """Ylm(l,m,phi,theta,f)
     Returns the coefficient of the complex spherical harmonics
     for the pixelized function 'f'.
-    
+
     l: Quantum number (0<=l).
     m: Quantum number (-l<=m<=l).
     phi: azimuth in the range [0,2*PI].
@@ -31,7 +32,7 @@ def Almr(l,m,phi,theta,f):
     """Ylmr(l,m,phi,theta,f)
     Returns the coefficient of the real spherical harmonics
     for the pixelized function 'f'.
-    
+
     l: Quantum number (0<=l).
     m: Quantum number (-l<=m<=l).
     phi: azimuth in the range [0,2*PI].
@@ -46,12 +47,12 @@ def Composition(alm,phi,theta):
     """Composition(alm,phi,theta)
     Returns the pixelized function corresponding to the sum of
     the real spherical harmonics having the coefficients 'alm'.
-    
+
     alm: Spherical harmonic coefficients. Must have the form:
         [A_{00},A_{1-1},A_{10},A_{11}, ]
     phi: azimuth in the range [0,2*PI].
     theta: co-latitude in the range [0,PI].
-    
+
     >>> f = Composition(alm,phi,theta)
     """
     if isinstance(alm, (float, int)):
@@ -71,7 +72,7 @@ def Decomposition(lmax,phi,theta,f,ndigit=None,norm=False):
     Returns the coefficient of the real spherical harmonic
     decomposition of a pixelized function 'f' up to the quantum
     number l 'lmax', inclusive.
-    
+
     lmax: Maximum order of decomposition for quantum number l.
     phi: azimuth in the range [0,2*PI].
     theta: co-latitude in the range [0,PI].
@@ -80,7 +81,7 @@ def Decomposition(lmax,phi,theta,f,ndigit=None,norm=False):
         ndigit (as per the np.round function).
     norm (False): if true, will normalize so that the sum of
         the square of the coefficients is unity.
-    
+
     The returned array has the form:
     [A_{00},A_{1-1},A_{10},A_{11}, ,A_{lmax,-lmax}, ,A_{lmax,0}, ,A{lmax,lmax}]
     >>> alm = Decomposition(lmax,phi,theta,f)
@@ -99,7 +100,7 @@ def Decomposition(lmax,phi,theta,f,ndigit=None,norm=False):
 def Legendre_assoc(l,m,x):
     """Legendre_assoc(l,m,x)
     Associated Legendre polynomials normalized as in Ylm.
-    
+
     l: Quantum number (0<=l).
     m: Quantum number (0<=m<=l).
     x: Argument, typically x=cos(theta) (abs(x)<=1).
@@ -126,7 +127,7 @@ def Legendre_assoc(l,m,x):
 def Normalization(val=1):
     """Normalization(val=1)
     Changes the global normalization factor.
-    
+
     val (1):
         0 -> Implies that the spherical harmonic
         coefficients are equal to sqrt(2*l+1)/sqrt(4*PI)
@@ -147,7 +148,7 @@ def Pretty_print_alm(alm, format=2):
     """Pretty_print_alm(alm, format=2)
     Returns a nice representation of the spherical harmonic
     coefficients.
-    
+
     alm: Spherical harmonic coefficients. Must have the form:
         [A_{00},A_{1-1},A_{10},A_{11}, ]
     format (2):
@@ -196,7 +197,7 @@ def Xfact(m):
 def Ylm(l,m,phi,theta):
     """Ylm(l,m,phi,theta)
     Returns the complex spherical harmonics.
-    
+
     l: Quantum number (0<=l).
     m: Quantum number (-l<=m<=l).
     phi: azimuth in the range [0,2*PI].
@@ -214,7 +215,7 @@ def Ylm(l,m,phi,theta):
 def Ylmr(l,m,phi,theta):
     """Ylmr(l,m,phi,theta)
     Returns the real spherical harmonics.
-    
+
     l: Quantum number (0<=l).
     m: Quantum number (-l<=m<=l).
     phi: azimuth in the range [0,2*PI].
@@ -228,8 +229,3 @@ def Ylmr(l,m,phi,theta):
         #return (-1)**m*Legendre_assoc(l,-m,np.cos(theta))*np.sin(-m*phi)*np.sqrt(2)
         return Legendre_assoc(l,-m,np.cos(theta))*np.sin(m*phi)*np.sqrt(2)
     return Legendre_assoc(l,m,np.cos(theta))*np.ones_like(phi)
-
-
-
-
-

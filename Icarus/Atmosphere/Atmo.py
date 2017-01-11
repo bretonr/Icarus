@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["AtmoGrid", "AtmoGridPhot", "AtmoGridDoppler", "AtmoGridSpec", "Vstack", "Atmo_grid"]
 
@@ -170,7 +171,7 @@ class AtmoGrid(Column):
         ----------
           Examples::
             atmo.Fill_nan(axis=0, method='interp1d', bounds_error=False, fill_value=np.nan)
-        
+
         This would fill in the value that are not out of bound with a linear fit. Values
         out of bound would be np.nan.
 
@@ -226,7 +227,7 @@ class AtmoGrid(Column):
         inds_fill : tuple(ndarray)
             Tuple/list containing the list of pixels to interpolate for.
         method : str
-            Interpolation method to use. Possible choices are 'spline', 
+            Interpolation method to use. Possible choices are 'spline',
             'interp1d' and 'pchip'.
             'spline' allows for the use of optional keywords k (the order) and
             s (the smoothing parameter). See scipy.interpolate.splrep.
@@ -255,7 +256,7 @@ class AtmoGrid(Column):
         ----------
           Examples::
             atmo.Fill_nan(axis=0, method='interp1d', bounds_error=False, fill_value=np.nan)
-        
+
         This would fill in the value that are not out of bound with a linear fit. Values
         out of bound would be np.nan.
 
@@ -549,13 +550,13 @@ class AtmoGridDoppler(AtmoGrid):
     def Get_boost(self, val_logtemp, val_logg, val_mu):
         """
         Return the interpolated Doppler boosting factor
-        
+
         Parameters
         ----------
         val_logtemp: log effective temperature
         val_logg: log surface gravity
         val_mu: cos(angle) of angle of emission
-        
+
         Examples
         ----------
           Examples::
@@ -584,7 +585,7 @@ class AtmoGridPhot(AtmoGrid):
         The zeropoint of the band for conversion from flux to mag
     ext: float
         The Aband/Av extinction ratio
-    
+
     Also recommended would be:
     filter: str
         Description of the filter
@@ -634,14 +635,14 @@ class AtmoGridPhot(AtmoGrid):
     def Get_flux(self, val_logtemp, val_logg, val_mu, val_area, **kwargs):
         """
         Return the flux interpolated from the atmosphere grid.
-        
+
         Parameters
         ----------
         val_logtemp: log effective temperature
         val_logg: log surface gravity
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
-        
+
         Examples
         ----------
           Examples::
@@ -664,7 +665,7 @@ class AtmoGridPhot(AtmoGrid):
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
         val_v: velocity of the surface element
-        
+
         Examples
         ----------
           Examples::
@@ -681,7 +682,7 @@ class AtmoGridPhot(AtmoGrid):
         Return the flux interpolated from the atmosphere grid.
         Each surface element is multiplied by the appropriate Doppler boosting
         factor.
-        
+
         Parameters
         ----------
         val_logtemp: log effective temperature
@@ -691,7 +692,7 @@ class AtmoGridPhot(AtmoGrid):
         val_vel: velocity of the surface element (units of c)
         atmo_doppler: AtmoGridDoppler instance containing a grid of Doppler
             boosting factors. Must be the same dimensions as the atmosphere grid.
-        
+
         Examples
         ----------
           Examples::
@@ -708,7 +709,7 @@ class AtmoGridPhot(AtmoGrid):
         Return the flux interpolated from the atmosphere grid.
         Each surface element is multiplied by the appropriate Doppler boosting
         factor.
-        
+
         Parameters
         ----------
         val_logtemp: log effective temperature
@@ -719,7 +720,7 @@ class AtmoGridPhot(AtmoGrid):
         atmo_doppler: AtmoGridDoppler instance containing a grid of Doppler
             boosting factors. Must be the same dimensions as the atmosphere grid.
 
-        
+
         Examples
         ----------
           Examples::
@@ -742,7 +743,7 @@ class AtmoGridPhot(AtmoGrid):
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
         val_v: velocity of the surface element
-        
+
         Examples
         ----------
           Examples::
@@ -764,7 +765,7 @@ class AtmoGridPhot(AtmoGrid):
         val_logg: log of surface gravity
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
-        
+
         Examples
         ----------
           Examples::
@@ -1007,7 +1008,7 @@ class Atmo_grid:
     def Flux_init(self):
         """Flux_init()
         Reads a band file and construct a grid.
-        
+
         Calculates:
             temp: effective temperatures. temp.shape = (ntemp)
             logg: log of surface gravity. logg.shape = (nlogg)
@@ -1015,7 +1016,7 @@ class Atmo_grid:
             grid: the grid of specific intensities. grid.shape = (ntemp,nlogg,nmu)
             leff: ???
             h: ???
-        
+
         >>> self.Flux_init()
         """
         f = open(self.fln,'r')
@@ -1028,7 +1029,7 @@ class Atmo_grid:
         # There should be 3 lines per grid point (temp,logg,mu): the info line and two flux lines
         # To that, we must subtract the comment line, the header line and two lines for the mu values
         if (n_temp*abs(n_logg)*3) != len(lines)-4:
-            print 'It appears that the number of lines in the file is weird'
+            print('It appears that the number of lines in the file is weird')
             return None
         # Read the mu values
         mu = np.array(lines[2].split()+lines[3].split(),dtype=float)
@@ -1064,7 +1065,7 @@ class Atmo_grid:
         val_logg: log of surface gravity
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
-        
+
         >>> self.Get_flux(val_logtemp, val_logg, val_mu, val_area)
         flux
         """
@@ -1086,7 +1087,7 @@ class Atmo_grid:
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
         val_v: velocity of the surface element
-        
+
         >>> self.Get_flux_details(val_logtemp, val_logg, val_mu, val_area, val_v)
         flux, Keff, vsini, temp
         """
@@ -1108,7 +1109,7 @@ class Atmo_grid:
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
         val_v: velocity of the surface element
-        
+
         >>> self.Get_flux_Keff(val_logtemp, val_logg, val_mu, val_area, val_v)
         flux, Keff
         """
@@ -1129,7 +1130,7 @@ class Atmo_grid:
         val_logg: log of surface gravity
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
-        
+
         >>> self.Get_flux_nosum(val_logtemp, val_logg, val_mu, val_area)
         flux
         """
@@ -1159,7 +1160,7 @@ class Atmo_grid:
         jl = 0
         ju = xx.size
         while (ju-jl) > 1:
-            jm=(ju+jl)/2
+            jm=(ju+jl)//2
             if ascending == (x > xx[jm]):
                 jl=jm
             else:
@@ -1195,4 +1196,3 @@ class Atmo_grid:
                             +w1mu*grid[jtemp+1,jlogg+1,jmu+1]))
         flux = np.exp(fl)*val_mu
         return flux
-

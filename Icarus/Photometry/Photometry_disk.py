@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["Photometry_disk"]
 
@@ -16,7 +17,7 @@ class Photometry_disk(object):
     (which in most cases will be a pulsar).
     It also handles a disk surrounding the pulsar, approximated
     as a constant flux contribution to the total flux.
-    
+
     It is meant to deal with photometry data. Many sets of photometry
     data (i.e. different filters) are read. For each data set, one can
     calculate the predicted flux of the model at every data point (i.e.
@@ -29,12 +30,12 @@ class Photometry_disk(object):
         (which in most cases will be a pulsar).
         It also handles a disk surrounding the pulsar, approximated
         as a constant flux contribution to the total flux.
-        
+
         It is meant to deal with photometry data. Many sets of photometry
         data (i.e. different filters) are read. For each data set, one can
         calculate the predicted flux of the model at every data point (i.e.
         for a given orbital phase).
-                
+
         atmo_fln: A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
                 band_name, center_wavelength, delta_wavelength, flux0,
@@ -68,7 +69,7 @@ class Photometry_disk(object):
             semi-amplitude in m/s, if known.
         read (False): Whether the geodesic surface should be read from a file or
             generated from scratch.
-        
+
         >>> fit = Photometry(atmo_fln, data_fln, ndiv, porb, x2sini, edot)
         """
         # We define some class attributes.
@@ -87,7 +88,8 @@ class Photometry_disk(object):
         self.__Read_atmo(atmo_fln)
         # We make sure that the length of data and atmo_dict are the same
         if len(self.atmo_grid) != len(self.data['mag']):
-            print 'The number of atmosphere grids and data sets (i.e. photometric bands) do not match!!!'
+            print('The number of atmosphere grids and data sets '
+                  '(i.e. photometric bands) do not match!!!')
             return
         else:
             # We keep in mind the number of datasets
@@ -99,7 +101,7 @@ class Photometry_disk(object):
     def Calc_chi2(self, par, offset_free=1, func_par=None, nsamples=None, influx=False, full_output=False, verbose=False):
         """Calc_chi2(par, offset_free=1, func_par=None, nsamples=None, influx=False, full_output=False, verbose=False)
         Returns the chi-square of the fit of the data to the model.
-        
+
         par (list/array): Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
@@ -123,7 +125,7 @@ class Photometry_disk(object):
                 the bands.
                 The full chi2 should be:
                     chi2 = sum[ w_i*(off_i-dm-av*C_i)**2]
-                        + w_dm*(dm-dm_obs)**2 
+                        + w_dm*(dm-dm_obs)**2
                         + w_av*(av-av_obs)**2,     with w = 1/sigma**2
                 The extra terms (i.e. dm-dm_obs and av-av_obs) should be included
                 as priors.
@@ -150,7 +152,7 @@ class Photometry_disk(object):
                 values of DM and AV.
             'res' (array): the fit residuals.
         verbose (bool): If true will display the list of parameters and fit information.
-        
+
         >>> chi2 = self.Calc_chi2([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
         # We can provide a function that massages the input parameters and returns them.
@@ -160,7 +162,7 @@ class Photometry_disk(object):
         # check if we are dealing with a dictionary
         if isinstance(par, dict):
             par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
-        
+
         if offset_free == 0:
             pred_flux = self.Get_flux(par, flat=True, nsamples=nsamples, verbose=verbose)
             ((par[7],par[8]), chi2_data, rank, s) = Utils.Misc.Fit_linear(self.mag-pred_flux, x=self.ext, err=self.mag_err, b=par[7], m=par[8])
@@ -206,7 +208,7 @@ class Photometry_disk(object):
     def Calc_chi2_disk(self, par, func_par=None, offset_free=1, doKeff=False, return_residuals=False, return_disk=False, verbose=False):
         """Calc_chi2_disk(par, func_par=None, offset_free=1, doKeff=False, return_residuals=False, return_disk=False, verbose=False)
         Returns the chi-square of the fit of the data to the model.
-        
+
         par: Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
@@ -239,7 +241,7 @@ class Photometry_disk(object):
         return_disk (False): If true, returns the disk flux and slope along with
             the chi2. Note that this option doesn't work with return_residuals.
         verbose (False): If true will display the list of parameters.
-        
+
         >>> chi2 = self.Calc_chi2_disk([PIBYTWO,1.,0.9,4000.,0.08,1.4,0.07,10.,0.])
         >>> chi2, disk, disk_slope = self.Calc_chi2_disk([PIBYTWO,1.,0.9,4000.,0.08,1.4,0.07,10.,0.], return_disk=True)
         """
@@ -247,7 +249,7 @@ class Photometry_disk(object):
         # This function can, for example, handle fixed parameters or boundary limits.
         if func_par is not None:
             par = func_par(par)
-        
+
         # Calculate the theoretical flux, not in magnitude but in flux!!!
         q = par[5] * self.K_to_q
         tirr = (par[6]**4 - par[3]**4)**0.25
@@ -255,16 +257,16 @@ class Photometry_disk(object):
             print( "#####\n" + str(par[0]) + ", " + str(par[1]) + ", " + str(par[2]) + ", " + str(par[3]) + ", " + str(par[4]) + ", " + str(par[5]) + ", " + str(par[6]) + ", " + str(par[7]) + ", " + str(par[8]) + ", " + str(par[9]) + "\n" + "q: " + str(q) + ", tirr: " + str(tirr)  )
         self.star.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
         pred_flux = [np.array([self.star.Flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=0.) for phase in self.data['phase'][i]]) for i in np.arange(self.ndataset)]
-        
+
         # We fit the best fit for the disk contribution to the data
         def residuals(res_disk, i): # Add a constant disk contribution
             mag = -2.5*np.log10((pred_flux[i]+res_disk) * self.star._Proj(self.star.separation) / self.atmo_grid[i].flux0)
             return ((mag + self.atmo_grid[i].ext*par[8] + par[7]) - self.data['mag'][i]) / self.data['mag_err'][i]
-        
+
         def residuals_special(res_disk, i): # Add a constant disk contribution that varies linearly as a function of orbital phase
             mag = -2.5*np.log10((pred_flux[i]+res_disk[0]+res_disk[1]*self.data['phase'][i]) * self.star._Proj(self.star.separation) / self.atmo_grid[i].flux0)
             return ((mag + self.atmo_grid[i].ext*par[8] + par[7]) - self.data['mag'][i]) / self.data['mag_err'][i]
-        
+
         if len(par) > 10:
             disk = np.array(par[9:])
             disk_slope = np.zeros_like(disk)
@@ -272,7 +274,7 @@ class Photometry_disk(object):
             disk = np.ones(self.ndataset) * par[9]
             disk_slope = np.zeros_like(disk)
         chi2 = np.empty(self.ndataset)
-        
+
         # In the case of disk offset fitting
         if offset_free:
             for i in np.arange(self.ndataset):
@@ -291,17 +293,17 @@ class Photometry_disk(object):
         else:
             for i in np.arange(self.ndataset):
                 chi2[i] = (residuals(disk[i], i)**2).sum()
-        
+
         if doKeff:
             pred_Keff = self.Get_Keff(par, nphases=20, make_surface=False, verbose=False)
             chi2Keff = ((self.Keff-pred_Keff)*self.Kefferr)**2
         else:
             pred_Keff = 0.
             chi2Keff = 0.
-        
+
         chi2DM = ((self.DM-par[7])*self.DMerr)**2
         chi2AV = ((self.AV-par[8])*self.AVerr)**2
-        
+
         if verbose:
             disk_str = ""
             for d in disk:
@@ -310,7 +312,7 @@ class Photometry_disk(object):
             for i in xrange(self.ndataset):
                 print( "chi2 (%i): %f,   d.o.f.: %i,   avg. companion flux: %.4e,   comp. flux/tot. flux: %.4f,   max. companion flux: %.4e,   max. comp. flux/tot. flux: %.4f,   avg. error: %.4f" %(i, chi2[i], self.data['mag'][i].size, pred_flux[i].mean(), pred_flux[i].mean()/(pred_flux[i].mean()+disk[i]), pred_flux[i].max(), pred_flux[i].max()/(pred_flux[i].max()+disk[i]), self.data['mag_err'][i].mean()) )
             print( "chi2: " + str(chi2.sum()) + ", chi2DM: " + str(chi2DM) + ", chi2AV: " + str(chi2AV) + ", chi2Keff: " + str(chi2Keff) + "\n    Keff: " + str(pred_Keff) + ", disk: " + disk_str )
-        
+
         if return_residuals:
             return np.sqrt(np.r_[chi2, chi2DM, chi2AV, chi2Keff])
         else:
@@ -323,7 +325,7 @@ class Photometry_disk(object):
         """Get_flux(par, flat=False, func_par=None, make_surface=True, verbose=False)
         Returns the predicted flux by the model evaluated at the
         observed values in the data set.
-        
+
         par: Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
@@ -344,9 +346,9 @@ class Photometry_disk(object):
             on the parameters. The vector returned by func_par must have a length
             equal to the number of expected parameters.
         make_surface (True): If false, Make_surface will not be call
-        
+
         Note: tirr = (par[6]**4 - par[3]**4)**0.25
-        
+
         >>> self.Get_flux([PIBYTWO,1.,0.9,4000.,0.08,1.4,0.07,10.,0.])
         """
         # Apply a function that can modify the value of parameters.
@@ -363,15 +365,15 @@ class Photometry_disk(object):
         flux = []
         if len(par) > 10: # in that situation, individual disk flux values are provided
             for i in np.arange(self.ndataset):
-                #print 'Dataset '+str(i)
+                #print('Dataset '+str(i))
                 flux.append(np.array([self.star.Mag_flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=par[9+i]) for phase in self.data['phase'][i]]))
         elif len(par) == 10: # in that situation, only one disk flux value is provided
             for i in np.arange(self.ndataset):
-                #print 'Dataset '+str(i)
+                #print('Dataset '+str(i))
                 flux.append(np.array([self.star.Mag_flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=par[9]) for phase in self.data['phase'][i]]))
         else: # otherwise there is no disk
             for i in np.arange(self.ndataset):
-                #print 'Dataset '+str(i)
+                #print('Dataset '+str(i))
                 flux.append(np.array([self.star.Mag_flux_disk(phase, atmo_grid=self.atmo_grid[i], disk=0.) for phase in self.data['phase'][i]]))
         if flat:
             return np.hstack(flux)
@@ -382,7 +384,7 @@ class Photometry_disk(object):
         """Get_flux_theoretical(par, phases, func_par=None, disk_slope=None, return_disk=False)
         Returns the predicted flux by the model evaluated at the
         observed values in the data set.
-        
+
         par: Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
@@ -406,9 +408,9 @@ class Photometry_disk(object):
         disk_slope (None): The disk slope values if provided.
         return_disk (False): If true, will get the disk flux values from
             Calc_chi2_disk.
-        
+
         Note: tirr = (par[6]**4 - par[3]**4)**0.25
-        
+
         >>> self.Get_flux_theoretical([PIBYTWO,1.,0.9,4000.,0.08,1.4,0.07,10.,0.], [[0.,0.25,0.5,0.75]]*4)
         """
         # Apply a function that can modify the value of parameters.
@@ -442,7 +444,7 @@ class Photometry_disk(object):
         Returns the effective projected velocity semi-amplitude of the star in m/s.
         The luminosity-weighted average velocity of the star is returned for
         nphases, for the specified dataset, and a sin wave is fitted to them.
-        
+
         par: Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
@@ -516,7 +518,7 @@ class Photometry_disk(object):
             returns the parameter vector. This allow for possible constraints
             on the parameters. The vector returned by func_par must have a length
             equal to the number of expected parameters.
-        
+
         >>> self.Plot([PIBYTWO,1.,0.9,4000.,0.08,1.4,0.07,10.,0.])
         """
         if func_par is not None:
@@ -592,7 +594,7 @@ class Photometry_disk(object):
         """
         Return a nice representation of the important
         parameters.
-        
+
         par: Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
@@ -606,7 +608,7 @@ class Photometry_disk(object):
             [9]: Disk flux.
             Note: If there extra parameters after [9], they are assumed to
             be the individual disk fluxes of each data set.
-        make_surface (True): Whether to recalculate the 
+        make_surface (True): Whether to recalculate the
             surface of the star or not.
         verbose (True): Output the nice representation
             of the important parameters or just return them
@@ -674,15 +676,15 @@ class Photometry_disk(object):
     def __Read_atmo(self, atmo_fln):
         """__Read_atmo(atmo_fln)
         Reads the atmosphere model data.
-        
+
         atmo_fln: A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
                 band_name, center_wavelength, delta_wavelength, flux0,
                     extinction, grid_file
-        
+
         Note: if a line starts with #!, the atmosphere model will be used
             to calculate the effective velocity and other quantities.
-        
+
         >>> self.__Read_atmo(atmo_fln)
         """
         f = open(atmo_fln,'r')
@@ -701,12 +703,12 @@ class Photometry_disk(object):
     def __Read_data(self, data_fln):
         """__Read_data(self, data_fln)
         Reads the photometric data.
-        
+
         data_fln: A file containing the information for each data set.
             The format of the file is as follows:
                 band_name, column_phase, column_flux, column_error_flux,
                     shift_to_phase_zero, calibration_error, data_file
-        
+
         >>> self.__Read_data(data_fln)
         """
         f = open(data_fln,'r')
@@ -728,11 +730,11 @@ class Photometry_disk(object):
                 self.data['fln'].append(tmp[6])
                 self.data['id'].append(tmp[0])
         return
-            
+
     def __Setup(self):
         """__Setup()
         Stores some important information in class variables.
-        
+
         >>> self.__Setup()
         """
         # We calculate the constant for the conversion of K to q (observed
@@ -753,4 +755,3 @@ class Photometry_disk(object):
         return
 
 ######################## class Photometry_disk ########################
-

@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 from astropy.table import Table, Column
 
@@ -52,9 +53,9 @@ def Fit_linear(y, x=None, err=1.0, m=None, b=None, output=None, inline=False):
     if output:
         b, m = sol
         fit_y = b + m*x
-        print 'b -> ' + str(b)
-        print 'm -> ' + str(m)
-        print 'Reduced chi-square: ' + str(res/(len(y)-rank))
+        print('b -> ' + str(b))
+        print('m -> ' + str(m))
+        print('Reduced chi-square: ' + str(res/(len(y)-rank)))
         plotxy(y, x, line=None, symbol=2, color=2)
         plotxy(fit_y, x)
     if res.shape == (0,):
@@ -79,11 +80,11 @@ def Pprint(arr, show_index=False, max_lines=None):
 def Sort_list(lst, cols):
     """Sort_list(lst, cols)
     Sorts inplace a list by multiple columns.
-    
+
     lst: List to be sorted.
     cols: Columns to be sorted, cols[0] first,
         cols[1] second, etc.
-    
+
     >>> lst = [(1,2,4),(3,2,1),(2,2,2),(2,1,4),(2,4,1)]
     >>> Sort_list(lst, [2,1])
     """
@@ -91,5 +92,3 @@ def Sort_list(lst, cols):
     for keycolumn in reversed(cols):
         lst.sort(key=itemgetter(keycolumn))
     return
-
-

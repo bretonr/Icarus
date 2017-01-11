@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["Photometry_temperature"]
 
@@ -15,7 +16,7 @@ class Photometry_temperature(Photometry):
     This class allows to fit the flux from the primary star
     of a binary system, assuming it is heated by the secondary
     (which in most cases will be a pulsar).
-    
+
     It is meant to deal with photometry data. Many sets of photometry
     data (i.e. different filters) are read. For each data set, one can
     calculate the predicted flux of the model at every data point (i.e.
@@ -26,12 +27,12 @@ class Photometry_temperature(Photometry):
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
         (which in most cases will be a pulsar).
-        
+
         It is meant to deal with photometry data. Many sets of photometry
         data (i.e. different filters) are read. For each data set, one can
         calculate the predicted flux of the model at every data point (i.e.
         for a given orbital phase).
-        
+
         atmo_fln (str): A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
                 Col 0: band name
@@ -87,23 +88,23 @@ class Photometry_temperature(Photometry):
         read (bool): If True, Icarus will use the pre-calculated geodesic
             primitives. This is the recommended option, unless you have the
             pygts package installed to calculate it on the spot.
-        
+
         Note: For an empirical approach, i.e. modelling the stellar
         temperature profile using spherical harmonics only, one can
         set tempgrav = 0., which disables the gravity darkening, and
         also set tirr = 0., which disables the irradiation.
-        
+
         >>> fit = Photometry_temperature(atmo_fln, data_fln, ndiv, read=True)
         """
         # Calling the parent class
         Photometry.__init__(self, atmo_fln, data_fln, ndiv, read=read)
         #self._Init_lightcurve(ndiv)
-        
+
     def _Init_lightcurve(self, ndiv, read=True, oldchi=False):
         """_Init_lightcurve(ndiv, read=True)
         Call the appropriate Lightcurve class and initialize
         the stellar array.
-        
+
         >>> self._Init_lightcurve(ndiv)
         """
         logger.log(9, "start")
@@ -116,7 +117,7 @@ class Photometry_temperature(Photometry):
         This function gets the parameters to construct to companion
         surface model and calls the Make_surface function from the
         Lightcurve object.
-        
+
         par: Parameter list.
             [0]: Mass ratio q = M2/M1, where M1 is the modelled star.
             [1]: Orbital period in seconds.
@@ -176,4 +177,3 @@ class Photometry_temperature(Photometry):
         return
 
 ######################## class Photometry_temperature ########################
-

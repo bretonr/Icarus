@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 import os
 
@@ -71,7 +72,7 @@ def Interp_photometry(grid, wteff, wlogg, wmu, jteff, jlogg, jmu, area, val_mu):
     """
     Simple interpolation of an atmosphere grid having axes (logtemp, logg, mu).
 
-    The interpolation takes a set of points to be interpolated and summed 
+    The interpolation takes a set of points to be interpolated and summed
     together.
 
     Parameters
@@ -591,7 +592,7 @@ def Interp_doppler(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, jwav, area,
     or redshift space, e.g. log lambda.
 
     Note: Because of the Doppler shift, the interpolation on the wavelength
-        will necessarily go out of bound, on the lower or upper range. We 
+        will necessarily go out of bound, on the lower or upper range. We
         assume that the atmosphere grid has a broader spectral coverage than
         the data.
 
@@ -725,7 +726,7 @@ def Interp_doppler_savememory(grid, wteff, wlogg, wmu, wwav, jteff, jlogg, jmu, 
     containing limb darkening coefficients.
 
     Note: Because of the Doppler shift, the interpolation on the wavelength
-        will necessarily go out of bound, on the lower or upper range. We 
+        will necessarily go out of bound, on the lower or upper range. We
         assume that the atmosphere grid has a broader spectral coverage than
         the data.
 
@@ -840,7 +841,7 @@ def Interp_doppler_savememory_linear(grid, wteff, wlogg, wmu, jteff, jlogg, jmu,
     containing limb darkening coefficients.
 
     Note: Because of the Doppler shift, the interpolation on the wavelength
-        will necessarily go out of bound, on the lower or upper range. We 
+        will necessarily go out of bound, on the lower or upper range. We
         assume that the atmosphere grid has a broader spectral coverage than
         the data.
 
@@ -957,7 +958,7 @@ def Interp_doppler_nomu(grid, wteff, wlogg, wwav, jteff, jlogg, jwav, area, val_
     or redshift space, e.g. log lambda.
 
     Note: Because of the Doppler shift, the interpolation on the wavelength
-        will necessarily go out of bound, on the lower or upper range. We 
+        will necessarily go out of bound, on the lower or upper range. We
         assume that the atmosphere grid has a broader spectral coverage than
         the data.
 
@@ -1049,13 +1050,13 @@ def Shift_spectrum(fref, wobs, v, refstart, refstep):
     """
     Takes a reference spectrum, Doppler shifts it, and calculate
     the new spectral flux values at the provided observed wavelengths.
-    
+
     fref: reference flux values
     wobs: observed wavelengths
     v: Doppler velocity shift (in m/s)
     refstart: wavelength of the first reference spectrum data point
     refstep: wavelength step size of the reference spectrum
-    
+
     N.B. Assumes constant bin size for the reference spectrum.
     N.B. Assumes that the observed spectrum bin size is larger than
     the reference spectrum bin size. Otherwise, a simple interpolation
@@ -1141,5 +1142,3 @@ def Shift_spectrum(fref, wobs, v, refstart, refstep):
     rebin = scipy.weave.inline(code, ['refstart', 'refstep', 'nobs', 'nref', 'fref', 'fbin', 'wobs', 'v'], type_converters=scipy.weave.converters.blitz, compiler='gcc', libraries=['m'])
     tmp = rebin
     return fbin
-
-

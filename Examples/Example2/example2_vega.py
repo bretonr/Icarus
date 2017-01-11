@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 import Icarus
 from Icarus.Utils.import_modules import *
@@ -178,5 +179,3 @@ print("diff. g: {:.3}".format(mag_g-g))
 print("diff. r: {:.3}".format(mag_r-r))
 print("diff. i: {:.3}".format(mag_i-i))
 print("diff. z: {:.3}".format(mag_z-z))
-
-

@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 from .import_modules import *
 
@@ -15,19 +16,19 @@ def Asinh_to_flux(mag, mag_err=None, zeropoint=0., flux0=1., softening=1.):
     Converts the asinh magnitude to flux and its error, if provided.
     If the softening parameter is not provided, the value will be
     assumed to be 1., which might be far off.
-    
+
     See Lupton, Gunn and Szalay 1999 (1999AJ....118.1406L).
-    
+
     mag: magnitude
     mag_err (None): magnitude error
     zeropoint (0.): zero-point value, in magnitude
     flux0 (1.): zero-point value, in flux
     softening (1.): softening parameter. If nothing is provided, it will
         be assumed to be 1. Careful as it might be far off.
-    
+
     Either zeropoint or flux0 can be provided. By default, the values have no
     effect. Make sure that both are not provided otherwise they might conflict.
-    
+
     >>> flux,flux_err = Asinh_to_flux(10., 0.1, 0.)
     >>> flux = Asinh_to_flux(10., softening=1)
     """
@@ -66,22 +67,22 @@ def Distance_to_distance_modulus(distance, absorption=0.0):
 def Extinction(w, Rv=3.1, cardelli=False):
     """Extinction(w, Rv=3.1)
     Returns the selective extinction for A_V=1 for a set of wavelengths w.
-    
+
     w: wavelengths in microns.
     Rv (3.1): ratio of total to selective extinction (A_V/E(B-V)).
         standard value is Rv=3.1.
     cardelli (False): If true will use Cardelli et al. 1989.
         If false, will use O'Donnell 1994.
-    
-    
+
+
     Source:
     Cardelli, Clayton and Mathis, 1989, ApJ, 345, 245:
     http://adsabs.harvard.edu/abs/1989ApJ...345..245C
-    
+
     O'Donnell, J. E., 1994, ApJ, 422, 158:
     http://adsabs.harvard.edu/abs/1994ApJ...422..158O
     Note: 1/w values between 1.1 micron^-1 < x < 3.3 microns^-1 (near-IR, optical)
-    
+
     """
     x = np.atleast_1d(1/w)
     ext = np.zeros_like(x)
@@ -134,7 +135,7 @@ def Extinction(w, Rv=3.1, cardelli=False):
     #
     inds = x > 10.0
     ext[inds] = np.nan
-    
+
     ##### Return scalar if possible
     if ext.shape == (1,):
         return ext[0]
@@ -146,19 +147,19 @@ def Flux_to_asinh(flux, flux_err=None, zeropoint=0., flux0=1., softening=None):
     If the softening parameter is not provided, the value will be
     determined from the flux_err, hence if none is present the function
     will crash.
-    
+
     See Lupton, Gunn and Szalay 1999 (1999AJ....118.1406L).
-    
+
     flux: flux
     flux_err (None): flux error
     zeropoint (0.): zero-point value, in magnitude, added to the magnitude
     flux0 (1.): zero-point value, in flux
     softening (None): softening parameter. If none is provided, it will
         be calculated as: softening = flux_err * sqrt(2.5*log10(e))
-    
+
     Either zeropoint or flux0 can be provided. By default, the values have no
     effect. Make sure that both are not provided otherwise they might conflict.
-    
+
     >>> mag,mag_err = Flux_to_asinh(10., 1., 0.)
     >>> mag = Flux_to_asinh(10., softening=1)
     """
@@ -183,16 +184,16 @@ def Flux_to_asinh(flux, flux_err=None, zeropoint=0., flux0=1., softening=None):
 def Flux_to_mag(flux, flux_err=None, zeropoint=0., flux0=1.):
     """ Flux_to_mag(flux, flux_err=None, zeropoint=0., flux0=1.)
     Converts the flux to magnitude and its error, if provided.
-    
+
     flux: flux in erg/s/cm^2/Hz (note 1 Jy = 1e-23 erg/s/cm^2/Hz)
     flux_err (None): flux error
     zeropoint (0.): zero-point value, in magnitude, added to the magnitude
     flux0 (1.): zero-point value, in flux
         in erg/s/cm^2/Hz
-    
+
     Either zeropoint or flux0 can be provided. By default, the values have no
     effect. Make sure that both are not provided otherwise they might conflict.
-    
+
     >>> mag,mag_err = Flux_to_mag(10., 1., 0.)
     >>> mag = Flux_to_mag(10.)
     """
@@ -206,12 +207,12 @@ def Flux_to_mag(flux, flux_err=None, zeropoint=0., flux0=1.):
 def Limb_darkening(lam, mu):
     """
     Returns the limb darkening.
-    
+
     lam: wavelength in micrometer.
         nlam = lam.shape
     mu: cos(theta) direction of emission angle.
         nmu, 1 = mu.shape
-    
+
     Note: Only valid for 0.42257 < lam < 1.100 micrometer.
     From Neckel 2005.
     """
@@ -297,7 +298,7 @@ def Mag_to_flux(mag, mag_err=None, zeropoint=0., flux0=1.):
     """ Mag_to_flux(mag, mag_err=None, zeropoint=0., flux0=1.)
     Converts the flux to magnitude and its error, if provided.
     Fluxes are in erg/s/cm^2/Hz (note 1 Jy = 1e-23 erg/s/cm^2/Hz)
-    
+
     mag: magnitude
     mag_err (None): magnitude error
     zeropoint (0.): zero-point value, in magnitude
@@ -306,7 +307,7 @@ def Mag_to_flux(mag, mag_err=None, zeropoint=0., flux0=1.):
 
     Either zeropoint or flux0 can be provided. By default, the values have no
     effect. Make sure that both are not provided otherwise they might conflict.
-    
+
     >>> flux,flux_err = Mag_to_flux(10., 1., 0.)
     >>> flux = Mag_to_flux(10.)
     """
@@ -316,5 +317,3 @@ def Mag_to_flux(mag, mag_err=None, zeropoint=0., flux0=1.):
         return flux, flux_err
     else:
         return flux
-
-

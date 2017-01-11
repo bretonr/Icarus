@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["Atmo_grid_spectro"]
 
@@ -31,7 +32,7 @@ class Atmo_grid_spectro(Atmo_grid):
             h: ???
         wave_cut: Allows to define a lower-upper cut in wavelength [wave_low, wave_up].
         linlog (=False): If true, will rebin the data to be linear in the log space.
-        
+
         >>> self.Flux_init()
         """
         lst = []
@@ -47,7 +48,8 @@ class Atmo_grid_spectro(Atmo_grid):
         self.logg.sort()
         n_logg = self.logg.shape[0]
         if n_temp*n_logg != lst.shape[0]:
-            print "There is a mismatch in the number of log(g) and temp grid points"
+            print("There is a mismatch in the number of log(g) and "
+                  "temp grid points")
             return
         grid = []
         mu = []
@@ -61,17 +63,17 @@ class Atmo_grid_spectro(Atmo_grid):
             mu = np.array(mu)
             wav = np.array(wav)
             if mu.std(0).sum() > 1.e-6:
-                print 'mu has different values'
+                print('mu has different values')
                 return
             else:
                 self.mu = mu[0]
             if wav.std(0).sum() > 1.e-6:
-                print 'wav has different values'
+                print('wav has different values')
                 return
             else:
                 self.wav = wav[0]
         except:
-            print 'mu or wav has inconsistent number of elements'
+            print('mu or wav has inconsistent number of elements')
             return
         grid = np.array(grid)
         grid.shape = n_temp, n_logg, self.mu.shape[0], self.wav.shape[0]
@@ -81,7 +83,7 @@ class Atmo_grid_spectro(Atmo_grid):
     def Flux_init_singlefile(self, fln, wave_cut=None, linlog=False):
         """Flux_init_singlefile(fln, linlog=False)
         Reads a band file and construct a grid.
-        
+
         wave_cut: Allows to define a lower-upper cut in wavelength [wave_low, wave_up].
         linlog (=False): If true, will rebin the data to be linear in the log space.
         >>>
@@ -154,7 +156,7 @@ class Atmo_grid_spectro(Atmo_grid):
         """Limb_darkening(mu, wav)
         Returns the limb darkening factor given the cos(angle)
         of emission, mu, and the wavelength, wav, in angstroms.
-        
+
         Note: The limb darkening law is from
             Hestroffer and Magnan, A&A, 1998, 333, 338
         """
@@ -164,4 +166,3 @@ class Atmo_grid_spectro(Atmo_grid):
         return 1 - mu*(1-mu**alpha)
 
 ######################## class Atmo_grid_spectro ########################
-

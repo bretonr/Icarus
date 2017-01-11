@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["Star_base"]
 
@@ -13,9 +14,9 @@ class Star_base(object):
     """Star_base(object)
     This class allows to determine the flux of a star
     in a binary system using an atmosphere grid.
-    
+
     The idea is the following:
-        Some basic parameters of the binary system are provided (mass ratio, 
+        Some basic parameters of the binary system are provided (mass ratio,
         corotation factor, filling factor, companion temperature, irradiated
         energy (spin down) from the primary). From these, the potential equation
         is solved and a grid of [temperature - surface gravity] is calculated.
@@ -29,22 +30,22 @@ class Star_base(object):
     def __init__(self, ndiv, atmo_grid=None):
         """__init__
         Initialize the class instance.
-        
+
         ndiv: The number of surface element subdivisions. Defines how
             coarse/fine the surface grid is.
         atmo_grid (None): An atmosphere model grid from which the
             radiance is interpolated.
-        
+
         It is optional to provide an atmosphere grid. If none is provided, it will
         have to be passed as a parameter to the routine calculating the flux.
-        
+
         >>> star = Star_base(nafl)
         """
         logger.log(9, "start")
         # We define some useful quantities.
         # We set the class attributes
         if atmo_grid is not None:
-           self.atmo_grid = atmo_grid 
+           self.atmo_grid = atmo_grid
         self.ndiv = ndiv
         # Instantiating some class attributes.
         self.q = None
@@ -63,7 +64,7 @@ class Star_base(object):
         Returns the surface area given a solid angle and radius
         arl: solid angle
         r: radius
-        
+
         >>> self._Area(arl, r)
         area
         """
@@ -74,16 +75,16 @@ class Star_base(object):
         Returns the blackbody flux of a star which is modulated
         by a linear limb darkening coefficient (i.e. some linear
         fall-off of the radiance vs. mu).
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         limbdark: limb darkening coefficient.
-        atmo_grid (optional): atmosphere grid instance to 
+        atmo_grid (optional): atmosphere grid instance to
             calculate the flux.
         proj (optional): projection effect to scale the flux to real flux
             units. If None is provided, will call _Proj with the current
             orbital separation as input parameter.
-        
+
         >>> self.Bbody_flux(phase, limbdark)
         bbody_flux
         """
@@ -108,13 +109,13 @@ class Star_base(object):
         """Bol_flux(phase)
         Returns the bolometric flux of a star
         (i.e. mu*sigma*T**4).
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         proj (optional): projection effect to scale the flux to real flux
             units. If None is provided, will call _Proj with the current
             orbital separation as input parameter.
-        
+
         >>> self.Bol_flux(phase)
         bol_flux
         """
@@ -128,7 +129,7 @@ class Star_base(object):
     def _Calc_qp1by2om2(self):
         """_Calc_qp1by2om2
         Sets the qp1by2om2 parameter.
-        
+
         >>> self._Calc_qp1by2om2()
         """
         self.qp1by2om2 = (self.q+1.)/2.*self.omega**2
@@ -138,21 +139,21 @@ class Star_base(object):
         """_Calc_teff(temp=None, tirr=None)
         Calculates the log of the effective temperature on the
         various surface elements of the stellar surface grid.
-        
+
         For surface elements that are not exposed to the primary's
         irradiated flux, the base temperature profile is described
-        using a constant temperature. This temperature is then 
-        modified by a factor that takes into account the gravity 
-        darking through the 'tempgrav' exponent specified when 
+        using a constant temperature. This temperature is then
+        modified by a factor that takes into account the gravity
+        darking through the 'tempgrav' exponent specified when
         calling Make_surface().
-        
+
         For the exposed surface elements, an irradiation temperature
         is added the base temperature as:
             (Tbase**4 + coschi/r**2*Tirr**4)**0.24
         where 'coschi' is the angle between the normal to the surface
         element and the direction to the irradiation source and 'r'
         is the distance.
-        
+
         temp (None): Base temperature of the star.
             If None, will use self.temp, otherwise, will use
             temp and set self.temp = temp.
@@ -161,7 +162,7 @@ class Star_base(object):
             (tirr = (eff * edot / (4*PI * a**2 * sigma))**0.25)
             If None, will use self.tirr, otherwise, will use
             tirr and set self.tirr = tirr.
-        
+
         >>> self._Calc_teff()
         """
         if temp is not None:
@@ -192,7 +193,7 @@ class Star_base(object):
         #         logg=4.0  logg=3.5
         # teff=6250 K  3.618     3.591
         # teff=6500 K  3.460     3.428
-        
+
         logteff: log of temperature.
         logg: log of surface gravity.
         """
@@ -204,7 +205,7 @@ class Star_base(object):
         except:
             print( "Problem with the test for the Doppler boosting range!!!" )
             return 0.
-        
+
         if case == 1:
             logg_vec = np.r_[3.5, 4.0]
             logteff_vec = np.log(np.r_[6250., 6500.])
@@ -216,7 +217,7 @@ class Star_base(object):
         else:
             print( "Problem with the test for the Doppler boosting range!!!" )
             return 0.
-        
+
         #lookup.shape = logg_vec.size, logteff_vec.size
         ### Here we use a shortcut by taking the average
         w_logg, j_logg = Utils.Series.Getaxispos_scalar(logg_vec, logg.mean())
@@ -226,7 +227,7 @@ class Star_base(object):
         #w_logteff, j_logteff = Utils.Series.Getaxispos_vector(logteff_vec, logteff)
         doppler = (1-w_logg) * ( (1-w_logteff)*lookup[j_logg,j_logteff] + w_logteff*lookup[j_logg,1+j_logteff] ) + w_logg * ( (1-w_logteff)*lookup[1+j_logg,j_logteff] + w_logteff*lookup[1+j_logg,1+j_logteff] )
         return doppler
-    
+
     def Doppler_boosting_old(self, logteff, logg):
         """ Doppler_boosting_old(logteff, logg)
         Returns the Doppler boosting factor for the values of logteff and logg.
@@ -234,7 +235,7 @@ class Star_base(object):
         #         logg=4.0  logg=3.5
         # teff=6250 K  3.618     3.591
         # teff=6500 K  3.460     3.428
-        
+
         logteff: log of temperature.
         logg: log of surface gravity.
         """
@@ -280,7 +281,7 @@ class Star_base(object):
         """Filling()
         Returns the volume-averaged filling factor of the star
         in units Roche lobe radius.
-        
+
         >>> self.Filling()
         """
         filling = self.filling
@@ -294,7 +295,7 @@ class Star_base(object):
         """
         Return the flux interpolated from the atmosphere grid.
 
-        phase: orbital phase (in orbital fraction; 0: companion 
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
@@ -309,7 +310,7 @@ class Star_base(object):
         inds (None): if provided, the list of indices to use for
             the flux calculation. Can be handy to approximate
             eclipses.
-        
+
         >>> self.Flux(phase)
         flux
         """
@@ -324,12 +325,12 @@ class Star_base(object):
             mu = self._Mu(phase)
         if inds is None:
             inds = mu > 0
-        
+
         logteff = self.logteff[inds]
         logg = self.logg[inds]+gravscale
         mu = mu[inds]
         area = self.area[inds]
-    
+
         if details:
             v = self._Velocity_surface(phase)[inds]
             fsum, Keff, vsini, Teff = atmo_grid.Get_flux_details(logteff, logg, mu, area, v)
@@ -355,8 +356,8 @@ class Star_base(object):
         Return the flux interpolated from the atmosphere grid.
         Takes into account the Doppler shift of the different surface
         elements due to the orbital velocity.
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
@@ -430,9 +431,9 @@ class Star_base(object):
         """_Geff(dpsidx, dpsidy, dpsidz)
         Returns the effective gravity at a given point having
         element surface gravity.
-        
+
         dpsidx, dpsidy, dpsidz: vector elements of surface gravity
-        
+
         >>> self._Geff(dpsidx, dpsidy, dpsidz)
         geff
         """
@@ -442,7 +443,7 @@ class Star_base(object):
         """_Gravdark()
         Returns the companion temperature after applying
         the gravity darkening coefficient.
-        
+
         >>> self._Gravdark()
         tcorr
         """
@@ -457,7 +458,7 @@ class Star_base(object):
         gmsun = G*Msun (in cgs)
         M1 = mass in Msun
         r = orbital separation in cm
-        
+
         >>> self._Gravscale()
         gravscale
         """
@@ -469,13 +470,13 @@ class Star_base(object):
         """Keff(phase, gravscale=None, atmo_grid=None)
         Return the effective velocity of the star in m/s (i.e. averaged over
         the visible surface and flux intensity weighted).
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         gravscale (optional): gravitational scaling parameter.
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
-        
+
         >>> self.Keff(phase)
         Keff
         """
@@ -492,15 +493,15 @@ class Star_base(object):
     def Mag_bbody_flux(self, phase, limbdark, proj=None, atmo_grid=None):
         """Mag_flux(phase)
         Returns the blackbody magnitude of a star.
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         limbdark: limb darkening coefficient.
         proj (optional): projection effect to scale the flux to real flux
             units. If None is provided, will call _Proj with the current
             orbital separation as input parameter.
         atmo_grid (optional): atmosphere grid instance to calculate the flux.
-        
+
         >>> self.Mag_bbody_flux(phase, limbdark, a=None)
         mag_bbody_flux
         """
@@ -514,13 +515,13 @@ class Star_base(object):
     def Mag_bol_flux(self, phase, proj=None):
         """Mag_bol_flux(phase, a=None)
         Returns the bolometric magnitude of a star.
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         proj (optional): projection effect to scale the flux to real flux
             units. If None is provided, will call _Proj with the current
             orbital separation as input parameter.
-        
+
         >>> self.Mag_bol_flux(phase)
         mag_bol_flux
         """
@@ -532,16 +533,16 @@ class Star_base(object):
     def Mag_flux(self, phase, gravscale=None, proj=None, atmo_grid=None):
         """Mag_flux(phase, gravscale=None, a=None, atmo_grid=None)
         Returns the magnitude interpolated from the atmosphere grid.
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         gravscale (optional): gravitational scaling parameter.
         proj (optional): projection effect to scale the flux to real flux
             units. If None is provided, will call _Proj with the current
             orbital separation as input parameter.
-        atmo_grid (optional): atmosphere grid instance to work from to 
+        atmo_grid (optional): atmosphere grid instance to work from to
             calculate the flux.
-        
+
         >>> self.Mag_flux(phase)
         mag_flux
         """
@@ -558,21 +559,21 @@ class Star_base(object):
         Returns the magnitude interpolated from the atmosphere grid.
         Takes into account the Doppler shift of the different surface
         elements due to the orbital velocity.
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         gravscale (optional): gravitational scaling parameter.
         proj (optional): projection effect to scale the flux to real flux
             units. If None is provided, will call _Proj with the current
             orbital separation as input parameter.
-        atmo_grid (optional): atmosphere grid instance to work from to 
+        atmo_grid (optional): atmosphere grid instance to work from to
             calculate the flux.
         velocity (optional): extra velocity in m/s to be added.
         atmo_doppler (optional): AtmoGridDoppler instance containing a grid of Doppler
             boosting factors. Must be the same dimensions as the atmosphere grid.
             This is needed for the photometry atmosphere grid, but not for the
             spectroscopy.
-        
+
         >>> self.Mag_flux_doppler(phase)
         mag_flux_doppler
         """
@@ -589,16 +590,16 @@ class Star_base(object):
         Provided some basic parameters about the binary system,
         calculates the surface grid values for surface gravity,
         temperature, surface area, etc.
-        
+
         This function is just a conveniance function that calls
         internal functions. If q, omega and filling are not changed,
         only the temperature is recalculated.
-        
+
         q (None): mass ratio (M2/M1). M1 is the star being modelled.
         omega (None): co-rotation factor (Protation/Porbital).
         filling (None): Roche-lobe filling factor (x_nose/L1).
         temp (None): surface temperature of the star.
-            The temperature is defined at the pole of the star, before 
+            The temperature is defined at the pole of the star, before
             irradiation and gravity darkening.
         tempgrav (None): gravity darkening coefficient.
             The gravity darkening is accounted as follow:
@@ -615,12 +616,12 @@ class Star_base(object):
         porb (None): orbital period, in seconds.
         k1 (None): velocity semi-amplitude, in m/s.
         incl (None): orbital inclination, in radians.
-        
+
         >>> self.Make_surface(q, omega, filling, temp, tempgrav, tirr, porb, k1, incl)
         """
         logger.log(9, "start")
-        #print 'Begin Make_surface'
-        #print q, omega, filling, temp, tempgrav, tirr
+        #print('Begin Make_surface')
+        #print(q, omega, filling, temp, tempgrav, tirr)
         redo_surface = False
         redo_teff = False
         redo_orbital = False
@@ -668,15 +669,15 @@ class Star_base(object):
                 self.incl = incl
                 redo_orbital = True
         if redo_surface:
-            #print 'Going to _Surface()'
+            #print('Going to _Surface()')
             self._Surface()
         if redo_teff:
-            #print 'Going to _Calc_teff()'
+            #print('Going to _Calc_teff()')
             self._Calc_teff()
         if redo_orbital:
-            #print 'Going to _Orbital_parameters()'
+            #print('Going to _Orbital_parameters()')
             self._Orbital_parameters()
-        #print 'End Make_surface'
+        #print('End Make_surface')
         logger.log(9, "end")
         return
 
@@ -684,10 +685,10 @@ class Star_base(object):
         """_Mu(phase)
         Returns the cos(angle) of the emission angle with respect
         to the observer.
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
-        
+
         >>> self._Mu(phase)
         mu
         """
@@ -698,7 +699,7 @@ class Star_base(object):
         This function uses the class variables q, k1, porb
         and incl in order to derive additional useful quantities
         such as a1sini, a1, d1, mass1, mass2.
-        
+
         >>> self._Orbital_parameters()
         """
         # We calculate the projected semi-major axis
@@ -716,9 +717,9 @@ class Star_base(object):
     def _Potential(self, x, y, z):
         """_Potential(x, y, z)
         Calculates the potential at a position (x, y, z).
-        
+
         x, y, z: position (can be vectors or scalars)
-        
+
         >>> self._Potential(x, y, z)
         rc, rx, dpsi, dpsidx, dpsidy, dpsidz, psi
         """
@@ -730,9 +731,9 @@ class Star_base(object):
     def _Proj(self, r):
         """_Proj(r)
         Returns the projection parameter (i.e. 1/r**2 fall-off of luminosity)
-        
+
         r: orbital separation in meters.
-        
+
         >>> self._Proj(r)
         proj
         """
@@ -744,11 +745,11 @@ class Star_base(object):
         """_Radius(cosx, cosy, cosz, psi0, rtry)
         Determines the radius of the star at a given angular position.
         If cosx,cosy,cosz are vectors, will return a vector of radii.
-        
+
         cosx, cosy, cosz: angular position (scalar or vector)
         psi0: gravitational potential of the star (scalar)
         rtry: guess radius (scalar)
-        
+
         >>> self._Radius(cosx, cosy, cosz, psi0, rtry)
         radius
         """
@@ -764,11 +765,11 @@ class Star_base(object):
         """_Radius_slow(cosx, cosy, cosz, psi0, rtry)
         Determines the radius of the star at a given angular position.
         This is the slow, "well tested" way.
-        
+
         cosx, cosy, cosz: angular position
         psi0: nominal potential ???
         rtry: guess radius
-        
+
         >>> self._Radius_slow(cosx, cosy, cosz, psi0, rtry)
         radius
         """
@@ -781,7 +782,8 @@ class Star_base(object):
             try:
                 radius = np.array([scipy.optimize.newton(get_radius, rtry, args=(cosx[i], cosy[i], cosz[i])) for i in np.arange(cosx.size)])
             except:
-                print "The cosx, cosy and cosz arrays don't have the same length!"
+                print("The cosx, cosy and cosz arrays don't have "
+                      "the same length!")
                 radius = 0.
         else:
             radius = scipy.optimize.newton(get_radius, rtry, args=(cosx, cosy, cosz))
@@ -791,7 +793,7 @@ class Star_base(object):
         """Radius()
         Returns the volume-averaged radius of the star, in
         units of orbital separation.
-        
+
         >>> self.Radius()
         """
         logger.log(9, "start")
@@ -809,7 +811,7 @@ class Star_base(object):
         """Roche()
         Returns the volume-averaged Roche lobe radius
         of the star in units of orbital separation.
-        
+
         >>> self.Roche()
         """
         logger.log(9, "start")
@@ -823,9 +825,9 @@ class Star_base(object):
     def _Saddle(self, xtry):
         """_Saddle(xtry)
         Returns the saddle point given an guess position
-        
+
         xtry: guess position
-        
+
         >>> self._Saddle(0.5)
         saddle
         """
@@ -836,9 +838,9 @@ class Star_base(object):
         """_Saddle_old(xtry)
         Returns the saddle point given an guess position
         This version does not always converge.
-        
+
         xtry: guess position
-        
+
         >>> self._Saddle_old(0.5)
         saddle
         """
@@ -855,7 +857,7 @@ class Star_base(object):
         Calculates the surface grid values of surface gravity
         and surface element area by solving the potential
         equation.
-        
+
         >>> self._Surface()
         """
         logger.log(9, "start")
@@ -864,26 +866,26 @@ class Star_base(object):
         self._Calc_qp1by2om2()
         sindeltalfby2 = np.sin(cts.PIBYTWO/self.ndiv)
         arl1 = cts.TWOPI*(1.-np.sqrt(1.-sindeltalfby2**2)) # solid angle
-        
-#        print 'Start surface'
+
+#        print('Start surface')
         # Calculate the initial saddle point
-#        print 'Saddle'
+#        print('Saddle')
         xl1 = self._Saddle(0.5)
         self.L1 = xl1
         self.rc_l1 = self.filling*xl1
         # Calculate the potential at the saddle point
-#        print 'Potential psil1'
+#        print('Potential psil1')
         psil1 = self._Potential(xl1, 0., 0.)[-1]
-#        print 'xl1,psil1 '+str(xl1)+' '+str(psil1)
+#        print('xl1,psil1 '+str(xl1)+' '+str(psil1))
         # Calculate the potential at rc_l1
-#        print 'Potential psi0'
+#        print('Potential psi0')
         trc, trx, dpsi, dpsidx, dpsidy, dpsidz, psi0 = self._Potential(self.rc_l1, 0., 0.)
-#        print 'rc_l1,psi0 '+str(self.rc_l1)+' '+str(psi0)
-#        print 'psi0 = ', psi0
-#        print 'psil1 = ', psil1
-#        print 'xl1 = ', xl1
-#        print 'rc_l1 = ', self.rc_l1
-#        print 'trc: %f, trx %f, dpsi %f, dpsidx %f, dpsidy %f, dpsidz %f, psi0 %f' % (trc, trx, dpsi, dpsidx, dpsidy, dpsidz, psi0)
+#        print('rc_l1,psi0 '+str(self.rc_l1)+' '+str(psi0))
+#        print('psi0 = ', psi0)
+#        print('psil1 = ', psil1)
+#        print('xl1 = ', xl1)
+#        print('rc_l1 = ', self.rc_l1)
+#        print('trc: %f, trx %f, dpsi %f, dpsidx %f, dpsidy %f, dpsidz %f, psi0 %f' % (trc, trx, dpsi, dpsidx, dpsidy, dpsidz, psi0))
         # Store the cos values
         cosx = []
         cosy = []
@@ -900,14 +902,14 @@ class Star_base(object):
         rc.append(trc)
         rx.append(trx)
         coschi.append(1.)
-        # Calculate surface gravity        
+        # Calculate surface gravity
         geff = self._Geff(dpsidx, dpsidy, dpsidz)
-#        print 'geff '+str(geff)
+#        print('geff '+str(geff))
         logg = []
         area = []
         logg.append(np.log10(geff))
         area.append(self._Area(arl1, trc))
-#        print 'area'+str(area)
+#        print('area'+str(area))
         # Calculate surface gradient components
         gradx = []
         grady = []
@@ -916,23 +918,23 @@ class Star_base(object):
         grady.append(-dpsidy/geff)
         gradz.append(-dpsidz/geff)
         #  rl180 is the Roche-lobe radius on the far side
-#        print 'about to calculate rl180'
+#        print('about to calculate rl180')
         try:
             rl180 = self._Radius(-1.,0.,0.,psil1,0.9*xl1)
         except:
             rl180 = self._Radius(-1.,0.,0.,psil1,0.1*xl1)
-#        print 'rl180 '+str(rl180)
-        
-#        print 'Start surface loop'
+#        print('rl180 '+str(rl180))
+
+#        print('Start surface loop')
         # Calculate useful quantities for each slice of the surface
         tcosx = np.cos(cts.PI*np.arange(1,self.ndiv)/self.ndiv)
         tsinx = np.sqrt(1.-tcosx**2)
         #rl = self._Radius(tcosx, tsinx, np.zeros(self.ndiv, dtype=float), psil1, np.repeat(rl180,self.ndiv-1))
-#        print 'about to calculate rl'
+#        print('about to calculate rl')
         rl = self._Radius(tcosx, tsinx, np.zeros(self.ndiv, dtype=float), psil1, rl180)
-#        print 'rl '#+str(rl)
+#        print('rl '#+str(rl))
         rtry = self._Radius(-1., 0., 0., psi0, rl180)
-#        print 'rtry '+str(rtry)
+#        print('rtry '+str(rtry))
         ar = 4*cts.PI*tsinx*sindeltalfby2
         nbet = np.round(ar/arl1*(rl/rl180)**2).astype(int)
         ar = ar/nbet
@@ -976,7 +978,7 @@ class Star_base(object):
         grady.append(-dpsidy/geff)
         gradz.append(-dpsidz/geff)
         # rc_pole is the Roche-lobe radius at 90 degrees, i.e. perpendicular to the line separating the two stars
-#        print 'psi0,r '+str(psi0)+' '+str(r)
+#        print('psi0,r '+str(psi0)+' '+str(r))
         rc_pole = self._Radius(0.,0.,1.,psi0,r)
         trc, trx, dpsi, dpsidx, dpsidy, dpsidz, psi = self._Potential(0.,0.,rc_pole)
         self.logg_pole = np.log10(np.sqrt(dpsidx**2+dpsidy**2+dpsidz**2))
@@ -985,7 +987,7 @@ class Star_base(object):
         trc, trx, dpsi, dpsidx, dpsidy, dpsidz, psi = self._Potential(0.,rc_eq,0.)
         self.logg_eq = np.log10(np.sqrt(dpsidx**2+dpsidy**2+dpsidz**2))
 
-#        print 'rc_pole,dpsidx,dpsidy,dpsidz '+str(rc_pole)+' '+str(dpsidx)+' '+str(dpsidy)+' '+str(dpsidz)
+#        print('rc_pole,dpsidx,dpsidy,dpsidz '+str(rc_pole)+' '+str(dpsidx)+' '+str(dpsidy)+' '+str(dpsidz))
         # Making so variable class attributes
         self.nbet = nbet
         self.rc = np.ascontiguousarray(rc)
@@ -1006,14 +1008,14 @@ class Star_base(object):
         """_Velocity_surface(phase, velocity=0.)
         Returns the velocity (in v/c) of each surface element
         of the star.
-        
+
         Positive velocity is away from observer (i.e. redshift).
         Negative velocity is towards observer (i.e. blueshift).
 
-        phase: orbital phase (in orbital fraction; 0: companion 
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         velocity: systematic velocity offset to be added (in m/s).
-        
+
         >>> self._Velocity_surface(phase)
         """
         phi = cts.TWOPI*phase
@@ -1035,4 +1037,3 @@ class Star_base(object):
         return Vx
 
 ######################## class Star_base ########################
-

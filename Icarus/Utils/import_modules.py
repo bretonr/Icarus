@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 ## import general modules
 #import struct, getopt, sys, types, datetime, operator, string, warnings
@@ -63,6 +64,3 @@ cts.SECPERJULYR = float('31557600.0')
 
 ## import some useful utility functions
 from .Misc import Pprint
-
-
-

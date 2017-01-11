@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["Photometry"]
 
@@ -161,7 +162,8 @@ class Photometry(object):
         self._Read_atmo(atmo_fln)
         # We make sure that the length of data and atmo_dict are the same
         if len(self.atmo_grid) != len(self.data['id']):
-            print 'The number of atmosphere grids and data sets (i.e. photometric bands) do not match!!!'
+            print('The number of atmosphere grids and data sets '
+                  '(i.e. photometric bands) do not match!!!')
             return
         else:
             # We keep in mind the number of datasets
@@ -594,7 +596,7 @@ class Photometry(object):
             [colormap name, alpha value, luminosity boosting, saturation boosting]
             [[cmap,alpha,lum,sat],[cmap,alpha,lum,sat]]
 
-            example : 
+            example :
                 cmap = ['jet', 1., 0.5, 1.0]
                 cmap = [['jet', 0.3, 1.0, 1.0], ['jet', 1., 0.5, 1.0]]
                 cmap = None -> (which defaults to ['jet',1.,1.,1.])
@@ -620,7 +622,7 @@ class Photometry(object):
             None
             [colormap name, alpha value, luminosity boosting, saturation boosting]
 
-            example : 
+            example :
                 cmap = ['jet', 1., 0.5, 1.0]
                 cmap = None -> (which defaults to ['jet',1.,1.,1.])
 
@@ -643,7 +645,7 @@ class Photometry(object):
                 if errors:
                     ax.errorbar(self.data['phase'][i], self.data['mag'][i], yerr=self.data['mag_err'][i], fmt='none', ecolor=colors[i])
                 ax.plot(self.data['phase'][i], self.data['mag'][i], linestyle='None', marker='o', markersize=4, markeredgecolor=colors[i], markerfacecolor=colors[i], label=self.data['id'][i])
-        Post_plot(influx=influx, ncol=np.clip(self.ndataset/3,1,4))
+        Post_plot(influx=influx, ncol=np.clip(self.ndataset//3,1,4))
         return
 
     def Plot_model(self, par, nphases=51, show_preoffset=False, do_offset=True, offset_list=None, verbose=False, full_output=False, cmap=None, influx=False):
@@ -664,7 +666,7 @@ class Photometry(object):
             None
             [colormap name, alpha value, luminosity boosting, saturation boosting]
 
-            example : 
+            example :
                 cmap = ['jet', 1., 0.5, 1.0]
                 cmap = None -> (which defaults to ['jet',1.,1.,1.])
 
@@ -698,7 +700,7 @@ class Photometry(object):
                 ax.plot(phases[i], pred_flux[i]*10**(-0.4*offset_list[i]), ls='-', color=colors[i])
             else:
                 ax.plot(phases[i], pred_flux[i]+offset_list[i], ls='-', color=colors[i])
-        Post_plot(influx=influx, ncol=np.clip(self.ndataset/3,1,4))
+        Post_plot(influx=influx, ncol=np.clip(self.ndataset//3,1,4))
         if full_output:
             return pred_flux, offset_list
         return
@@ -709,7 +711,7 @@ class Photometry(object):
         parameters.
 
         par (list/array): Parameter list as expected by the Make_surface function.
-        make_surface (True): Whether to recalculate the 
+        make_surface (True): Whether to recalculate the
             surface of the star or not.
         DM (float): Distance modulus to apply to the data.
         AV (float): V band extinction.
@@ -966,4 +968,3 @@ class Photometry(object):
         return
 
 ######################## class Photometry ########################
-

@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["Photometry_doppler"]
 
@@ -17,7 +18,7 @@ class Photometry_doppler(Photometry):
     This class allows to fit the flux from the primary star
     of a binary system, assuming it is heated by the secondary
     (which in most cases will be a pulsar).
-    
+
     It is meant to deal with photometry data. Many sets of photometry
     data (i.e. different filters) are read. For each data set, one can
     calculate the predicted flux of the model at every data point (i.e.
@@ -30,12 +31,12 @@ class Photometry_doppler(Photometry):
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
         (which in most cases will be a pulsar).
-        
+
         It is meant to deal with photometry data. Many sets of photometry
         data (i.e. different filters) are read. For each data set, one can
         calculate the predicted flux of the model at every data point (i.e.
         for a given orbital phase).
-        
+
         atmo_fln (str): A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
                 Col 0: band name
@@ -99,7 +100,7 @@ class Photometry_doppler(Photometry):
         read (bool): If True, Icarus will use the pre-calculated geodesic
             primitives. This is the recommended option, unless you have the
             pygts package installed to calculate it on the spot.
-        
+
         >>> fit = Photometry(atmo_fln, data_fln, ndiv, porb, x2sini)
         """
         super(Photometry_doppler, self).__init__(atmo_fln, data_fln, ndiv, porb, x2sini, edot=edot, read=read)
@@ -108,7 +109,7 @@ class Photometry_doppler(Photometry):
         """Get_flux(par, flat=False, func_par=None, DM_AV=False, nsamples=None, verbose=False)
         Returns the predicted flux (in magnitude) by the model evaluated
         at the observed values in the data set.
-        
+
         par: Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
@@ -134,9 +135,9 @@ class Photometry_doppler(Photometry):
         nsamples (None): Number of points for the lightcurve sampling.
             If None, the lightcurve will be sampled at the observed data
             points.
-        
+
         Note: tirr = (par[6]**4 - par[3]**4)**0.25
-        
+
         >>> self.Get_flux([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.])
         """
         # func_par
@@ -145,23 +146,23 @@ class Photometry_doppler(Photometry):
         # check if we are dealing with a dictionary
         if isinstance(par, dict):
             par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
-        
+
         # We call Make_surface to make the companion's surface.
         self.Make_surface(par, verbose=verbose)
-        
+
         # If nsamples is None we evaluate the lightcurve at each data point.
         if nsamples is None:
             phases = self.data['phase']
         # If nsamples is set, we evaluate the lightcurve at nsamples
         else:
             phases = (np.arange(nsamples, dtype=float)/nsamples).repeat(self.ndataset).reshape((nsamples,self.ndataset)).T
-        
+
         # If DM_AV, we take into account the DM and AV into the flux here.
         if DM_AV:
             DM_AV = self.data['ext']*par[8] + par[7]
         else:
             DM_AV = self.data['ext']*0.
-        
+
         # Calculate the actual lightcurves
         flux = []
         for i in np.arange(self.ndataset):
@@ -171,13 +172,13 @@ class Photometry_doppler(Photometry):
                     flux.append(flux[self.grouping[i]])
                 else:
                     flux.append( np.array([self.star.Mag_flux_doppler(phase, atmo_grid=self.atmo_grid[i], atmo_doppler=self.atmo_doppler[i]) for phase in phases[i]]) + DM_AV[i] )
-        
+
         # If nsamples is set, we interpolate the lightcurve at nsamples.
         if nsamples is not None:
             for i in np.arange(self.ndataset):
                 ws, inds = Utils.Series.Getaxispos_vector(phases[i], self.data['phase'][i])
                 flux[i] = flux[i][inds]*(1-ws) + flux[i][inds+1]*ws
-        
+
         # We can flatten the flux array to simplify some of the calculations in the Calc_chi2 function
         if flat:
             return np.hstack(flux)
@@ -188,7 +189,7 @@ class Photometry_doppler(Photometry):
         """Get_flux_theoretical(par, phases, func_par=None, verbose=False)
         Returns the predicted flux (in magnitude) by the model evaluated at the
         observed values in the data set.
-        
+
         par: Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
@@ -211,9 +212,9 @@ class Photometry_doppler(Photometry):
             on the parameters. The vector returned by func_par must have a length
             equal to the number of expected parameters.
         verbose (False)
-        
+
         Note: tirr = (par[6]**4 - par[3]**4)**0.25
-        
+
         >>> self.Get_flux_theoretical([PIBYTWO,1.,0.9,4000.,0.08,300e3,5000.,10.,0.], [[0.,0.25,0.5,0.75]]*4)
         """
         # func_par
@@ -222,12 +223,12 @@ class Photometry_doppler(Photometry):
         # check if we are dealing with a dictionary
         if isinstance(par, dict):
             par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['dm'], par['av']]
-        
+
         # We call Make_surface to make the companion's surface.
         self.Make_surface(par, verbose=verbose)
-        
+
         DM_AV = self.data['ext']*par[8] + par[7]
-        
+
         flux = []
         for i in np.arange(self.ndataset):
             # If the filter is the same as a previously calculated one
@@ -243,7 +244,7 @@ class Photometry_doppler(Photometry):
         Returns the effective projected velocity semi-amplitude of the star in m/s.
         The luminosity-weighted average velocity of the star is returned for
         nphases, for the specified dataset, and a sin wave is fitted to them.
-        
+
         par: Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
@@ -273,13 +274,13 @@ class Photometry_doppler(Photometry):
     def _Read_atmo(self, atmo_fln):
         """_Read_atmo(atmo_fln)
         Reads the atmosphere model data.
-        
+
         atmo_fln (str): A file containing the grid model information for each
             data set. The format of each line of the file is as follows:
                 Col 0: band name
                 Col 1: band filename
                 Col 2: Doppler boosting coefficient filename
-        
+
         >>> self._Read_atmo(atmo_fln)
         """
         f = open(atmo_fln,'r')
@@ -294,4 +295,3 @@ class Photometry_doppler(Photometry):
         return
 
 ######################## class Photometry_doppler ########################
-

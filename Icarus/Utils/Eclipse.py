@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 import os
 
@@ -28,13 +29,13 @@ def Hsr(y1, z1, y2, z2, faces):
     Hidden surface removal algorithm.
     Returns the weight of each face/surface element with
     0, 1/3, 2/3, 1, going from not covered to fully covered.
-    
+
     y1,2, z1,2: Projected coordinates of the stars in the sky
         plane (y is along the orbital plane, z is along the orbital
         angular momentum).
     faces: List of faces of the primary (containing the
         vertice indices).
-    
+
     >>> weights = Hsr(y1, z1, y2, z2, faces)
     """
     # In the following, we loop through the vertices of the occulted primary
@@ -60,7 +61,7 @@ def Hsr_c(faces_b, vertices_b, r_vertices_b, assoc_b, faces_f, vertices_f, r_ver
     Hidden surface removal algorithm (implemented in C).
     Returns the weight of each face/surface element with
     0, 1/3, 2/3, 1, going from not covered to fully covered.
-    
+
     >>> weights = Hsr_c(y1, z1, y2, z2, faces)
     """
     support_code = """
@@ -68,7 +69,7 @@ def Hsr_c(faces_b, vertices_b, r_vertices_b, assoc_b, faces_f, vertices_f, r_ver
     // method to convert 3d coordinate to sky plane projection
     void to_skyplane( double x, double y, double z, double incl, double orbph, double offsety, double offsetz, double *ynew, double *znew ) {
         double cos_incl, sin_incl, cos_phs, sin_phs, xnew;
-        
+
         cos_incl = cos(incl);
         sin_incl = sin(incl);
         cos_phs = cos(orbph);
@@ -83,12 +84,12 @@ def Hsr_c(faces_b, vertices_b, r_vertices_b, assoc_b, faces_f, vertices_f, r_ver
         //std::cout << *znew << std::endl;
 
     }
-    
+
     // function that returns true if the point py,pz lies inside
     // the triangle described by y1,2,3 and z1,2,3
     bool inside_triangle( double py, double pz, double y1, double z1, double y2, double z2, double y3, double z3 ) {
         double detT,lambda1,lambda2,lambda3;
-        
+
         detT = (y1-y3)*(z2-z3) - (z1-z3)*(y2-y3);
         lambda1 = ((z2-z3)*(py-y3) - (y2-y3)*(pz-z3)) / detT;
         lambda2 = (-(z1-z3)*(py-y3) + (y1-y3)*(pz-z3)) / detT;
@@ -96,24 +97,24 @@ def Hsr_c(faces_b, vertices_b, r_vertices_b, assoc_b, faces_f, vertices_f, r_ver
         return (0. <= lambda1) && (lambda1 <= 1.) && (0. <= lambda2) && (lambda2 <= 1.) && (0. <= lambda3) and (lambda3 <= 1.);
     }
     """
-    
+
     code = """
-    
+
     //FILE * pfile;
     //pfile = fopen("debug.txt","w");
-    
+
     double PI = 4 * atan(1);
-    
+
     double phs_b = orbph*2*PI;
     double phs_f = (orbph+0.5)*2*PI;
-    
+
     // calculate the offset of the eclipsing star
     double offsety_f, offsetz_f;
     to_skyplane( 1/(1+q), 0., 0., incl, phs_f, 0., 0., &offsety_f, &offsetz_f );
-    
+
     //fprintf(pfile, "Offset front: %f %f\\n",offsety_f,offsetz_f);
     //printf("Offset front: %f %f\\n",offsety_f,offsetz_f);
-    
+
     // Vy,Vz: sky plane coordinates of eclipsing star vertices
     double Vy[n_vertices_f], Vz[n_vertices_f];
 
@@ -122,14 +123,14 @@ def Hsr_c(faces_b, vertices_b, r_vertices_b, assoc_b, faces_f, vertices_f, r_ver
         to_skyplane( vertices_f(i,0)*r_vertices_f(i),vertices_f(i,1)*r_vertices_f(i),vertices_f(i,2)*r_vertices_f(i),incl,phs_f,offsety_f,offsetz_f,&Vy[i],&Vz[i] );
     }
     // loop through the vertices of the eclipsing star to convert to sky plane
-    
+
     // calculate the offset of the eclipsed star
     double offsety_b, offsetz_b;
     to_skyplane( q/(1+q), 0., 0., incl, phs_b, 0., 0., &offsety_b, &offsetz_b );
-    
+
     //fprintf(pfile, "Offset back: %f %f\\n",offsety_b,offsetz_b);
     //printf("Offset back: %f %f\\n",offsety_b,offsetz_b);
-    
+
     double vx, vy, vz;
     double y, z;
     double dist2, dr2;
@@ -143,20 +144,20 @@ def Hsr_c(faces_b, vertices_b, r_vertices_b, assoc_b, faces_f, vertices_f, r_ver
         vz = vertices_b(i,2);
         // transform the vertice coordinates to the sky plane
         to_skyplane( vx*r_vertices_b(i),vy*r_vertices_b(i),vz*r_vertices_b(i),incl,phs_b,offsety_b,offsetz_b,&y,&z );
-        
+
         //fprintf(pfile, "  Vertice %i: (x,y,z) %f %f %f; (sky y, sky z) [%f], [%f]\\n",i,vx,vy,vz,y,z);
         //printf("  Vertice %i: (x,y,z) %f %f %f; (sky y, sky z) [%f], [%f]\\n",i,vx,vy,vz,y,z);
-        
+
         // optimize the occlusion algorithm
         dr2 = pow(y-offsety_f,2) + pow(z-offsetz_f,2);
-        
+
         // if the point is further than the maximum extent of the
         // eclipsing star, we just step to the next surface element.
         if (dr2 > pow(rmax_f,2)) {
             //fprintf(pfile, "    Continue (clearly outside!)");
             //printf("    Continue (clearly outside!)");
             continue;
-        
+
         // if the next point is within the minimum extent of the
         // eclipsing star, it is necessarily hidden so we add the
         // weights right away.
@@ -171,11 +172,11 @@ def Hsr_c(faces_b, vertices_b, r_vertices_b, assoc_b, faces_f, vertices_f, r_ver
                 }
             }
             // for each face that the vertice belongs to
-        
+
         // if none of the above conditions is met, we have to go
         // through the lengthy calculation.
         } else {
-        
+
             // identify the nearest vertice of the eclipsing star
             // for each vertice of the eclipsing star
             id = 0;
@@ -189,10 +190,10 @@ def Hsr_c(faces_b, vertices_b, r_vertices_b, assoc_b, faces_f, vertices_f, r_ver
                 }
             }
             // for each vertice of the eclipsing star
-            
+
             //fprintf(pfile, "    Nearest front vertice %i at %f\\n",id,dist2);
             //printf("    Nearest front vertice %i at %f\\n",id,dist2);
-            
+
             // once we know the nearest vertice of the eclipsing star
             // to the vertice of the eclipsed star, we check if the latter
             // lies inside one of its associated surfaces. If it does, we
@@ -249,10 +250,10 @@ def Hsr_c(faces_b, vertices_b, r_vertices_b, assoc_b, faces_f, vertices_f, r_ver
         //printf("  %f\\n",weight(i));
     }
     // loop through the faces of the eclipsed star to normalize the weights
-    
-    
+
+
     //fclose(pfile);
-    
+
     """
     n_vertices_b = vertices_b.shape[0]
     n_vertices_f = vertices_f.shape[0]
@@ -267,7 +268,7 @@ def Inside_triangle(p, a, b, c):
     """ inside_triangle(p, a, b, c)
     p: point (x,y)
     a, b, c: vertices of the triangle (x,y)
-    
+
     >>> inside_triangle(p, a, b, c)
     """
     detT = (a[0]-c[0])*(b[1]-c[1]) - (a[1]-c[1])*(b[0]-c[0])
@@ -288,7 +289,7 @@ def Occultation_approx(vertices, r_vertices, assoc, n_faces, incl, orbph, q, nth
     // method to convert 3d coordinate to sky plane projection
     void to_skyplane( double x, double y, double z, double incl, double orbph, double offsety, double offsetz, double *ynew, double *znew ) {
         double cos_incl, sin_incl, cos_phs, sin_phs, xnew;
-        
+
         cos_incl = cos(incl);
         sin_incl = sin(incl);
         cos_phs = cos(orbph);
@@ -303,11 +304,11 @@ def Occultation_approx(vertices, r_vertices, assoc, n_faces, incl, orbph, q, nth
         //std::cout << *znew << std::endl;
     }
     """
-    
+
     code = """
     double tmp_y, tmp_z;
     double offsety, offsetz;
-    
+
     to_skyplane( -1./(1.+q), 0., 0., incl, orbph, 0., 0., &offsety, &offsetz );
     //std::cout << offsety << " " << offsetz << std::endl;
     tmp_y = offsety;
@@ -316,7 +317,7 @@ def Occultation_approx(vertices, r_vertices, assoc, n_faces, incl, orbph, q, nth
     //std::cout << offsety << " " << offsetz << std::endl;
     offsety -= tmp_y;
     offsetz -= tmp_z;
-    
+
     #pragma omp parallel shared(n_vertices,vertices,assoc,r_vertices,incl,orbph,weight,ntheta,radii,offsety,offsetz) default(none)
     {
     int ind;
@@ -332,14 +333,14 @@ def Occultation_approx(vertices, r_vertices, assoc, n_faces, incl, orbph, q, nth
         vz = vertices(i,2);
         // transform the vertice coordinates to the sky plane
         to_skyplane( vx*r_vertices(i),vy*r_vertices(i),vz*r_vertices(i),incl,orbph,offsety,offsetz,&y,&z );
-        
+
         theta = atan2(z,y);
         pos = int( theta/ntheta );
         w = theta/ntheta - pos;
         //std::cout << "Test" << std::endl;
         //std::cout << theta << " " << pos << " " << w << std::endl;
         r = radii(pos)*(1-w) + radii(pos+1)*w;
-        
+
         if ((pow(y,2)+pow(z,2)) < pow(r,2)) {
             for (int j=0; j<5; j++) {
                 ind = assoc(i, j);
@@ -364,7 +365,7 @@ def Occultation_approx(vertices, r_vertices, assoc, n_faces, incl, orbph, q, nth
         tmp = scipy.weave.inline(code, ['n_vertices', 'vertices', 'assoc', 'r_vertices', 'incl', 'orbph', 'q', 'weight', 'ntheta', 'radii'], type_converters=scipy.weave.converters.blitz, compiler='gcc', support_code=support_code, extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<cstdio>', '<cmath>', '<omp.h>'], verbose=2, force=0)
     except:
         tmp = scipy.weave.inline(code, ['n_vertices', 'vertices', 'assoc', 'r_vertices', 'incl', 'orbph', 'q', 'weight', 'ntheta', 'radii'], type_converters=scipy.weave.converters.blitz, compiler='gcc', support_code=support_code, extra_compile_args=['-O3'], extra_link_args=['-O3'], headers=['<cstdio>', '<cmath>'], verbose=2, force=0)
-    
+
     return weight
 
 def Occultation_shapely(vertices, faces_ind, incl, orbph, q, ntheta, radii):
@@ -373,7 +374,7 @@ def Occultation_shapely(vertices, faces_ind, incl, orbph, q, ntheta, radii):
     Hidden surface removal algorithm.
     Returns the weight of each face/surface element (i.e.
     fractional area uncovered).
-    
+
     vertices (array (3,n_vertices)): Array of vertices making the faces of the
         star located in front.
     faces_ind (array (n_faces,3)): Array providing the vertice indices of the
@@ -383,12 +384,12 @@ def Occultation_shapely(vertices, faces_ind, incl, orbph, q, ntheta, radii):
     if not _HAS_SHAPELY:
         print( "You must install the Shapely package to run this function." )
         return
-    
+
     #print( "orbph: {}".format(orbph) )
     import time
     T = []
     T.append(time.time())
-    
+
     # Defining the front star polygon
     theta = np.arange(ntheta, dtype=float)/ntheta * cts.TWOPI
     xoff, yoff = Observer_2Dprojection(1./(1+q), 0., 0., incl, orbph+0.5)
@@ -398,7 +399,7 @@ def Occultation_shapely(vertices, faces_ind, incl, orbph, q, ntheta, radii):
     prepared_star_front = shapely.prepared.prep(star_front)
     T.append(time.time())
     #print( "T{}: {} ({})".format(len(T), T[-1]-T[0], T[-1]-T[-2]) )
-    
+
     # Defining the faces of the back star
     x_back, y_back = Observer_2Dprojection(vertices[0], vertices[1], vertices[2], incl, orbph, xoffset=q/(1.+q))
     x_back = x_back[faces_ind]
@@ -459,7 +460,7 @@ def Observer_2Dprojection(x, y, z, incl, orbph, xoffset=None):
     orbph: orbital phase (0-1)
     xoffset (None): x offset, due to star not located at the
         origin of the coordinate system
-    
+
     >>> new_y,new_z = Observer_2Dprojection(x, y, z, incl, orbph, xoffset=None)
     """
     orbph = orbph%1
@@ -485,7 +486,7 @@ def Observer_3Dprojection(x, y, z, incl, orbph, xoffset=None):
     orbph: orbital phase (0-1)
     xoffset (None): x offset, due to star not located at the
         origin of the coordinate system
-    
+
     >>> new_x,new_y,new_z = Observer_3Dprojection(x, y, z, incl, orbph, xoffset=None)
     """
     orbph = orbph%1
@@ -537,7 +538,7 @@ def System_2Dprojection(x1, y1, z1, x2, y2, z2, incl, orbph, q):
     incl: orbital inclination (radians)
     orbph: orbital phase of primary (0-1)
     mass ratio: M2/M1, used to calculate the x offset
-    
+
     >>> new_y1,new_z1,new_y2,new_z2 = system_2Dprojection(x1, y1, z1, x2, y2, z3, incl, orbph, q)
     """
     y1, z1 = Observer_2Dprojection(x1, y1, z1, incl, orbph, -q/(1+q))
@@ -546,7 +547,7 @@ def System_2Dprojection(x1, y1, z1, x2, y2, z2, incl, orbph, q):
 
 def Weights_transit(inds_highres, weight_highres, n_lowres):
     """Weights_transit(inds_highres, weight_highres, n_lowres)
-    
+
     """
     code = """
     #pragma omp parallel shared(n_highres,weight_lowres,weight_highres,inds_highres) default(none)
@@ -559,7 +560,7 @@ def Weights_transit(inds_highres, weight_highres, n_lowres):
     }
     }
     """
-    
+
     n_highres = inds_highres.shape[0]
     weight_lowres = np.zeros(n_lowres, dtype='float')
     try:
@@ -571,7 +572,3 @@ def Weights_transit(inds_highres, weight_highres, n_lowres):
     except:
         get_assoc = scipy.weave.inline(code, ['n_highres', 'weight_lowres', 'weight_highres', 'inds_highres'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], libraries=['m'], verbose=2, force=0)
     return weight_lowres
-
-
-
-
