@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["Atmo_BTSettl7_spectro", "Read_BTSettl7"]
 
@@ -33,7 +34,7 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
         Calculates the limb darkening coefficients.
         wav: wavelength in micrometer.
         verbose (=False): verbosity.
-        
+
         Note: Only valid for 0.42257 < wav < 1.100 micrometer.
         From Neckel 2005.
         """
@@ -142,7 +143,7 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
             and save the results therein.
         linlog (bool): If true, will rebin the data to be linear in the log space.
         verbose (bool): verbosity.
-        
+
         >>> self.Flux_init(flns)
         """
         ## Reading the parameter information about the spectra
@@ -231,7 +232,7 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
         val_vel: velocity of the grid point in units of speed of light
-        
+
         >>> flux = self.Get_flux_doppler(val_logtemp, val_logg, val_mu, val_area, val_vel)
         """
         logger.log(9, "start")
@@ -267,7 +268,7 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
         """
         Returns the limb darkening for each wavelength of the grid.
         mu: cos(theta) direction of emission angle.
-        
+
         Note: Only valid for 0.42257 < wav < 1.100 micrometer.
         From Neckel 2005.
         """
@@ -278,7 +279,7 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
         Calculates grids for different mu values.
         It is faster to interpolate from a grid than calculating
         the exact flux value every time.
-        
+
         savememory (=False): If true, will keep the mu factors on the
             side and will account for them at the flux calculation time
             in the modified Interp function.
@@ -311,7 +312,7 @@ class Atmo_spectro_BTSettl7(Atmo_grid):
 def Read_BTSettl7(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut=None, convert=None, linlog=False):
     """Read_BTSettl7(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut=None, convert=None, linlog=False)
     Reads a band file and return the grid and wavelength.
-    
+
     fln: filename
     oversample (None): Oversampling factor (integer). If provided, a cubic spline
         interpolation will be performed in order to oversample the grid in the
@@ -327,7 +328,7 @@ def Read_BTSettl7(fln, oversample=None, sigma=None, tophat=None, thin=None, wave
     convert (None): If not None, will append 'convert' at the end of the filename
         and save the results therein.
     linlog (False): If true, will rebin the data to be linear in the log space.
-    
+
     >>> grid, wav, z = Read_BTSettl7(fln, thin=20)
     """
     ## The wavelength is contained in the first column and the flux in the second.
@@ -390,5 +391,3 @@ def Read_BTSettl7(fln, oversample=None, sigma=None, tophat=None, thin=None, wave
         print( "Saving the data into "+fln+convert )
         np.savetxt(fln+convert,np.vstack((wav,np.log10(grid))).T)
     return grid, wav, z
-
-

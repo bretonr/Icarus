@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 from .import_modules import *
 from . import Grid, Misc, Series
@@ -13,7 +14,7 @@ from . import Grid, Misc, Series
 def Band_integration(band_func, w, f, input_nu=False, AB=True, mask=None, method='simps'):
     """
     Integrate a spectrum over a filter response curve.
-    
+
     band_func: function that interpolates the filter response at a given
         set of wavelengths/frequencies. Takes one parameter, which is the
         same units as w.
@@ -125,7 +126,7 @@ def Load_filter(band_fln, conv=1., kind='quadratic', provide_bounds=False):
     """
     Returns a function that interpolates the filter response at a given
     wavelength/frequency.
-    
+
     band_fln: filter filename.
         The format should be two columns
             wavelengths in A, response
@@ -158,7 +159,7 @@ def Pivot_wavelength(band_func, w):
     band_func: function that interpolates the filter response at a given
         set of wavelengths.
     w: wavelengths in A.
-    
+
     See The Alhambra Photometric System (doi:10.1088/0004-6256/139/3/1242) for more details.
     See also The Mauna Kea Observatories Near-Infrared Filter Set. III. Isophotal Wavelengths and Absolute Calibration (doi:10.1086/429382).
     """
@@ -172,7 +173,7 @@ def Resample_spectrum(w, f, wrange=None, resample=None):
     """
     Takes a spectrum f and the associated wavelengths/frequencies
     and trim it off and resample it as constant intervals.
-    
+
     w (array): spectral wavelengths/frequencies
     f (array): spectral fluxes
     wrange (list): minimum and maximum value to trim the spectrum at.
@@ -195,5 +196,3 @@ def Resample_spectrum(w, f, wrange=None, resample=None):
         f = f_new
         w = w_new
     return w, f
-
-

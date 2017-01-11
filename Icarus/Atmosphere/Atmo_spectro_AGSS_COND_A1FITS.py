@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["Atmo_AGSS_spectro", "Read_AGSS"]
 
@@ -66,7 +67,7 @@ class Atmo_AGSS_spectro(Atmo_grid):
             and save the results therein.
         linlog (bool): If true, will rebin the data to be linear in the log space.
         verbose (bool): verbosity.
-        
+
         >>> self.Flux_init(flns)
         """
         ## Reading the parameter information about the spectra
@@ -164,7 +165,7 @@ class Atmo_AGSS_spectro(Atmo_grid):
         val_mu: cos(angle) of angle of emission
         val_area: area of the surface element
         val_vel: velocity of the grid point in units of speed of light
-        
+
         >>> flux = self.Get_flux_doppler(val_logtemp, val_logg, val_mu, val_area, val_vel)
         """
         logger.log(9, "start")
@@ -211,7 +212,7 @@ class Atmo_AGSS_spectro(Atmo_grid):
 def Read_AGSS(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut=None, convert=None, linlog=False):
     """Read_AGSS(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut=None, convert=None, linlog=False)
     Reads a band file and return the grid and wavelength.
-    
+
     fln: filename
     oversample (None): Oversampling factor (integer). If provided, a cubic spline
         interpolation will be performed in order to oversample the grid in the
@@ -227,7 +228,7 @@ def Read_AGSS(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut
     convert (None): If not None, will append 'convert' at the end of the filename
         and save the results therein.
     linlog (False): If true, will rebin the data to be linear in the log space.
-    
+
     >>> grid, wav, z = Read_BTSettl7(fln, thin=20)
     """
     ## Opening the file table
@@ -288,5 +289,3 @@ def Read_AGSS(fln, oversample=None, sigma=None, tophat=None, thin=None, wave_cut
         print( "Saving the data into "+fln+convert )
         np.savetxt(fln+convert,np.vstack((wav,np.log10(grid))).T)
     return grid, wav, z
-
-

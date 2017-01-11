@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 import os
 
@@ -22,7 +23,7 @@ def Err_velocity(chi2, vels, dof, clip=None, normalize=False, redchi2_unity=Fals
     will return the best chi2, the best velocity shift and the
     1sigma error bar by approximating the region near the minimum
     chi2 as a parabola.
-    
+
     chi2: vector of chi2 values.
     vels: vector of velocities.
     dof: number of degrees of freedom.
@@ -92,10 +93,10 @@ def Get_K_to_q(porb, asini):
     orbital period and an observed asini.
     The K is for the "primary" whereas asini is that
     of the "secondary" star.
-    
+
     porb: Orbital period in seconds.
     asini: Projected semi-major axis in lt-s.
-    
+
     >>> K_to_q = Get_K_to_q(porb, asini)
     """
     return porb / (cts.TWOPI * asini * cts.c)
@@ -103,11 +104,11 @@ def Get_K_to_q(porb, asini):
 def Mass_companion(mass_function, q, incl):
     """
     Returns the mass of the neutron star companion.
-    
+
     mass_function: Mass function of the neutron star.
     q: Mass ratio (q = M_ns/M_comp)
     incl: Orbital inclination in radians.
-    
+
     >>> Mass_companion(mass_function, q, incl)
     """
     return mass_function * (1+q)**2 / np.sin(incl)**3
@@ -136,11 +137,11 @@ def Mass_function2(M_ns, M_comp, incl):
 def Mass_ratio(mass_function, M_ns, incl):
     """
     Returns the mass ratio of a binary (q = M_ns/M_comp).
-    
+
     mass_function: Mass function of the neutron star.
     M_ns: Neutron star mass in solar mass.
     incl: Orbital inclination in radians.
-    
+
     >>> Mass_ratio(mass_function, M_ns, incl)
     """
     q = -1./9
@@ -181,11 +182,11 @@ def Mass_ratio2(M_ns, porb, incl, k1):
 def Orbital_separation(asini, q, incl):
     """
     Returns the orbital separation in m.
-    
+
     asini: Projected semi-major axis of the neutron star in lt-s.
     q: Mass ratio of the binary (q = M_ns/M_comp).
     incl: Orbital inclination in radians.
-    
+
     >>> Orbital_separation(asini, q, incl)
     """
     return asini*(1+q)/np.sin(incl)*cts.c
@@ -194,11 +195,11 @@ def Potential(x, y, z, q, qp1by2om2):
     """
     Returns the potential at a given point (x, y, z) given
     a mass ratio and a qp1by2om2.
-    
+
     x,y,z can be vectors or scalars.
     q: mass ratio (mass companion/mass pulsar).
     qp1by2om2: (q+1) / (2 * omega^2)
-    
+
     >>> rc, rx, dpsi, dpsidx, dpsidy, dpsidz, psi = Potential(x, y, z, q, qp1by2om2)
     """
     rc2 = x**2+y**2+z**2
@@ -380,5 +381,3 @@ def Saddle(x, q, qp1by2om2):
     x = get_saddle
     logger.log(9, "end")
     return x
-
-

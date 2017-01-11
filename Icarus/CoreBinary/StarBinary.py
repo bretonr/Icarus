@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["StarBinary"]
 
@@ -13,9 +14,9 @@ class StarBinary(object):
     """StarBinary
     This class allows determine the flux of the two stars in a
     binary system using an atmosphere grid.
-    
+
     The idea is the following:
-        Some basic parameters of the binary system are provided (mass ratio, 
+        Some basic parameters of the binary system are provided (mass ratio,
         corotation factor, filling factor, companion temperature, irradiated
         energy (spin down) from the primary). From these, the potential equation
         is solved and a grid of [temperature - surface gravity] is calculated.
@@ -25,11 +26,11 @@ class StarBinary(object):
         surface element of that it covers, provides the contribution to the total
         luminosity of the star. It is taken into account that some energy received
         from the primary heat up the exposed side of the companion.
-        
+
         The flux for each star is calculated. The primary first, and then the
         secondary, by simply inverting the mass ratio and calculating the
         appropriate distance.
-    
+
     The phases are such the star 1 is at superior conjunction at phase 0.5
     (hence possibly eclipsed by star 2) and at inferior conjunction at phase 0
     (hence possibly eclipsing star 2).
@@ -37,7 +38,7 @@ class StarBinary(object):
     def __init__(self, ndiv1, ndiv2, atmo_grid=None, read=False):
         """__init__
         Initialize the class instance.
-        
+
         ndiv: The number of surface element subdivisions. Defines how
             coarse/fine the surface grid is.
             Can be a two-element array (e.g. [5,8]), which would define the
@@ -47,17 +48,17 @@ class StarBinary(object):
             radiance is interpolated.
         read (False): If true, will read the geodesic primitives instead of
             generating them from scratch.
-        
+
         It is optional to provide an atmosphere grid. If none is provided, it will
         have to be passed as a parameter to the routine calculating the flux.
-        
+
         >>> lightcurve = StarBinary(nafl1, ndiv2)
         """
         # We define some useful quantities.
         # We set the class attributes
         if atmo_grid is not None:
            self.atmo_grid = atmo_grid
-        
+
         print( "Instantiating the primary star" )
         # Single resolution for the primary
         if isinstance(ndiv1, int):
@@ -102,7 +103,7 @@ class StarBinary(object):
         # In case of problem for the primary's resolution
         else:
             print( "Problem with ndiv1. Has to be a float or two-element array" )
-        
+
         print( "Instantiating the secondary star" )
         # Single resolution for the secondary
         if isinstance(ndiv2, int):
@@ -153,14 +154,14 @@ class StarBinary(object):
     def Flux(self, phase, atmo_grid=None, nosum=False):
         """Flux(phase, atmo_grid=None, nosum=False)
         Return the flux interpolated from the atmosphere grid.
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
         nosum (False): if true, will no sum across the surface
             and returns (fsum1, fsum2).
-        
+
         >>> self.Flux(phase)
         flux
         """
@@ -175,8 +176,8 @@ class StarBinary(object):
     def Flux_eclipse_old(self, phase, atmo_grid=None, ntheta=100, doppler1=0., doppler2=0.):
         """Flux_eclipse(phase, atmo_grid=None, ntheta=100, doppler1=0., doppler2=0.)
         Return the flux interpolated from the atmosphere grid.
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
@@ -186,17 +187,17 @@ class StarBinary(object):
             Doppler boosting is performed. If None, will use the value
             returned by self.primary.Doppler_boosting() or
             self.secondary.Doppler_boosting().
-        
+
         >>> self.Flux_eclipse(phase)
         flux
         """
         phase = phase%1
-        
+
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
-        
+
         type1, type2 = self.Occultation(phase)
-        
+
         if type1 == "full":
             fsum1 = 0.
         elif type1 == "partial":
@@ -217,7 +218,7 @@ class StarBinary(object):
             fsum1 = fsum1.sum()
         else:
             fsum1 = self.primary.Flux(phase, atmo_grid=atmo_grid, nosum=False, doppler=doppler1) * self.normalize1
-        
+
         if type2 == "full":
             fsum2 = 0.
         elif type2 == "partial":
@@ -238,16 +239,16 @@ class StarBinary(object):
             fsum2 = fsum2.sum()
         else:
             fsum2 = self.secondary.Flux((phase+0.5)%1, atmo_grid=atmo_grid, nosum=False, doppler=doppler2) * self.normalize2
-        
+
         return fsum1+fsum2#, fsum1, fsum2
 
     def Flux_eclipse_shapely(self, phase, atmo_grid=None, ntheta=100, doppler1=0., doppler2=0., nosum=False, invert=True):
         """Flux_eclipse_shapely(phase, atmo_grid=None, ntheta=100, doppler1=0., doppler2=0., nosum=False, invert=True)
         Return the flux interpolated from the atmosphere grid.
-        
+
         Uses the outline of the eclipsing star in order to speed up computation.
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
@@ -261,20 +262,20 @@ class StarBinary(object):
             and returns (fsum1, fsum2).
         invert (True): If true, will use the high resolution computation
             for the out-of-eclipse and the low resolution for the eclipse.
-        
+
         >>> self.Flux_eclipse(phase)
         flux
         """
         phase = phase%1
-        
+
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
-        
+
         #import time
         #t0 = time.time()
-        
+
         type1, type2 = self.Occultation(phase)
-        
+
         #t1 = time.time()
         #print( "phase: {}".format(phase) )
         if type1 == "full":
@@ -317,7 +318,7 @@ class StarBinary(object):
                 #print( "out hd1" )
                 fsum1 = self.primary_hd.Flux(phase, atmo_grid=atmo_grid, nosum=False, doppler=doppler1) #* self.normalize1 ## not needed here
             #print( "    regular phase: {}".format(phase) )
-        
+
         if type2 == "full":
             fsum2 = 0.
             #print( "    full phase: {}".format(phase) )
@@ -358,10 +359,10 @@ class StarBinary(object):
                 #print( "out hd2" )
                 fsum2 = self.secondary_hd.Flux((phase+0.5)%1, atmo_grid=atmo_grid, nosum=False, doppler=doppler2) #* self.normalize2 ## not needed here
             #print( "    regular phase: {}".format(phase) )
-        
+
         #t2 = time.time()
         #print( "        time: {} {}".format(t1-t0, t2-t1) )
-        
+
         if nosum:
             return fsum1, fsum2
         return fsum1+fsum2
@@ -369,10 +370,10 @@ class StarBinary(object):
     def Flux_eclipse(self, phase, atmo_grid=None, ntheta=100, doppler1=0., doppler2=0., nosum=False):
         """Flux_eclipse(phase, atmo_grid=None, ntheta=100, doppler1=0., doppler2=0., nosum=False)
         Return the flux interpolated from the atmosphere grid.
-        
+
         Uses the outline of the eclipsing star in order to speed up computation.
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
@@ -384,17 +385,17 @@ class StarBinary(object):
             self.secondary.Doppler_boosting().
         nosum (False): if true, will no sum across the surface
             and returns (fsum1, fsum2).
-        
+
         >>> self.Flux_eclipse(phase)
         flux
         """
         phase = phase%1
-        
+
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
-        
+
         type1, type2 = self.Occultation(phase)
-        
+
         if type1 == "full":
             fsum1 = 0.
         elif type1 == "partial":
@@ -416,7 +417,7 @@ class StarBinary(object):
             fsum1 = fsum1.sum() * self.normalize1
         else:
             fsum1 = self.primary.Flux(phase, atmo_grid=atmo_grid, nosum=False, doppler=doppler1) * self.normalize1
-        
+
         if type2 == "full":
             fsum2 = 0.
         elif type2 == "partial":
@@ -438,7 +439,7 @@ class StarBinary(object):
             fsum2 = fsum2.sum() * self.normalize2
         else:
             fsum2 = self.secondary.Flux((phase+0.5)%1, atmo_grid=atmo_grid, nosum=False, doppler=doppler2) * self.normalize2
-        
+
         if nosum:
             return fsum1, fsum2
         return fsum1+fsum2
@@ -448,13 +449,13 @@ class StarBinary(object):
         Return the flux interpolated from the atmosphere grid.
         Takes into account the Doppler shift of the different surface
         elements due to the orbital velocity.
-        
-        phase: orbital phase (in orbital fraction; 0: companion 
+
+        phase: orbital phase (in orbital fraction; 0: companion
             in front, 0.5: companion behind).
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
         velocity1,2 (optional): extra velocity in m/s to be added.
-        
+
         >>> self.Flux_doppler(phase)
         flux
         """
@@ -469,11 +470,11 @@ class StarBinary(object):
         Provided some basic parameters about the binary system,
         calculates the surface grid values for surface gravity,
         temperature, surface area, etc.
-        
+
         This function is just a conveniance function that calls
         internal functions. If q, omega and filling are not changed,
         only the temperature is recalculated.
-        
+
         q (None): mass ratio (M2/M1)
         omega1,2 (None): co-rotation factor
         filling1,2 (None): filling factor
@@ -489,7 +490,7 @@ class StarBinary(object):
         normalize (True): If true, will calculate the normalization factor
             so that the two resolutions (normal and high resolution) match
             in terms of flux.
-        
+
         >>> self.Make_surface(q, omega1, omega2, filling1, filling2, temp1, temp2, tempgrav1, tempgrav2, tirr1, tirr2, porb, k1, incl)
         """
         # Making the surface of the primary
@@ -499,7 +500,7 @@ class StarBinary(object):
             self.primary_hd.Make_surface(q=q, omega=omega1, filling=filling1, temp=temp1, tempgrav=tempgrav1, tirr=tirr1, porb=porb, k1=k1, incl=incl)
             if normalize:
                 self.normalize1 = self.primary_hd.Flux(0.5) / self.primary.Flux(0.5)
-        
+
         # Making the surface of the secondary
         self.secondary.Make_surface(q=1/q, omega=omega2, filling=filling2, temp=temp2, tempgrav=tempgrav2, tirr=tirr2, porb=porb, k1=k1/q, incl=incl)
         self.normalize2 = 1.
@@ -507,7 +508,7 @@ class StarBinary(object):
             self.secondary_hd.Make_surface(q=1/q, omega=omega2, filling=filling2, temp=temp2, tempgrav=tempgrav2, tirr=tirr2, porb=porb, k1=k1/q, incl=incl)
             if normalize:
                 self.normalize2 = self.secondary_hd.Flux(0.5) / self.secondary.Flux(0.5)
-        
+
         self.r1max = self.primary.rc.max()
         self.r2max = self.secondary.rc.max()
         self.r1min = self.primary.rc.min()
@@ -556,9 +557,9 @@ class StarBinary(object):
         """Occultation(self, phase)
         Given an orbital phase, calculates the type of occultation
         for each star.
-        
+
         phase: the orbital phase (in the range [0,1]).
-        
+
         Returns for each star:
             "none": Fully visible
             "full": Fully eclipsed
@@ -570,7 +571,7 @@ class StarBinary(object):
             type1 = "none"
             type2 = "none"
             if debug: print( "No overlap possible in this system." )
-        
+
         # (phase <= 0.25 and phase >= 0.75) the secondary star is in the back
         elif ((phase <= self.overlap_phs) or (phase >= 1-self.overlap_phs)):
             type1 = "none"
@@ -586,7 +587,7 @@ class StarBinary(object):
                 else:
                     type2 = "partial"
                 if debug: print( "Partial eclipse of secondary" )
-        
+
         # (0.25 <= phase <= 0.75) the primary star is in the back
         elif ((0.5-self.overlap_phs) <= phase <= (0.5+self.overlap_phs)):
             type2 = "none"
@@ -602,14 +603,13 @@ class StarBinary(object):
                 else:
                     type1 = "partial"
                 if debug: print( "Partial eclipse of primary." )
-        
+
         # if overlap is possible but not in the range for it
         else:
             type1 = "none"
             type2 = "none"
             if debug: print( "No overlap at this phase." )
-        
+
         return type1, type2
 
 ######################## class StarBinary ########################
-

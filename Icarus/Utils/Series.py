@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 import sys
 import os
@@ -65,10 +66,10 @@ def Getaxispos_scalar(xold, xnew):
     Given a scalar xnew, returns the index and fractional weight
     that corresponds to the nearest linear interpolation from
     the vector xold.
-    
+
     xold: vector of values to be interpolated from.
     xnew: scalar value to be interpolated.
-    
+
     weight,index = Getaxispos_scalar(xold, xnew)
     """
     n = xold.shape[0]
@@ -104,10 +105,10 @@ def Getaxispos_vector(xold, xnew):
     Given a vector xnew, returns the indices and fractional weights
     that corresponds to their nearest linear interpolation from
     the vector xold.
-    
+
     xold: vector of values to be interpolated from.
     xnew: vector of values to be interpolated.
-    
+
     weights,indices = Getaxispos_scalar(xold, xnew)
     """
     logger.log(5, "start")
@@ -365,16 +366,16 @@ def Resample_linlog(xold):
     """Resample_linlog(xold)
     Resample a linear wavelength vector to a log space and
     returns the new vector and the Doppler shift z.
-    
+
     The resampling is done such that the largest wavelength interval
     is conserved in order to preserve the spectral resolution.
-    
+
     The Doppler shift is:
         1+z = lambda_1 / lambda_0
 
     In the non-relativistic limit:
         z = v/c
-    
+
     >>> xnew, z = Resample_linlog(xold)
     """
     z = xold[-2] / xold[-1] - 1
@@ -386,14 +387,12 @@ def Resample_linlog(xold):
 def Resample_loglin(xold):
     """Resample_loglin(xold)
     Resample a log wavelength vector to a linear space.
-    
+
     The resampling is done such that the smallest wavelength interval
     is conserved in order to preserve the spectral resolution.
-    
+
     >>> xnew = Resample_loglin(xold)
     """
     step = xold[1] - xold[0]
     xnew = np.arange(xold[0], xold[-1]+step, step)
     return xnew
-
-

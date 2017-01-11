@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["Atmo_BTSettl7_spectro", "Read_BTSettl7"]
 
@@ -31,7 +32,7 @@ class Atmo_photo_AGSS_COND_LIMBDARK(Atmo_grid):
         temp_cut (list): Allows to define a lower and an upper limit to the temperature.
         logg_cut (list): Allows to define a lower and an upper limit to the logg.
         verbose (bool): Verbosity.
-        
+
         >>> self.Flux_init(flns)
         """
         ## Reading the parameter information about the spectra
@@ -120,9 +121,9 @@ class Atmo_photo_AGSS_COND_LIMBDARK(Atmo_grid):
 def Read(fln):
     """Read(fln)
     Reads a band file and return the flux.
-    
+
     fln: filename
-    
+
     >>> grid, wav, z = Read_original(fln)
     """
     ## Load the hdu
@@ -146,13 +147,13 @@ def Read_multiple(flns, temp_cut=None, logg_cut=None, verbose=False):
     temp_cut (list): Allows to define a lower and an upper limit to the temperature.
     logg_cut (list): Allows to define a lower and an upper limit to the logg.
     verbose (bool): Verbosity.
-    
+
     >>> Read_multiple(flns)
     """
     temp = []
     logg = []
     mu = []
-    
+
     ## Reading the parameter information about the spectra
     lst = []
     for i in np.arange(len(flns)):
@@ -192,8 +193,3 @@ def Read_multiple(flns, temp_cut=None, logg_cut=None, verbose=False):
 
     ## Save to fits table
     return
-
-
-
-
-

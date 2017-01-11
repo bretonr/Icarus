@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["Spectroscopy", "Doppler_shift", "Normalize_spectrum", "Rebin", "Process_flux", "Process_flux1"]
 
@@ -19,7 +20,7 @@ class Spectroscopy(object):
     This class allows to fit the flux from the primary star
     of a binary system, assuming it is heated by the secondary
     (which in most cases will be a pulsar).
-    
+
     It is meant to deal with spectroscopic data. A set of spectroscopic
     data (i.e. different orbital phases) is read. For each data set, one can
     calculate the predicted flux of the model at every data point (i.e.
@@ -30,12 +31,12 @@ class Spectroscopy(object):
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
         (which in most cases will be a pulsar).
-    
+
         It is meant to deal with spectroscopic data. A set of spectroscopic
         data (i.e. different orbital phases) is read. For each data set, one can
         calculate the predicted flux of the model at every data point (i.e.
         for a given orbital phase).
-        
+
         atmo_grid: An atmosphere grid instance or a file containing the grid
             model information for the whole data set. The format of each line
             of the file is as follow:
@@ -69,7 +70,7 @@ class Spectroscopy(object):
         read (bool): If True, Icarus will use the pre-calculated geodesic
             primitives. This is the recommended option, unless you have the
             pygts package installed to calculate it on the spot.
-        
+
         >>> fit = Spectroscopy(atmo_fln, data_fln, ndiv, porb, x2sini)
         """
         # We define some class attributes.
@@ -122,7 +123,7 @@ class Spectroscopy(object):
         """Get_flux(par, orbph=None, velocities=0., gravscale=None, atmo_grid=None, verbose=False)
         Returns the predicted flux by the model evaluated at the
         observed values in the data set.
-        
+
         par (array): Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
@@ -143,9 +144,9 @@ class Spectroscopy(object):
         atmo_grid (optional): atmosphere grid instance used to
             calculate the flux.
         verbose (False): If true will display the list of parameters.
-        
+
         Note: tirr = (par[6]**4 - par[3]**4)**0.25
-        
+
         >>> self.Get_flux([PIBYTWO,1.,0.9,4000.,0.08,300e3,6000.,50e3])
         """
         logger.log(9, "start")
@@ -174,7 +175,7 @@ class Spectroscopy(object):
     def Initialize(self, seeing=-1):
         """Initialize(seeing=-1)
         Initializes and stores some important variables
-        
+
         seeing (-1): The seeing factor. -1 will use the default value.
         """
         ## We calculate the constant for the conversion of K to q (observed
@@ -448,7 +449,7 @@ class Spectroscopy(object):
         """
         Return a nice representation of the important
         parameters.
-        
+
         par: Parameter list.
             [0]: Orbital inclination in radians.
             [1]: Corotation factor.
@@ -458,7 +459,7 @@ class Spectroscopy(object):
             [5]: K (projected velocity semi-amplitude) in m/s.
             [6]: Front side temperature.
             [7]: Systematic velocity offset in m/s.
-        make_surface (True): Whether to recalculate the 
+        make_surface (True): Whether to recalculate the
             surface of the star or not.
         verbose (True): Output the nice representation
             of the important parameters or just return them
@@ -512,7 +513,7 @@ class Spectroscopy(object):
     def __Read_atmo(self, atmo_fln):
         """__Read_atmo(atmo_fln)
         Reads the atmosphere model data.
-        
+
         atmo_fln: A file containing the grid model information for the whole
             data set. The file contains one line having the following format:
                 descriptor name (str): description of the grid
@@ -526,7 +527,7 @@ class Spectroscopy(object):
                 smooth (float): A Gaussian smoothing with a sigma equals to
                     'smooth' in the wavelength dimension will be performed.
                     If 0, no smoothing will be performed.
-        
+
         >>> self.__Read_atmo(atmo_fln)
         """
         f = open(atmo_fln,'r')
@@ -550,7 +551,7 @@ class Spectroscopy(object):
     def __Read_data(self, data_fln, phase_offset=-0.25, wave_cut=None):
         """__Read_data(self, data_fln, phase_offset=-0.25, wave_cut=None)
         Reads the photometric data.
-        
+
         data_fln (str): A file containing the information for each data set.
             The format of the file is as follows:
                 descriptor name
@@ -559,16 +560,16 @@ class Spectroscopy(object):
                 column name flux
                 column name error flux
                 orbital phase
-                barycenter offset (i.e. measured velocity for optical 
+                barycenter offset (i.e. measured velocity for optical
                     companion in km/s)
-                barycenter offset error (i.e. measured velocity error 
+                barycenter offset error (i.e. measured velocity error
                     for optical companion in km/s)
                 approximate velocity (i.e. measure velocity for pulsar companion
                     with velocity_find in km/s)
         phase_offset (float): Value to be added to the orbital phase in order
             to have phase 0.0 and 0.5 being conjunction times, with 0.0 the eclipse.
-        wave_cut (array): Lower and upper wavelength limit 
-        
+        wave_cut (array): Lower and upper wavelength limit
+
         >>> self.__Read_data(data_fln)
         """
         f = open(data_fln,'r')
@@ -607,7 +608,7 @@ class Spectroscopy(object):
         The format is three columns (wavelength, flux, err).
         Note that the errors are: err = err/flux_obs*flux_pred so
         that the errors are scaled from the observed to modeled flux.
-        
+
         fln: filename, files will be fln.n, where n is the data id.
         par: parameters (see Get_flux for more info).
         velocities (optional): A scalar/vector of velocities to add to the
@@ -756,7 +757,7 @@ def Rebin(flux, x, xnew, interpolate=True):
     """Rebin(flux, x, xnew, interpolate=True)
     Rebin a spectrum from a given sampling (i.e. log(lambda))
     to another one (i.e. lambda).
-    
+
     The function can deal with a single spectrum or a set of
     multiple spectra. In the latter case, the wavelength axis
     must be along the last dimension and the interpolation the
@@ -784,4 +785,3 @@ def Rebin(flux, x, xnew, interpolate=True):
         else:
             newflux = Utils.Series.Interp_integrate(flux, x, xnew)
     return newflux
-
