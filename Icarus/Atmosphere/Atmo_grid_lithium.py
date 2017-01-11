@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 __all__ = ["Atmo_grid_lithium"]
 
@@ -29,11 +30,12 @@ class Atmo_grid_lithium(Atmo_grid):
         Calculates the limb darkening coefficients.
         wav: wavelength in micrometer.
         verbose (=False): verbosity.
-        
+
         Note: Only valid for 0.42257 < wav < 1.100 micrometer.
         From Neckel 2005.
         """
-        if verbose: print( "Calculating limb darkening coefficients" )
+        if verbose:
+            print("Calculating limb darkening coefficients")
         def L_422_1100(wav):
             a_00 = 0.75267
             a_01 = -0.265577
@@ -133,7 +135,7 @@ class Atmo_grid_lithium(Atmo_grid):
             and save the results therein.
         linlog (False): If true, will rebin the data to be linear in the log space.
         verbose (False): verbosity.
-        
+
         >>> self.Flux_init(flns)
         """
         lst = []
@@ -149,7 +151,8 @@ class Atmo_grid_lithium(Atmo_grid):
         self.logg.sort()
         n_logg = self.logg.shape[0]
         if n_temp*n_logg != lst.shape[0]:
-            print "There is a mismatch in the number of log(g) and temp grid points"
+            print("There is a mismatch in the number of log(g) "
+                  "and temp grid points")
             return
         if 1 == 1:
             grid = []
@@ -163,12 +166,12 @@ class Atmo_grid_lithium(Atmo_grid):
             try:
                 wav = np.array(wav)
                 if wav.std(0).max() > 1.e-6:
-                    print 'wav has different values'
+                    print('wav has different values')
                     return
                 else:
                     wav = wav[0]
             except:
-                print 'wav has inconsistent number of elements'
+                print('wav has inconsistent number of elements')
                 return
             if verbose: print( 'Transforming grid data to array' )
             grid = np.asarray(grid)
@@ -182,7 +185,7 @@ class Atmo_grid_lithium(Atmo_grid):
     def Flux_init_singlefile(self, fln, oversample=None, smooth=None, thin=None, wave_cut=None, convert=None, linlog=False):
         """Flux_init_singlefile(fln, oversample=None, smooth=None, thin=None, wave_cut=None, convert=None, linlog=False)
         Reads a band file and return the grid and wavelength.
-        
+
         fln: filename
         oversample (None): Oversampling factor (integer). If provided, a cubic spline
             interpolation will be performed in order to oversample the grid in the
@@ -195,7 +198,7 @@ class Atmo_grid_lithium(Atmo_grid):
         convert (None): If not None, will append 'convert' at the end of the filename
             and save the results therein.
         linlog (False): If true, will rebin the data to be linear in the log space.
-        
+
         >>> grid, wav = self.Flux_init_singlefile(fln, thin=20)
         """
         # The wavelength is contained in the first column and the flux in the second.
@@ -230,7 +233,7 @@ class Atmo_grid_lithium(Atmo_grid):
         else:
             self.z0 = np.float(wav[1]/wav[0] - 1)
         if convert is not None:
-            print 'Saving the data into '+fln+convert
+            print('Saving the data into '+fln+convert)
             np.savetxt(fln+convert,np.vstack((wav,np.log10(grid))).T)
         return grid, wav
 
@@ -290,7 +293,7 @@ class Atmo_grid_lithium(Atmo_grid):
         """
         Returns the limb darkening for each wavelength of the grid.
         mu: cos(theta) direction of emission angle.
-        
+
         Note: Only valid for 0.42257 < wav < 1.100 micrometer.
         From Neckel 2005.
         """
@@ -301,7 +304,7 @@ class Atmo_grid_lithium(Atmo_grid):
         Calculates grids for different mu values.
         It is faster to interpolate from a grid than calculating
         the exact flux value every time.
-        
+
         savememory (=False): If true, will keep the mu factors on the
             side and will account for them at the flux calculation time
             in the modified Interp function.
@@ -320,5 +323,3 @@ class Atmo_grid_lithium(Atmo_grid):
             self.grid = np.ascontiguousarray(g.swapaxes(0,1).swapaxes(1,2))
 
 ######################## class Atmo_grid_lithium ########################
-
-

@@ -1,3 +1,4 @@
+from __future__ import print_function
 from distutils.core import setup
 from setuptools import find_packages
 
@@ -8,7 +9,8 @@ setup(
     version='2.3.1',
 
     # description
-    description='Icarus is a stellar binary light curve synthesis tool initially developed by Rene Breton',
+    description=('Icarus is a stellar binary light curve synthesis tool '
+                 'initially developed by Rene Breton'),
     long_description=open('README.md').read(),
 
     # The project's main homepage.
@@ -47,17 +49,19 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
 
-    keywords=['astrophysics','cosmology', 'photometry', 'binary', 'modeling', 'space', 'models', 'spectroscopy', 'astronomy', 'science', 'research', 'stars', 'physics'],
+    keywords=['astrophysics','cosmology', 'photometry', 'binary', 'modeling',
+              'space', 'models', 'spectroscopy', 'astronomy', 'science',
+              'research', 'stars', 'physics'],
 
     # includes everything except the examples
     packages=find_packages(exclude=['Examples']),
 
-    # as stated on https://github.com/bretonr/Icarus 
+    # as stated on https://github.com/bretonr/Icarus
     install_requires=['numpy', 'scipy', 'astropy'],
 
 
     # including the geodesic data files.
-    include_package_data = True,
+    include_package_data=True,
     package_data={
         '': ['*.txt'],
     }
@@ -67,9 +71,13 @@ setup(
 try:
     import matplotlib
 except:
-    print 'matlibplot is not installed. Although not a requirement but in order to get better graphs please install it'
+    print('matlibplot is not installed. Although not a requirement, please '
+          'install it in order to get better graphs.')
 
-try: 
+try:
     import PyGTS
 except:
-    print 'PyGTS is not installed. Although not a requirement but in order to generate surface geodesic primitives instead of reading the pre-generated one, and calculate occulations and transits in eclipsing binaries please install it'
+    print('PyGTS is not installed. Although not a requirement, please '
+          'install it in order to generate surface geodesic primitives '
+          'instead of reading the pre-generated one, and calculate '
+          'occultations and transits in eclipsing binaries.')
