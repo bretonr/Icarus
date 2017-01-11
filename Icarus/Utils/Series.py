@@ -61,6 +61,45 @@ def Convolve_gaussian_tophat(arr, sigma=1., top=1):
     newarr = scipy.ndimage.convolve1d(arr, kernel, axis=-1)
     return newarr
 
+def Doppler_shift(xold, xnew):
+    """ Getaxispos_scalar(xold, xnew)
+    Given a scalar xnew, returns the index and fractional weight
+    that corresponds to the nearest linear interpolation from
+    the vector xold.
+    
+    xold: vector of values to be interpolated from.
+    xnew: scalar value to be interpolated.
+    
+    weight,index = Getaxispos_scalar(xold, xnew)
+    """
+    n = xold.shape[0]
+    code = """
+    int jl, ju, jm;
+    double w;
+    bool ascending = xold(n-1) > xold(0);
+    jl = 0;
+    ju = n;
+    while ((ju-jl) > 1)
+    {
+        jm = (ju+jl)/2;
+        if (ascending == (xnew > xold(jm)))
+            jl = jm;
+        else
+            ju = jm;
+    }
+    jl = (jl < (n-1) ? jl : n-2);
+    w = (xnew-xold(jl))/(xold(jl+1)-xold(jl));
+    py::tuple results(2);
+    results[0] = w;
+    results[1] = jl;
+    return_val = results;
+    """
+    xold = np.asarray(xold)
+    xnew = float(xnew)
+    get_axispos = scipy.weave.inline(code, ['xold', 'xnew', 'n'], type_converters=scipy.weave.converters.blitz, compiler='gcc', verbose=2)
+    w,j = get_axispos
+    return w,j
+
 def Getaxispos_scalar(xold, xnew):
     """ Getaxispos_scalar(xold, xnew)
     Given a scalar xnew, returns the index and fractional weight

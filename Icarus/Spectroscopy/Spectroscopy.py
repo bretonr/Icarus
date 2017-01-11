@@ -26,7 +26,7 @@ class Spectroscopy(object):
     calculate the predicted flux of the model at every data point (i.e.
     for a given orbital phase).
     """
-    def __init__(self, atmo_grid, data_fln, ndiv, porb, x2sini, phase_offset=-0.25, seeing=-1, read=True, oldchi=False):
+    def __init__(self, atmo_grid, data_fln, ndiv, read=True, oldchi=False):
         """
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
@@ -37,64 +37,66 @@ class Spectroscopy(object):
         calculate the predicted flux of the model at every data point (i.e.
         for a given orbital phase).
 
-        atmo_grid: An atmosphere grid instance or a file containing the grid
-            model information for the whole data set. The format of each line
-            of the file is as follow:
+        Parameters
+        ----------
+        atmo_fln : str
+            A file containing the grid model information for the whole
+            data set. The file contains one line having the following format:
+                descriptor name (str): description of the grid
+                grid file (str): the grid files to be read; can be a wildcard
+                wavelength cut low (float): the lower limit to trim the grid
+                wavelength cut high (float): the upper limit to trim the grid
+                oversample (int): Oversampling factor. A linear interpolation
+                    will be performed in order to oversample the grid in the
+                    wavelength dimension by a factor 'oversample'. If 0 or 1,
+                    no oversampling will be performed.
+                smooth (float): A Gaussian smoothing with a sigma equals to
+                    'smooth' in the wavelength dimension will be performed.
+                    If 0, no smoothing will be performed.
+        data_fln : str
+            A file containing the information for each data set.
+            The format of the file is as follows:
                 descriptor name
-                grid file
-                wavelength cut low
-                wavelength cut high
-                oversample factor
-                smoothing factor
-            Can also be None. In which case, the atmosphere grid must be given
-            for each Get_flux call.
-        data_fln: A file containing the information for each data set.
-            The format of the file is as follow:
-                descriptor name
-                orbital phase
-                column wavelength
-                column flux
-                column error flux
                 data file
-                velocity offset
-                velocity offset error
-                approximate velocity
-        ndiv: The number of surface element subdivisions. Defines how coarse/fine
-            the surface grid is.
-        porb: Orbital period of the system in seconds.
-        x2sini: Projected semi-major axis of the secondary (pulsar)
-            in light-second.
-        phase_offset (-0.25): Value to be added to the orbital phase in order
-            to have phase 0.0 and 0.5 being conjunction times, with 0.0 the eclipse.
-        seeing (-1): The seeing factor. -1 will use the default value.
-        read (bool): If True, Icarus will use the pre-calculated geodesic
+                column name wavelength
+                column name flux
+                column name error flux
+                orbital phase (orbital phases are defined as 0.0 being the
+                    modelled star in 'front', i.e. inferior conjunction, and
+                    0.5 being behind, i.e. superior conjunction)
+                barycenter velocity offset (m/s)
+                barycenter velocity offset error (m/s)
+                approximate velocity (m/s)
+        ndiv : int
+            The number of surface element subdivisions. Defines how coarse/fine
+            the surface grid is. Recommended values 4-6.
+        read : bool
+            If True, Icarus will use the pre-calculated geodesic
             primitives. This is the recommended option, unless you have the
             pygts package installed to calculate it on the spot.
 
-        >>> fit = Spectroscopy(atmo_fln, data_fln, ndiv, porb, x2sini)
+        >>> fit = Spectroscopy(atmo_fln, data_fln, ndiv)
         """
-        # We define some class attributes.
-        self.porb = porb
-        self.x2sini = x2sini
-        # We read the data.
+        ## We read the data.
         print( 'Reading spectral data' )
-        self.__Read_data(data_fln, phase_offset=phase_offset)
-        # We read the atmosphere models with the atmo_grid class
+        self.__Read_data(data_fln)
+        ## We read the atmosphere models with the atmo_grid class
         print( 'Reading atmosphere grid' )
+        ## We may choose not to read the atmosphere grid automatically
         if atmo_grid is None:
             self.atmo_grid = None
+        ## If a string is provided, this is the file containing the info about the atmosphere grid
         elif isinstance(atmo_grid, basestring):
             self.__Read_atmo(atmo_grid)
+        ## One might provide an atmosphere grid object directly
         else:
             self.atmo_grid = atmo_grid
-        # We keep in mind the number of datasets
+        ## We keep in mind the number of datasets
         self.ndataset = len(self.data['phase'])
-        # We initialize some important class attributes.
-        print( 'Initializing the lightcurve attribute' )
+        ## We initialize some important class attributes.
+        print( 'Initializing the stellar mesh' )
         self.star = Core.Star(ndiv, atmo_grid=self.atmo_grid, read=read, oldchi=oldchi)
-        print( 'Performing some more initialization' )
-        self.Initialize(seeing=seeing)
-        print( 'Done. Play and have fun...' )
+        return
 
     def Fit_flux(self, flux_model, v=None, inds=None):
         """
@@ -159,7 +161,7 @@ class Spectroscopy(object):
             orbph = np.atleast_1d(orbph)
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
-        #velocities = np.zeros_like(orbph) + par[7] + self.data['v_offset'] + velocities
+        #velocities = np.zeros_like(orbph) + par[7] + self.data['v_bary'] + velocities
         velocities = np.zeros_like(orbph) + par[7] + velocities
         q = par[5] * self.K_to_q
         tirr = (par[6]**4 - par[3]**4)**0.25
@@ -180,7 +182,7 @@ class Spectroscopy(object):
         """
         ## We calculate the constant for the conversion of K to q (observed
         ## velocity semi-amplitude to mass ratio, with K in m/s)
-        self.K_to_q = Utils.Binary.Get_K_to_q(self.porb, self.x2sini)
+        #self.K_to_q = Utils.Binary.Get_K_to_q(self.porb, self.x2sini)
 
         ## Here we pre-calculate the wavelengths, interpolation indices
         ## and weights for the rebining of the log-spaced atmo_grid data
@@ -256,7 +258,7 @@ class Spectroscopy(object):
         ## If the model fluxes are not provided, we calculate them
         if plotmodel or plotres:
             if flux_model is None:
-                flux_model = self.Get_flux(par, orbph=self.data['phase'][inds], velocities=self.data['v_offset'][inds], verbose=False)
+                flux_model = self.Get_flux(par, orbph=self.data['phase'][inds], velocities=self.data['v_bary'][inds], verbose=False)
                 flux_model, chi2 = self.Fit_flux(flux_model, inds=inds)
             if wav_model is None:
                 if len(flux_model[0]) == len(self.data['wavelength'][inds[0]]):
@@ -401,7 +403,7 @@ class Spectroscopy(object):
             inds = [inds]
 
         ## Calculating the spectra with the polynomial continuum fitting
-        flux_model = self.Get_flux(par, orbph=self.data['phase'][inds], velocities=self.data['v_offset'][inds], verbose=False)
+        flux_model = self.Get_flux(par, orbph=self.data['phase'][inds], velocities=self.data['v_bary'][inds], verbose=False)
         wave_model = self.atmo_grid.wav
 
         if len(pylab.get_fignums()) == 0:
@@ -514,7 +516,10 @@ class Spectroscopy(object):
         """__Read_atmo(atmo_fln)
         Reads the atmosphere model data.
 
-        atmo_fln: A file containing the grid model information for the whole
+        Parameters
+        ----------
+        atmo_fln : str
+            A file containing the grid model information for the whole
             data set. The file contains one line having the following format:
                 descriptor name (str): description of the grid
                 grid file (str): the grid files to be read; can be a wildcard
@@ -522,8 +527,8 @@ class Spectroscopy(object):
                 wavelength cut high (float): the upper limit to trim the grid
                 oversample (int): Oversampling factor. A linear interpolation
                     will be performed in order to oversample the grid in the
-                    wavelength dimension by a factor 'oversample'. If 0, no
-                    oversampling will be performed.
+                    wavelength dimension by a factor 'oversample'. If 0 or 1,
+                    no oversampling will be performed.
                 smooth (float): A Gaussian smoothing with a sigma equals to
                     'smooth' in the wavelength dimension will be performed.
                     If 0, no smoothing will be performed.
@@ -537,44 +542,37 @@ class Spectroscopy(object):
         flns.sort()
         wavelow = float(tmp[2])
         wavehigh = float(tmp[3])
-        if len(tmp) > 4:
-            oversample = int(tmp[4])
-            if oversample == 0:
-                oversample = None
-        else:
-            oversample = None
-        sigma = float(tmp[5]) if len(tmp) > 5 else None
-        tophat = int(tmp[6]) if len(tmp) > 6 else None
-        self.atmo_grid = Atmosphere.Atmo_BTSettl7_spectro(flns, oversample=oversample, sigma=sigma, tophat=tophat, wave_cut=[wavelow, wavehigh])
+        oversample = int(tmp[4])
+        sigma = float(tmp[5])
+        self.atmo_grid = Atmosphere.AtmoGridSpec.ReadHDF5(flns, oversample=oversample, sigma=sigma, tophat=tophat, wave_cut=[wavelow, wavehigh])
         return
 
-    def __Read_data(self, data_fln, phase_offset=-0.25, wave_cut=None):
-        """__Read_data(self, data_fln, phase_offset=-0.25, wave_cut=None)
+    def __Read_data(self, data_fln):
+        """__Read_data(self, data_fln)
         Reads the photometric data.
 
-        data_fln (str): A file containing the information for each data set.
+        Parameters
+        ----------
+        data_fln : str
+            A file containing the information for each data set.
             The format of the file is as follows:
                 descriptor name
                 data file
                 column name wavelength
                 column name flux
                 column name error flux
-                orbital phase
-                barycenter offset (i.e. measured velocity for optical
-                    companion in km/s)
-                barycenter offset error (i.e. measured velocity error
-                    for optical companion in km/s)
-                approximate velocity (i.e. measure velocity for pulsar companion
-                    with velocity_find in km/s)
-        phase_offset (float): Value to be added to the orbital phase in order
-            to have phase 0.0 and 0.5 being conjunction times, with 0.0 the eclipse.
-        wave_cut (array): Lower and upper wavelength limit
-
+                orbital phase (orbital phases are defined as 0.0 being the
+                    modelled star in 'front', i.e. inferior conjunction, and
+                    0.5 being behind, i.e. superior conjunction)
+                barycenter velocity offset (m/s)
+                barycenter velocity offset error (m/s)
+                approximate velocity (m/s)
+        
         >>> self.__Read_data(data_fln)
         """
         f = open(data_fln,'r')
         lines = f.readlines()
-        self.data = {'wavelength':[], 'flux':[], 'phase':[], 'err':[], 'v_offset':[], 'v_offset_err':[], 'v_approx':[], 'fln':[], 'id':[]}
+        self.data = {'wavelength':[], 'flux':[], 'phase':[], 'err':[], 'v_bary':[], 'v_bary_err':[], 'v_approx':[], 'fln':[], 'id':[]}
         for line in lines:
             if not line.startswith('#'):
                 tmp = line.split()
@@ -582,43 +580,36 @@ class Spectroscopy(object):
                 self.data['id'].append(tmp[0])
                 self.data['fln'].append(tmp[1])
                 d = np.loadtxt(tmp[1], usecols=[int(tmp[2]),int(tmp[3]),int(tmp[4])], unpack=True)
-                wavelow, wavehigh = float(tmp[9]), float(tmp[10])
-                if wavelow != wavehigh:
-                    inds = (d[0] >= wavelow)*(d[0] <= wavehigh)
-                    d = d[:,inds]
                 self.data['wavelength'].append(d[0])
                 self.data['flux'].append(d[1])
                 self.data['err'].append(d[2])
-                self.data['phase'].append((float(tmp[5])+phase_offset)%1)
-                ## We have to convert the velocities from km/s to m/s
-                self.data['v_offset'].append(float(tmp[6]) * 1000)
-                self.data['v_offset_err'].append(float(tmp[7]) * 1000)
-                self.data['v_approx'].append(float(tmp[8]) * 1000)
+                self.data['phase'].append(float(tmp[5]))
+                self.data['v_bary'].append(float(tmp[6]))
+                self.data['v_bary_err'].append(float(tmp[7]))
+                self.data['v_approx'].append(float(tmp[8]))
         sys.stdout.write("\n"); sys.stdout.flush()
         self.data['id'] = np.asarray(self.data['id'])
         self.data['phase'] = np.asarray(self.data['phase'])
-        self.data['v_offset'] = np.asarray(self.data['v_offset'])
-        self.data['v_offset_err'] = np.asarray(self.data['v_offset_err'])
+        self.data['v_bary'] = np.asarray(self.data['v_bary'])
+        self.data['v_bary_err'] = np.asarray(self.data['v_bary_err'])
         self.data['v_approx'] = np.asarray(self.data['v_approx'])
         return
 
-    def Save_flux(self, fln, par, velocities=0., verbose=False):
-        """Save_flux(fln, par, velocities=0., verbose=False)
-        Saves the flux in files.
-        The format is three columns (wavelength, flux, err).
-        Note that the errors are: err = err/flux_obs*flux_pred so
-        that the errors are scaled from the observed to modeled flux.
-
-        fln: filename, files will be fln.n, where n is the data id.
-        par: parameters (see Get_flux for more info).
-        velocities (optional): A scalar/vector of velocities to add to the
-                    pre-computed ones (in m/s unit).
-        verbose: verbosity flag.
+    def Trim_data(self, wave_cut):
         """
-        flux = self.Get_flux(par, rebin=True, velocities=velocities, verbose=verbose)
+        Trim the wavelength range of the data.
+
+        Parameters
+        ----------
+        wave_cut : list
+            A two-element list containing the lowest and highest wavelength to
+            keep.
+        """
         for i in np.arange(self.ndataset):
-            err = np.abs(self.data['err'][i]/self.data['flux'][i]*flux[i])
-            np.savetxt(fln+".%02i" %i, np.c_[self.data['wavelength'][i],flux[i],err])
+            inds = (self.data['wavelength'][i] >= wave_cut[0]) * (self.data['wavelength'][i] <= wave_cut[1])
+            self.data['wavelength'][i] = self.data['wavelength'][i][inds]
+            self.data['flux'][i] = self.data['flux'][i][inds]
+            self.data['err'][i] = self.data['err'][i][inds]
         return
 
 ######################## class Spectroscopy ########################

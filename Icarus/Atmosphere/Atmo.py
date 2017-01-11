@@ -805,7 +805,7 @@ class AtmoGridSpec(AtmoGrid):
     units: str
         Description of the flux units
     magsys: str
-        Magnitude system
+        Magnitude system for the zeropoint
 
     Examples
     --------
@@ -898,9 +898,11 @@ class AtmoGridSpec(AtmoGrid):
 
     @classmethod
     def ReadHDF5(cls, flns, verbose=True):
+        ## If a single file is requested, we call the parent class reader
         if isinstance(flns, str):
             return super(AtmoGridSpec, cls).ReadHDF5(flns)
 
+        ## Otherwise, we need to read files one at a time
         try:
             import h5py
         except ImportError:
@@ -916,6 +918,8 @@ class AtmoGridSpec(AtmoGrid):
             atmo.append( cls.ReadHDF5(fln) )
             logtemp.append( atmo[-1]['logtemp'].data )
             logg.append( atmo[-1]['logg'].data )
+        if verbose:
+            print("")
 
         logtemp = np.unique(logtemp)
         logg = np.unique(logg)
