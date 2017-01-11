@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 import Icarus
 from Icarus.Utils.import_modules import *
@@ -16,7 +17,7 @@ star = Icarus.Core.Star(ndiv, read=True)
 
 
 ##### Initializing the Icarus object with Vega's parameters
-q = cts.Mearth / cts.Msun 
+q = cts.Mearth / cts.Msun
 omega = 365.25/27 # This is roughly the ratio of the Sun's orbital period over its spin period
 filling = 0.03
 temp = 5778.
@@ -111,5 +112,3 @@ print("diff. g: {:.3}".format(sun_g-g))
 print("diff. r: {:.3}".format(sun_r-r))
 print("diff. i: {:.3}".format(sun_i-i))
 print("diff. z: {:.3}".format(sun_z-z))
-
-

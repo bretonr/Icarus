@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 import Icarus
 from Icarus.Utils.import_modules import *
@@ -93,7 +94,3 @@ if pylab:
     vals = np.r_[fit.data['mag'][0], fit.data['mag'][1]]
     ax.set_ylim([vals.max()+(vals.max()-vals.min())*0.1, vals.min()-(vals.max()-vals.min())*0.1])
     pylab.show()
-
-
-
-

@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
+from __future__ import print_function, division
 
 import Icarus
 from Icarus.Utils.import_modules import *
@@ -54,6 +55,3 @@ mag[1] = mag[1] + np.random.normal(loc=0.0, scale=0.2, size=mag[1].shape)
 ##### Saving the mock data into the file
 np.savetxt('mock_i.txt', np.c_[fit.data['phase'][0], mag[0], fit.data['err'][0]])
 np.savetxt('mock_g.txt', np.c_[fit.data['phase'][1], mag[1], fit.data['err'][1]])
-
-
-
