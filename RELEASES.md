@@ -2,9 +2,11 @@
 
 ## Release history
 
-### 2.3.1 (2017-01-14)
+### 2.3.2 (2017-01-14)
 
 Features:
+
+- Added some of the compliance for Python 3.x. However, some libraries such as scipy.weave are no longer supported under 3.x, which makes things a bit awkward.
 
 
 Bug fixes:
@@ -12,7 +14,7 @@ Bug fixes:
 - Fixed one further assumption about the was that coschi, the angle between the incident irradiating flux and the normal to the surface, is calculation. The exact calculation is now used. This has an effect especially on shorter orbital period systems in which the companion is large, and the terminator does not lie on the meridian passing through the centre of mass, but towards the nose of the star.
 
 
-### 2.3.0 (2016-04-15)
+### 2.3.0 & 2.3.1 (2016-04-15)
 
 Features:
 

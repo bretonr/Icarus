@@ -6,7 +6,7 @@ from setuptools import find_packages
 setup(
     name='Icarus',
 
-    version='2.3.1',
+    version='2.3.2',
 
     # description
     description=('Icarus is a stellar binary light curve synthesis tool '
@@ -17,7 +17,7 @@ setup(
     url='https://github.com/bretonr/Icarus',
 
     # The project's download url.
-    download_url='https://github.com/bretonr/Icarus/tarball/v2.3.0',
+    download_url='https://github.com/bretonr/Icarus/tarball/v2.3.2',
 
     # Author details
     author='Dr Rene Breton',
@@ -43,10 +43,10 @@ setup(
         # python versions this library supports
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
+        #'Programming Language :: Python :: 3',
+        #'Programming Language :: Python :: 3.3',
+        #'Programming Language :: Python :: 3.4',
+        #'Programming Language :: Python :: 3.5',
     ],
 
     keywords=['astrophysics','cosmology', 'photometry', 'binary', 'modeling',
