@@ -241,16 +241,21 @@ class Star(Star_base):
         self.gradx = -dpsidx/geff
         self.grady = -dpsidy/geff
         self.gradz = -dpsidz/geff
-        ## coschi is the cosine angle between the rx and the surface element. shape = n_faces
-        ## A value of 1 means that the companion's surface element is directly facing the pulsar, 0 is at the limb and -1 on the back.
-        ## The following is the old way, which is derived from the spherical approximation, i.e. that the normal to the surface is approximately the same as the radial position
         if self.oldchi:
-            self.coschi = -(self.rc-self.cosx)/self.rx
-        ## The better calculation should use the gradient as the normal vector, and the direction to the pulsar as positive x.
-        ## This implies that the angle coschi is simply the x component of the gradient.
-        else:
-            self.coschi = self.gradx.copy()
+            ## coschi is the cosine angle between the rx and the surface element. shape = n_faces
+            ## A value of 1 means that the companion's surface element is directly facing the pulsar, 0 is at the limb and -1 on the back.
+            ## The following is the old way, which is derived from the spherical approximation, i.e. that the normal to the surface is approximately the same as the radial position
+            #self.coschi = -(self.rc-self.cosx)/self.rx
 
+            ## The better calculation should use the gradient as the normal vector, and the direction to the pulsar as positive x.
+            ## This implies that the angle coschi is simply the x component of the gradient.
+            self.coschi = self.gradx.copy()
+        else:
+            ## coschi = (N * rx) / (abs(N) abs(rx))
+            ## N: vector normal to the surface, which is the grad of the potential
+            ## rx: vector from the secondary (e.g. neutron star) to the primary (e.g. companion)
+            ## note that N is normalised already
+            self.coschi = -self.rc*((self.cosx-1/self.rc)*self.gradx + self.cosy*self.grady + self.cosz*self.gradz) / np.abs(self.rx)
         ## surface area. shape = n_faces
         self.area = self.rc**2 * self.pre_area
         logger.log(9, "end")
