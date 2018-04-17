@@ -13,9 +13,9 @@ import logging
 ##    DEBUG       10
 ##    NOTSET      0
 ## The lower the number, the higher the debugging level
-LEVEL = 'INFO'
+#LEVEL = 'INFO'
 #LEVEL = 'DEBUG'
-#LEVEL = 5
+LEVEL = 20
 
 for i in xrange(5,9):
     logging.addLevelName(i, "DEBUG{}".format(i))

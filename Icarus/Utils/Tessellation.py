@@ -1,7 +1,13 @@
 # Licensed under a 3-clause BSD style license - see LICENSE
 from __future__ import print_function, division
 
-import scipy.weave
+try:
+    from scipy import weave 
+except:
+    try:
+        import weave
+    except:
+        print('weave cannot be import from scipy nor on its own.')
 
 from .import_modules import *
 
@@ -265,12 +271,13 @@ def Make_geodesic(n):
 
     free_memory();
     """
+    n = np.int(n)
     n_faces = 20 * 4**n
-    myfaces = np.empty((n_faces,3), dtype=np.int)
+    myfaces = np.empty((n_faces,3), dtype=int)
     n_vertices = 2 + 10 * 4**n
-    myvertices = np.empty((n_vertices,3), dtype=np.float)
-    myassoc = np.empty((n_vertices,6), dtype=np.int)
-    get_axispos = scipy.weave.inline(code, ['n','myfaces','myvertices','myassoc'], type_converters=scipy.weave.converters.blitz, compiler='gcc', libraries=['m'], verbose=2, support_code=support_code, force=0)
+    myvertices = np.empty((n_vertices,3), dtype=float)
+    myassoc = np.empty((n_vertices,6), dtype=int)
+    get_axispos = weave.inline(code, ['n','myfaces','myvertices','myassoc'], type_converters=weave.converters.blitz, compiler='gcc', libraries=['m'], verbose=2, support_code=support_code, force=0)
     return n_faces, n_vertices, myfaces, myvertices, myassoc
 
 def Match_assoc(faces, n_vertices):
@@ -296,9 +303,11 @@ def Match_assoc(faces, n_vertices):
         }
     }
     """
+    faces = np.ascontiguousarray(faces, dtype=int)
+    n_vertices = np.int(n_vertices)
     n_faces = faces.shape[0]
     assoc = -99 * np.ones((n_vertices,6), dtype=np.int)
-    get_assoc = scipy.weave.inline(code, ['n_faces','faces','assoc'], type_converters=scipy.weave.converters.blitz, compiler='gcc', libraries=['m'], verbose=2, force=0)
+    get_assoc = weave.inline(code, ['n_faces','faces','assoc'], type_converters=weave.converters.blitz, compiler='gcc', libraries=['m'], verbose=2, force=0)
     return assoc
 
 def Match_triangles(high_x, high_y, high_z, low_x, low_y, low_z):
@@ -333,8 +342,14 @@ def Match_triangles(high_x, high_y, high_z, low_x, low_y, low_z):
     """
     n_highres = high_x.size
     n_lowres = low_x.size
-    ind = np.zeros(n_highres, dtype='int')
-    get_assoc = scipy.weave.inline(code, ['n_highres','n_lowres','ind', 'high_x', 'low_x', 'high_y', 'low_y', 'high_z', 'low_z'], type_converters=scipy.weave.converters.blitz, compiler='gcc', libraries=['m'], verbose=2, force=0)
+    ind = np.zeros(n_highres, dtype=int)
+    high_x = np.ascontiguousarray(high_x, dtype=float)
+    high_y = np.ascontiguousarray(high_x, dtype=float)
+    high_z = np.ascontiguousarray(high_x, dtype=float)
+    low_x = np.ascontiguousarray(low_x, dtype=float)
+    low_y = np.ascontiguousarray(low_y, dtype=float)
+    low_z = np.ascontiguousarray(low_z, dtype=float)
+    get_assoc = weave.inline(code, ['n_highres','n_lowres','ind', 'high_x', 'low_x', 'high_y', 'low_y', 'high_z', 'low_z'], type_converters=weave.converters.blitz, compiler='gcc', libraries=['m'], verbose=2, force=0)
     return ind
 
 def Match_subtriangles(inds_highres, inds_lowres):
@@ -357,6 +372,8 @@ def Match_subtriangles(inds_highres, inds_lowres):
     """
     n_highres = inds_highres.size
     n_lowres = inds_lowres.size
-    ind = np.zeros(n_highres, dtype='int')
-    get_assoc = scipy.weave.inline(code, ['n_highres','n_lowres','ind', 'inds_highres', 'inds_lowres'], type_converters=scipy.weave.converters.blitz, compiler='gcc', libraries=['m'], verbose=2, force=0)
+    ind = np.zeros(n_highres, dtype=int)
+    inds_highres = np.ascontiguousarray(inds_highres, dtype=int)
+    inds_lowres = np.ascontiguousarray(inds_lowres, dtype=int)
+    get_assoc = weave.inline(code, ['n_highres','n_lowres','ind', 'inds_highres', 'inds_lowres'], type_converters=weave.converters.blitz, compiler='gcc', libraries=['m'], verbose=2, force=0)
     return ind

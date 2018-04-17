@@ -165,17 +165,20 @@ class Star_base(object):
 
         >>> self._Calc_teff()
         """
+        logger.log(9, "start")
         if temp is not None:
             self.temp = temp
         if tirr is not None:
             self.tirr = tirr
-        # We calculate the gravity darkening correction to the temperatures across the surface and multiply them by the base temperature.
-        teff = self.temp*self._Gravdark()
+        # We calculate the gravity darkening correction to the temperatures across the surface and multiply them by the base temperature. We only do it if the gravity darkening is enabled (i.e. tempgrav != 0.).
+        if self.tempgrav != 0:
+            teff = self.temp*self._Gravdark()
         # We apply the irradiation to the surface visible to the irradiation source.
         inds = self.coschi > 0.0
         if inds.any() and self.tirr != 0.:
             teff[inds] = (teff[inds]**4+self.coschi[inds]*self.tirr**4/self.rx[inds]**2)**0.25
         if (teff <= 0).any():
+            logger.log(9, "Surface elements with temperature lower than 0!")
             print( self.temp.min() )
             print( self.temp.max() )
             print( self.tirr )
@@ -184,6 +187,7 @@ class Star_base(object):
             print( (teff <= 0).sum() )
             print( teff[teff <=0 ] )
         self.logteff = np.log(teff)
+        logger.log(9, "end")
         return
 
     def Doppler_boosting(self, logteff, logg):

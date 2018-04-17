@@ -3,7 +3,13 @@ from __future__ import print_function, division
 
 import os
 
-import scipy.weave
+try:
+    from scipy import weave 
+except:
+    try:
+        import weave
+    except:
+        print('weave cannot be import from scipy nor on its own.')
 
 from .import_modules import *
 
@@ -255,13 +261,24 @@ def Hsr_c(faces_b, vertices_b, r_vertices_b, assoc_b, faces_f, vertices_f, r_ver
     //fclose(pfile);
 
     """
+    vertices_b = np.ascontiguousarray(vertices_b, dtype=float)
+    r_vertices_b = np.ascontiguousarray(r_vertices_b, dtype=float)
+    assoc_b = np.ascontiguousarray(assoc_b, dtype=float)
+    faces_f = np.ascontiguousarray(faces_f, dtype=float)
+    vertices_f = np.ascontiguousarray(vertices_f, dtype=float)
+    r_vertices_f = np.ascontiguousarray(r_vertices_f, dtype=float)
+    assoc_f = np.ascontiguousarray(assoc_f, dtype=float)
     n_vertices_b = vertices_b.shape[0]
     n_vertices_f = vertices_f.shape[0]
     n_faces_b = faces_b.shape[0]
-    weight = np.zeros(n_faces_b, dtype=np.float)
+    incl = np.float(incl)
+    q = np.float(q)
+    rmax_f = np.float(rmax_f)
+    rmin_f = np.float(rmin_f)
+    weight = np.zeros(n_faces_b, dtype=float)
     #extra_compile_args = extra_link_args = ['-O3 -fopenmp']
     extra_compile_args = extra_link_args = ['']
-    tmp = scipy.weave.inline(code, ['vertices_b', 'r_vertices_b', 'assoc_b', 'faces_f', 'vertices_f', 'r_vertices_f', 'assoc_f', 'n_vertices_b', 'n_vertices_f', 'n_faces_b', 'incl', 'orbph', 'q', 'rmax_f', 'rmin_f', 'weight'], type_converters=scipy.weave.converters.blitz, compiler='gcc', support_code=support_code, extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<cstdio>', '<cmath>', '<omp.h>'], verbose=1)
+    tmp = weave.inline(code, ['vertices_b', 'r_vertices_b', 'assoc_b', 'faces_f', 'vertices_f', 'r_vertices_f', 'assoc_f', 'n_vertices_b', 'n_vertices_f', 'n_faces_b', 'incl', 'orbph', 'q', 'rmax_f', 'rmin_f', 'weight'], type_converters=weave.converters.blitz, compiler='gcc', support_code=support_code, extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<cstdio>', '<cmath>', '<omp.h>'], verbose=1)
     return weight
 
 def Inside_triangle(p, a, b, c):
@@ -354,17 +371,24 @@ def Occultation_approx(vertices, r_vertices, assoc, n_faces, incl, orbph, q, nth
     }
     }
     """
+    vertices = np.ascontiguousarray(vertices, dtype=float)
+    assoc = np.ascontiguousarray(assoc, dtype=float)
+    r_vertices = np.ascontiguousarray(r_vertices, dtype=float)
+    radii = np.ascontiguousarray(radii, dtype=float)
+    incl = np.float(incl)
+    orbph = np.float(orbph)
     q = np.float(q)
+    ntheta = np.int(ntheta)
     n_vertices = vertices.shape[0]
-    weight = np.zeros(n_faces, dtype=np.float)
+    weight = np.zeros(n_faces, dtype=float)
     try:
         if os.uname()[0] == 'Darwin':
             extra_compile_args = extra_link_args = ['-O3']
         else:
             extra_compile_args = extra_link_args = ['-O3 -fopenmp']
-        tmp = scipy.weave.inline(code, ['n_vertices', 'vertices', 'assoc', 'r_vertices', 'incl', 'orbph', 'q', 'weight', 'ntheta', 'radii'], type_converters=scipy.weave.converters.blitz, compiler='gcc', support_code=support_code, extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<cstdio>', '<cmath>', '<omp.h>'], verbose=2, force=0)
+        tmp = weave.inline(code, ['n_vertices', 'vertices', 'assoc', 'r_vertices', 'incl', 'orbph', 'q', 'weight', 'ntheta', 'radii'], type_converters=weave.converters.blitz, compiler='gcc', support_code=support_code, extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<cstdio>', '<cmath>', '<omp.h>'], verbose=2, force=0)
     except:
-        tmp = scipy.weave.inline(code, ['n_vertices', 'vertices', 'assoc', 'r_vertices', 'incl', 'orbph', 'q', 'weight', 'ntheta', 'radii'], type_converters=scipy.weave.converters.blitz, compiler='gcc', support_code=support_code, extra_compile_args=['-O3'], extra_link_args=['-O3'], headers=['<cstdio>', '<cmath>'], verbose=2, force=0)
+        tmp = weave.inline(code, ['n_vertices', 'vertices', 'assoc', 'r_vertices', 'incl', 'orbph', 'q', 'weight', 'ntheta', 'radii'], type_converters=weave.converters.blitz, compiler='gcc', support_code=support_code, extra_compile_args=['-O3'], extra_link_args=['-O3'], headers=['<cstdio>', '<cmath>'], verbose=2, force=0)
 
     return weight
 
@@ -561,14 +585,17 @@ def Weights_transit(inds_highres, weight_highres, n_lowres):
     }
     """
 
+    inds_highres = np.ascontiguousarray(inds_highres, dtype=float)
+    weight_highres = np.ascontiguousarray(weight_highres, dtype=float)
+    n_lowres = np.int(n_lowres)
     n_highres = inds_highres.shape[0]
-    weight_lowres = np.zeros(n_lowres, dtype='float')
+    weight_lowres = np.zeros(n_lowres, dtype=float)
     try:
         if os.uname()[0] == 'Darwin':
             extra_compile_args = extra_link_args = ['-O3']
         else:
             extra_compile_args = extra_link_args = ['-O3 -fopenmp']
-        get_assoc = scipy.weave.inline(code, ['n_highres', 'weight_lowres', 'weight_highres', 'inds_highres'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>'], libraries=['m'], verbose=2, force=0)
+        get_assoc = weave.inline(code, ['n_highres', 'weight_lowres', 'weight_highres', 'inds_highres'], type_converters=weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>'], libraries=['m'], verbose=2, force=0)
     except:
-        get_assoc = scipy.weave.inline(code, ['n_highres', 'weight_lowres', 'weight_highres', 'inds_highres'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], libraries=['m'], verbose=2, force=0)
+        get_assoc = weave.inline(code, ['n_highres', 'weight_lowres', 'weight_highres', 'inds_highres'], type_converters=weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], libraries=['m'], verbose=2, force=0)
     return weight_lowres

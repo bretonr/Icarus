@@ -399,7 +399,7 @@ class AtmoGrid(Column):
             raise Exception("h5py is needed for ReadHDF5")
         f = h5py.File(fln, 'r')
 
-        flux = f['flux'].value
+        flux = np.ascontiguousarray(f['flux'].value, dtype=float)
 
         meta = {}
         for key_attrs, val_attrs in f.attrs.iteritems():
@@ -412,7 +412,7 @@ class AtmoGrid(Column):
         grp = f['cols']
         for col in colnames:
             dset = grp[col]
-            cols.append( Column(data=dset.value, name=col, meta=dict(dset.attrs.iteritems())) )
+            cols.append( Column(data=np.ascontiguousarray(dset.value), name=col, meta=dict(dset.attrs.iteritems())) )
         cols = TableColumns(cols)
 
         f.close()
@@ -469,16 +469,17 @@ class AtmoGrid(Column):
         """
         if colname not in self.colnames:
             raise Exception("The provided column name is not valid.")
+        slices = [slice(None)]*self.ndim
         colind = self.colnames.index(colname)
-        cols = self.cols.copy()
         if low is None:
             low = cols[colname].min()
         if high is None:
             high = cols[colname].max()
-        inds = [slice(None)]*self.ndim
-        inds[colind] = np.logical_and(self.cols[colname] >= low, self.cols[colname] <= high)
-        cols[colname] = Column(data=cols[colname][inds[colind]], name=colname)
-        data = self.data[inds].copy()
+        slices[colind] = np.logical_and(self.cols[colname] >= low, self.cols[colname] <= high)
+        cols = []
+        for c,s in zip(self.cols,slices):
+            cols.append( (c, np.atleast_1d(self.cols[c][s])) )
+        data = self.data[slices].copy()
         meta = deepcopy(self.meta)
         return self.__class__(name=self.name, data=data, unit=self.unit, format=self.format, description=self.description, meta=meta, cols=cols)
 
@@ -973,6 +974,14 @@ def Vstack(grids, verbose=False):
         vals = np.unique( np.hstack([g.cols[i] for g in grids]) )
         cols.append( (colnames[i], vals) )
         shape.append( vals.size )
+        if verbose:
+            print('-'*80)
+            print('Column {} ({})'.format(i, colnames[i]))
+            print('.'*80)
+            print('Number of unique values: {}'.format(vals.size))
+            print('Unique values:')
+            print('{}'.format(vals))
+            print('')
 
     if verbose:
         print("The new grid will have a shape {}".format(shape))

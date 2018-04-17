@@ -14,17 +14,26 @@ logger = logging.getLogger(__name__)
 
 
 ######################## Plotting functions ########################
-def Prep_plot(ncolors=5, cmap=['jet',1.,1.,1.]):
+def Prep_plot(ncolors=10, coldef=['none',1.,1.,1.]):
     """
     Return : fig, ax, colors
 
     ncolors : number of colors for the colormap
-    cmap : list of [colormap name,
-                    alpha value,
-                    luminosity boosting,
-                    saturation boosting]
+    coldef : Colormap definition for the plot. Can be one of the following:
+        None
+        [colormap name, alpha value, luminosity boosting, saturation boosting]
+
+        example :
+            coldef = ['jet', 1., 0.5, 1.0]
+            coldef = None -> (which defaults to ['none',1.,1.,1.])
+    Note:
+        The default colormap is the new matplotlib 'T10' categorical palette.
+        This will be selected if the colormap name is set to 'none'.
     """
     ## We retrieve the figure and axes
+    logger.log(9, "start")
+    logger.log(9, "ncolors: {}, coldef: {}".format(ncolors,coldef))
+
     try:
         fig = pylab.gcf()
         try:
@@ -34,8 +43,26 @@ def Prep_plot(ncolors=5, cmap=['jet',1.,1.,1.]):
     except:
         fig, ax = pylab.subplots(nrows=1, ncols=1)
     ## We generate a list of colors
-    cmap, alpha, luminosity, saturation = cmap
-    if HAS_SEABORN and cmap != 'jet':
+    cmap, alpha, luminosity, saturation = coldef
+    logger.log(8, "cmap: {}, alpha: {}, luminosity: {}, saturation: {}".format(cmap, alpha, luminosity, saturation))
+    if cmap == 'none':
+        ## This try/except is to handle a feature absent in matplotlib < v2.x
+        try:
+            colors = matplotlib.colors.to_rgba_array(['C0', 'C1', 'C2', 'C3', 'C4',
+            'C5', 'C6', 'C7', 'C8', 'C9'][:ncolors])
+        except:
+            colors = np.array([[ 0.29803922,  0.44705882,  0.69019608,  1. ],
+                        [ 0.33333333,  0.65882353,  0.40784314,  1.        ],
+                        [ 0.76862745,  0.30588235,  0.32156863,  1.        ],
+                        [ 0.50588235,  0.44705882,  0.69803922,  1.        ],
+                        [ 0.8       ,  0.7254902 ,  0.45490196,  1.        ],
+                        [ 0.39215686,  0.70980392,  0.80392157,  1.        ],
+                        [ 0.29803922,  0.44705882,  0.69019608,  1.        ],
+                        [ 0.33333333,  0.65882353,  0.40784314,  1.        ],
+                        [ 0.76862745,  0.30588235,  0.32156863,  1.        ],
+                        [ 0.50588235,  0.44705882,  0.69803922,  1.        ]])
+    elif HAS_SEABORN and cmap != 'none':
+        logger.log(7, "cmap: {}, ncolors: {}".format(cmap, ncolors))
         colors = sns.color_palette(cmap, ncolors)
     else:
         if cmap not in dir(pylab.cm):
@@ -51,6 +78,8 @@ def Prep_plot(ncolors=5, cmap=['jet',1.,1.,1.]):
             hls[:,2] *= saturation
         rgb = np.array([colorsys.hls_to_rgb(*c) for c in hls])
         colors = np.c_[rgb,colors[:,-1]]
+
+    logger.log(9, "end")
     return fig, ax, colors
 
 def Post_plot(influx=False, ncol=1):
@@ -237,6 +266,7 @@ class Photometry(object):
         >>> self.Calc_chi2([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
         """
         ## Extract the DM and AV from the parameter list.
+        logger.log(9, "start")
         if isinstance(par, dict):
             DM = par['dm'] if 'dm' in par.keys() else 0.
             AV = par['av'] if 'av' in par.keys() else 0.
@@ -275,10 +305,12 @@ class Photometry(object):
                 if full_output:
                     residuals = [ ((self.data['mag'][i] - pred_flux[i]) - offset_band[i])/self.data['mag_err'][i] for i in np.arange(self.ndataset) ]
             chi2_data = res1[:,2].sum()
+            logger.log(9, "square of residuals for each band {}".format(res1[:,2]))
             # Fit for the best offset between the observed and theoretical flux given the DM and A_V
             res2 = Utils.Misc.Fit_linear(offset_band, x=self.data['ext'], err=self.data['calib'], b=DM, m=AV, inline=True)
             DM, AV = res2[0], res2[1]
             chi2_band = res2[2]
+            logger.log(9, "square of residuals for each band offset {}".format(res2[2]))
             # Here we add the chi2 of the data from that of the offsets for the bands.
             chi2 = chi2_data + chi2_band
             # Update the offset to be the actual offset between the data and the band (i.e. minus the DM and A_V contribution)
@@ -292,6 +324,7 @@ class Photometry(object):
             if len(par) == 10: par[-2] = DM
             if len(par) == 10: par[-1] = AV
 
+        logger.log(9, "end")
         # Output results
         if verbose:
             print('chi2: {:.3f}, chi2 (data): {:.3f}, chi2 (band offset): {:.3f}, DM: {:.3f}, AV: {:.3f}'.format(chi2, chi2_data, chi2_band, DM, AV))
@@ -339,6 +372,8 @@ class Photometry(object):
 
         >>> self.Get_flux([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
         """
+        logger.log(9, "start")
+
         # We call Make_surface to make the companion's surface.
         self.Make_surface(par, verbose=verbose)
 
@@ -509,8 +544,8 @@ class Photometry(object):
         Keff = tmp[1]
         return Keff
 
-    def _Init_lightcurve(self, ndiv, read=False, oldchi=False):
-        """_Init_lightcurve(ndiv, read=False)
+    def _Init_lightcurve(self, ndiv, read=True, oldchi=False):
+        """_Init_lightcurve(ndiv, read=True)
         Call the appropriate Lightcurve class and initialize
         the stellar array.
 
@@ -578,7 +613,7 @@ class Photometry(object):
 
         return
 
-    def Plot(self, par, nphases=51, show_preoffset=False, do_offset=True, offset_list=None, verbose=False, full_output=False, cmap=None, errors=True, influx=False):
+    def Plot(self, par, nphases=51, show_preoffset=False, do_offset=True, offset_list=None, verbose=False, full_output=False, coldef=None, errors=True, influx=False):
         """
         Plot the predicted light curves.
 
@@ -590,41 +625,41 @@ class Photometry(object):
             offset calculation is not performed, which voids the previous keyword.
         verbose (False): verbosity.
         full_output (False): If true, will return the model flux values and the offsets.
-        cmap : Colormap definition for the plot. Can be one for both data and model
+        coldef : Colormap definition for the plot. Can be one for both data and model
         or one for each. Hence:
             None
             [colormap name, alpha value, luminosity boosting, saturation boosting]
             [[cmap,alpha,lum,sat],[cmap,alpha,lum,sat]]
 
             example :
-                cmap = ['jet', 1., 0.5, 1.0]
-                cmap = [['jet', 0.3, 1.0, 1.0], ['jet', 1., 0.5, 1.0]]
-                cmap = None -> (which defaults to ['jet',1.,1.,1.])
+                coldef = ['jet', 1., 0.5, 1.0]
+                coldef = [['none', 0.3, 1.0, 1.0], ['none', 1., 0.5, 1.0]]
+                coldef = None -> (which defaults to ['none',1.,1.,1.])
 
         errors : Whether to show error bars or not.
         influx : Whether to show the data in flux instead of magnitude.
 
         >>> self.Plot_model([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
         """
-        if cmap is None:
-            cmap = [['jet',1.,1.,1.],['jet',1.,0.5,1.]]
-        if isinstance(cmap[0], str):
-            cmap = [cmap]*2
-        self.Plot_data(cmap=cmap[0], errors=errors, influx=influx)
-        results = self.Plot_model(par, nphases=nphases, show_preoffset=show_preoffset, do_offset=do_offset, offset_list=offset_list, verbose=verbose, full_output=full_output, cmap=cmap[1], influx=influx)
+        if coldef is None:
+            coldef = [['none',1.,1.,1.],['none',1.,0.5,1.]]
+        if isinstance(coldef[0], str):
+            coldef = [coldef]*2
+        self.Plot_data(coldef=coldef[0], errors=errors, influx=influx)
+        results = self.Plot_model(par, nphases=nphases, show_preoffset=show_preoffset, do_offset=do_offset, offset_list=offset_list, verbose=verbose, full_output=full_output, coldef=coldef[1], influx=influx)
         return results
 
-    def Plot_data(self, cmap=None, errors=True, influx=False):
+    def Plot_data(self, coldef=None, errors=True, influx=False):
         """
         Plots the observed data.
 
-        cmap : Colormap definition for the plot. Can be one of the following:
+        coldef : Colormap definition for the plot. Can be one of the following:
             None
             [colormap name, alpha value, luminosity boosting, saturation boosting]
 
             example :
-                cmap = ['jet', 1., 0.5, 1.0]
-                cmap = None -> (which defaults to ['jet',1.,1.,1.])
+                coldef = ['jet', 1., 0.5, 1.0]
+                coldef = None -> (which defaults to ['none',1.,1.,1.])
 
         errors : Whether to show error bars or not.
         influx : Whether to show the data in flux instead of magnitude.
@@ -633,9 +668,9 @@ class Photometry(object):
         """
         #ncolors = max(self.ndataset,4)
         ncolors = self.ndataset
-        if cmap is None:
-            cmap = ['jet',1.,1.,1.]
-        fig, ax, colors = Prep_plot(ncolors=ncolors, cmap=cmap)
+        if coldef is None:
+            coldef = ['none',1.,1.,1.]
+        fig, ax, colors = Prep_plot(ncolors=ncolors, coldef=coldef)
         for i in np.arange(self.ndataset):
             if influx:
                 if errors:
@@ -648,7 +683,7 @@ class Photometry(object):
         Post_plot(influx=influx, ncol=np.clip(self.ndataset//3,1,4))
         return
 
-    def Plot_model(self, par, nphases=51, show_preoffset=False, do_offset=True, offset_list=None, verbose=False, full_output=False, cmap=None, influx=False):
+    def Plot_model(self, par, nphases=51, show_preoffset=False, do_offset=True, offset_list=None, verbose=False, full_output=False, coldef=None, influx=False, do_plot=True):
         """
         Plot the predicted light curves.
 
@@ -662,15 +697,17 @@ class Photometry(object):
                 will be computed.
         verbose (False): verbosity.
         full_output (False): If true, will return the model flux values and the offsets.
-        cmap : Colormap definition for the plot. Can be one of the following:
+        coldef : Colormap definition for the plot. Can be one of the following:
             None
             [colormap name, alpha value, luminosity boosting, saturation boosting]
 
             example :
-                cmap = ['jet', 1., 0.5, 1.0]
-                cmap = None -> (which defaults to ['jet',1.,1.,1.])
+                coldef = ['jet', 1., 0.5, 1.0]
+                coldef = None -> (which defaults to ['none',1.,1.,1.])
 
         influx : Whether to show the data in flux instead of magnitude.
+        noplot : If True, will no plot the light curves. Useful to retrieve the data
+            for the plot without plotting it.
 
         Example :
         >>> self.Plot_model([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
@@ -690,17 +727,18 @@ class Photometry(object):
                 offset_list = np.zeros(self.ndataset)
 
         ncolors = self.ndataset
-        if cmap is None:
-            cmap = ['jet',1.,1.,1.]
-        fig, ax, colors = Prep_plot(ncolors=ncolors, cmap=cmap)
-        for i in np.arange(self.ndataset):
-            if show_preoffset:
-                ax.plot(phases[i], pred_flux[i], ls='--', color=colors[i])
-            if influx:
-                ax.plot(phases[i], pred_flux[i]*10**(-0.4*offset_list[i]), ls='-', color=colors[i])
-            else:
-                ax.plot(phases[i], pred_flux[i]+offset_list[i], ls='-', color=colors[i])
-        Post_plot(influx=influx, ncol=np.clip(self.ndataset//3,1,4))
+        if coldef is None:
+            coldef = ['none',1.,1.,1.]
+        if do_plot:
+            fig, ax, colors = Prep_plot(ncolors=ncolors, coldef=coldef)
+            for i in np.arange(self.ndataset):
+                if show_preoffset:
+                    ax.plot(phases[i], pred_flux[i], ls='--', lw=1.0, color=colors[i])
+                if influx:
+                    ax.plot(phases[i], pred_flux[i]*10**(-0.4*offset_list[i]), ls='-', lw=1.0, color=colors[i])
+                else:
+                    ax.plot(phases[i], pred_flux[i]+offset_list[i], ls='-', lw=1.0, color=colors[i])
+            Post_plot(influx=influx, ncol=np.clip(self.ndataset//3,1,4))
         if full_output:
             return pred_flux, offset_list
         return

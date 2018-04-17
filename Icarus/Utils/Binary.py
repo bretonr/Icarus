@@ -3,7 +3,13 @@ from __future__ import print_function, division
 
 import os
 
-import scipy.weave
+try:
+    from scipy import weave 
+except:
+    try:
+        import weave
+    except:
+        print('weave cannot be import from scipy nor on its own.')
 
 from .import_modules import *
 
@@ -113,28 +119,28 @@ def Mass_companion(mass_function, q, incl):
     """
     return mass_function * (1+q)**2 / np.sin(incl)**3
 
-def Mass_function(asini, porb):
+def Mass_function1(asini, porb):
     """
-    Returns the mass function of an orbit.
+    Returns the mass function of a binary star.
 
-    asini: Projected semi-major axis in lt-s.
-    porb: Orbital period in s.
+    asini: Projected semi-major axis in light-second.
+    porb: Orbital period in second.
     """
     mfunc = 8015123.37129 * asini**3 / porb**2
     return mfunc
 
-def Mass_function2(M_ns, M_comp, incl):
+def Mass_function2(M1, M2, incl):
     """
-    Returns the mass function of an orbit.
+    Returns the mass function of a binary star.
 
-    M_ns: Mass of the neutron star in solar mass.
-    M_comp: Mass of the companion in solar mass.
+    M1: Mass of the primary in solar mass.
+    M2: Mass of the companion in solar mass.
     incl: Orbital inclination in radians.
     """
-    mfunc = 8015123.37129 * asini**3 / porb**2
+    mfunc = (M2*np.sin(i))**3 / (M1+M2)**2
     return mfunc
 
-def Mass_ratio(mass_function, M_ns, incl):
+def Mass_ratio1(mass_function, M_ns, incl):
     """
     Returns the mass ratio of a binary (q = M_ns/M_comp).
 
@@ -264,7 +270,7 @@ def Radius(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
     cosy = np.float(cosy)
     cosz = np.float(cosz)
     qp1by2om2 = np.float(qp1by2om2)
-    get_radius = scipy.weave.inline(code, ['r', 'cosx', 'cosy', 'cosz', 'psi0', 'q', 'qp1by2om2'], type_converters=scipy.weave.converters.blitz, compiler='gcc', verbose=2)
+    get_radius = weave.inline(code, ['r', 'cosx', 'cosy', 'cosz', 'psi0', 'q', 'qp1by2om2'], type_converters=weave.converters.blitz, compiler='gcc', verbose=2)
     r = get_radius
     logger.log(9, "end")
     return r
@@ -314,9 +320,9 @@ def Radii(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
     }
     }
     """
-    cosx = np.ascontiguousarray(cosx)
-    cosy = np.ascontiguousarray(cosy)
-    cosz = np.ascontiguousarray(cosz)
+    cosx = np.ascontiguousarray(cosx, dtype=float)
+    cosy = np.ascontiguousarray(cosy, dtype=float)
+    cosz = np.ascontiguousarray(cosz, dtype=float)
     psi0 = np.float(psi0)
     r = np.float(r)
     q = np.float(q)
@@ -328,9 +334,9 @@ def Radii(cosx, cosy, cosz, psi0, r, q, qp1by2om2):
             extra_compile_args = extra_link_args = ['-O3']
         else:
             extra_compile_args = extra_link_args = ['-O3 -fopenmp']
-        get_radius = scipy.weave.inline(code, ['r', 'cosx', 'cosy', 'cosz', 'psi0', 'q', 'qp1by2om2', 'rout', 'n'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>'], verbose=2)
+        get_radius = weave.inline(code, ['r', 'cosx', 'cosy', 'cosz', 'psi0', 'q', 'qp1by2om2', 'rout', 'n'], type_converters=weave.converters.blitz, compiler='gcc', extra_compile_args=extra_compile_args, extra_link_args=extra_link_args, headers=['<omp.h>'], verbose=2)
     except:
-        get_radius = scipy.weave.inline(code, ['r', 'cosx', 'cosy', 'cosz', 'psi0', 'q', 'qp1by2om2', 'rout', 'n'], type_converters=scipy.weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], verbose=2)
+        get_radius = weave.inline(code, ['r', 'cosx', 'cosy', 'cosz', 'psi0', 'q', 'qp1by2om2', 'rout', 'n'], type_converters=weave.converters.blitz, compiler='gcc', extra_compile_args=['-O3'], extra_link_args=['-O3'], verbose=2)
     r = get_radius
     logger.log(9, "end")
     return rout
@@ -375,9 +381,11 @@ def Saddle(x, q, qp1by2om2):
         } while (fabs(dx/x) > 0.00001);
         return_val = x;
         """
+    x = np.float(x)
     q = np.float(q)
     qp1by2om2 = np.float(qp1by2om2)
-    get_saddle = scipy.weave.inline(code, ['x', 'q', 'qp1by2om2'], type_converters=scipy.weave.converters.blitz, compiler='gcc', verbose=2)
+    qp1by2om2 = np.float(qp1by2om2)
+    get_saddle = weave.inline(code, ['x', 'q', 'qp1by2om2'], type_converters=weave.converters.blitz, compiler='gcc', verbose=2)
     x = get_saddle
     logger.log(9, "end")
     return x

@@ -83,8 +83,8 @@ class Photometry_temperature(Photometry):
                     it.
                 Col 5: band calibration error, in magnitude
                 Col 6: filename
-        ndiv (int): The number of surface element subdivisions. Defines how
-            coarse/fine the surface grid is.
+        ndiv (int): The number of surface slice. Defines how coarse/fine the
+            surface grid is.
         read (bool): If True, Icarus will use the pre-calculated geodesic
             primitives. This is the recommended option, unless you have the
             pygts package installed to calculate it on the spot.
@@ -98,7 +98,7 @@ class Photometry_temperature(Photometry):
         """
         # Calling the parent class
         Photometry.__init__(self, atmo_fln, data_fln, ndiv, read=read)
-        #self._Init_lightcurve(ndiv)
+        self._Init_lightcurve(ndiv)
 
     def _Init_lightcurve(self, ndiv, read=True, oldchi=False):
         """_Init_lightcurve(ndiv, read=True)
@@ -132,12 +132,9 @@ class Photometry_temperature(Photometry):
                 Can be a float or a list of values to be used for the spherical
                 harmonic composition of the temperature.
                 Must have the form: [A_{00},A_{1-1},A_{10},A_{11},...,A_{lm}]
-
             [8]: Irradiation temperature at the center of mass location.
                 The effective temperature is calculated as T^4 = Tbase^4+Tirr^4
                 and includes projection and distance effect.
-
-            [3]: Companion temperature.
 
             Note: Can also be a dictionary:
                 par.keys() = ['q','porb','incl','k1','omega','filling','tempgrav','temp','tirr']

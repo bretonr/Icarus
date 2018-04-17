@@ -169,30 +169,74 @@ def Pivot_wavelength(band_func, w):
     f_pivot = np.sqrt(f_pivot)
     return f_pivot
 
-def Resample_spectrum(w, f, wrange=None, resample=None):
+def Resample_grid(w, f, resample=None, wrange=None, axis=-1):
     """
-    Takes a spectrum f and the associated wavelengths/frequencies
-    and trim it off and resample it as constant intervals.
+    Takes a (spectral) grid f and the associated coordinates (e.g. wavelengths,
+    frequencies) w and resample it using a simple linear interpolation. The
+    grid can potentially be trimmed off as well.
 
-    w (array): spectral wavelengths/frequencies
-    f (array): spectral fluxes
-    wrange (list): minimum and maximum value to trim the spectrum at.
-        The range is inclusive of the trim values.
-        If None, will preserve the current limits.
-    resample (float): new sampling interval, in the same units as the
-        w parameter. If None, not resampling is done (thus only trimming).
+    Parameters
+    ----------
+    w : ndarray
+        Coordinates (e.g. wavelengths/frequencies).
+    f : ndarray
+        Grid (e.g. spectral fluxes). Can be N-dimensional.
+    resample : None, float, ndarray
+        New sampling, in the same units as the w parameter.
+        If None is given, no resampling is performed (thus only trimming).
+        If a float is given, the array will be resampled at a constant interval
+        between the minimum and maximum coordinate value.
+        If an vector array is given, the grid will be resampled at the given
+        values.
+    wrange : list
+        Minimum and maximum value to trim the coordinates at.
+        Note that the range is inclusive.
+        If None is given, the current boundaries are preserved.
+    axis : int
+        In the case of an N-dimensional grid, index represents the axis along
+        which to perform the interpolation.
+
+    Returns
+    -------
+    w_new : ndarray
+        Resampled coordinates (e.g. wavelengths, frequencies)
+    f_new : ndarray
+        Resampled grid (e.g. spectral fluxes)
     """
+    ## Assert that the original coordinate matches the axis of the grid
+    if w.size != f.shape[axis]:
+        raise Exception("The length of w must match the dimension 'axis' of the grid f.")
+
     ## We may want to resample the spectrum at a given resolution.
     if wrange is not None:
         inds = (w>=wrange[0])*(w<=wrange[1])
         w = w[inds]
-        f = f[inds]
+        if f.ndim == 1:
+            f = f[inds]
+        else:
+            fslice = [slice(l) for l in f.shape]
+            fslice[axis] = inds
+            f = f[fslice]
     if resample is not None:
-        ## Because np.arange does not include the last point, we need to add
-        ## half the resampling size to catch the last element in case it falls on.
-        w_new = np.arange(w[0], w[-1]+resample*0.5, resample)
+        if isinstance(resample, float):
+            ## Because np.arange does not include the last point, we need to add
+            ## the resampling size to catch the last element in case it falls on.
+            w_new = np.arange(w[0], w[-1]+resample, resample)
+        else:
+            w_new = resample
         weight, pos = Series.Getaxispos_vector(w, w_new)
-        f_new = f[pos]*(1-weight) + f[pos+1]*weight
-        f = f_new
-        w = w_new
+
+        if f.ndim == 1:
+            f = f[pos]*(1-weight) + f[pos+1]*weight
+            w = w_new
+            return w_new, f
+        else:
+            if axis < 0:
+                axis = f.ndim + axis
+            if axis == f.ndim-1:
+                f = f[...,pos]*(1-weight) + f[...,pos+1]*weight
+            else:
+                f = (f.swapaxes(axis,-1)[...,pos]*(1-weight) + f.swapaxes(axis,-1)[...,pos+1]*weight).swapaxes(axis,-1)
+            return w_new, f
     return w, f
+

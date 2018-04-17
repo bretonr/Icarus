@@ -26,7 +26,7 @@ class Star(Star_base):
         y: Along the orbital plane along the orbital motion.
         z: Along the orbital angular momentum.
     """
-    def __init__(self, ndiv, atmo_grid=None, read=False, oldchi=False):
+    def __init__(self, ndiv, atmo_grid=None, read=True, oldchi=False):
         Star_base.__init__(self, ndiv, atmo_grid=atmo_grid)
         if read:
             self._Read_geodesic()

@@ -26,7 +26,7 @@ class Spectroscopy(object):
     calculate the predicted flux of the model at every data point (i.e.
     for a given orbital phase).
     """
-    def __init__(self, atmo_grid, data_fln, ndiv, read=True, oldchi=False):
+    def __init__(self, data_fln, ndiv, atmo_grid=None, read=True, oldchi=False):
         """
         This class allows to fit the flux from the primary star
         of a binary system, assuming it is heated by the secondary
@@ -39,20 +39,6 @@ class Spectroscopy(object):
 
         Parameters
         ----------
-        atmo_fln : str
-            A file containing the grid model information for the whole
-            data set. The file contains one line having the following format:
-                descriptor name (str): description of the grid
-                grid file (str): the grid files to be read; can be a wildcard
-                wavelength cut low (float): the lower limit to trim the grid
-                wavelength cut high (float): the upper limit to trim the grid
-                oversample (int): Oversampling factor. A linear interpolation
-                    will be performed in order to oversample the grid in the
-                    wavelength dimension by a factor 'oversample'. If 0 or 1,
-                    no oversampling will be performed.
-                smooth (float): A Gaussian smoothing with a sigma equals to
-                    'smooth' in the wavelength dimension will be performed.
-                    If 0, no smoothing will be performed.
         data_fln : str
             A file containing the information for each data set.
             The format of the file is as follows:
@@ -70,17 +56,33 @@ class Spectroscopy(object):
         ndiv : int
             The number of surface element subdivisions. Defines how coarse/fine
             the surface grid is. Recommended values 4-6.
+        atmo_fln : None, str
+            If None, will not attempt to read the atmosphere grid.
+            If a string object, the file containing information about the 
+            atmosphere grid. The file contains one line having the following
+            format:
+                descriptor name (str): description of the grid
+                grid file (str): the grid files to be read; can be a wildcard
+                wavelength cut low (float): the lower limit to trim the grid
+                wavelength cut high (float): the upper limit to trim the grid
+                oversample (int): Oversampling factor. A linear interpolation
+                    will be performed in order to oversample the grid in the
+                    wavelength dimension by a factor 'oversample'. If 0 or 1,
+                    no oversampling will be performed.
+                smooth (float): A Gaussian smoothing with a sigma equals to
+                    'smooth' in the wavelength dimension will be performed.
+                    If 0, no smoothing will be performed.
         read : bool
             If True, Icarus will use the pre-calculated geodesic
             primitives. This is the recommended option, unless you have the
             pygts package installed to calculate it on the spot.
 
-        >>> fit = Spectroscopy(atmo_fln, data_fln, ndiv)
+        >>> fit = Spectroscopy(data_fln, ndiv)
         """
         ## We read the data.
         print( 'Reading spectral data' )
         self.__Read_data(data_fln)
-        ## We read the atmosphere models with the atmo_grid class
+        ## We read the atmosphere models with the atmo class
         print( 'Reading atmosphere grid' )
         ## We may choose not to read the atmosphere grid automatically
         if atmo_grid is None:
@@ -126,18 +128,24 @@ class Spectroscopy(object):
         Returns the predicted flux by the model evaluated at the
         observed values in the data set.
 
-        par (array): Parameter list.
-            [0]: Orbital inclination in radians.
-            [1]: Corotation factor.
-            [2]: Roche-lobe filling.
-            [3]: Companion temperature.
-            [4]: Gravity darkening coefficient.
-            [5]: K (projected velocity semi-amplitude) in m/s.
-            [6]: Front side temperature.
-            [7]: Systematic velocity offset in m/s.
+        par: Parameter list.
+            [0]: Mass ratio q = M2/M1, where M1 is the modelled star.
+            [1]: Orbital period in seconds.
+            [2]: Orbital inclination in radians.
+            [3]: K1 (projected velocity semi-amplitude) in m/s.
+            [4]: Corotation factor (Protation/Porbital).
+            [5]: Roche-lobe filling in fraction of x_nose/L1.
+            [6]: Gravity darkening coefficient.
+                Should be 0.25 for radiation envelopes, 0.08 for convective.
+            [7]: Star base temperature at the pole, before gravity darkening.
+            [8]: Irradiation temperature at the center of mass location.
+                The effective temperature is calculated as T^4 = Tbase^4+Tirr^4
+                and includes projection and distance effect.
+            The following are optional, set to 0. if not provided.
+
             Note: Can also be a dictionary:
-                par.keys() = ['incl', 'corotation', 'filling', 'tnight',
-                    'gravdark', 'k1', 'tday', 'vsys']
+                par.keys() = ['q','porb','incl','k1','omega','filling','tempgrav','temp','tirr']
+
         orbph (float, array): List of orbital phases to evaluate the
             spectrum at. If None, will use the same phaes as the data.
         velocities (float, array): Velocities to add to the
@@ -147,30 +155,21 @@ class Spectroscopy(object):
             calculate the flux.
         verbose (False): If true will display the list of parameters.
 
-        Note: tirr = (par[6]**4 - par[3]**4)**0.25
-
-        >>> self.Get_flux([PIBYTWO,1.,0.9,4000.,0.08,300e3,6000.,50e3])
+        >>> self.Get_flux([10.,7200.,PIBYTWO,300e3,1.0,0.9,0.08,4000.,5000.])
         """
         logger.log(9, "start")
-        ## Check if we are dealing with a dictionary
-        if isinstance(par, dict):
-            par = [par['incl'], par['corotation'], par['filling'], par['tnight'], par['gravdark'], par['k1'], par['tday'], par['vsys']]
-        if orbph is None:
-            orbph = self.data['phase']
-        else:
-            orbph = np.atleast_1d(orbph)
+
+        # We call Make_surface to make the companion's surface.
+        self.Make_surface(par, verbose=verbose)
+
         if atmo_grid is None:
             atmo_grid = self.atmo_grid
-        #velocities = np.zeros_like(orbph) + par[7] + self.data['v_bary'] + velocities
-        velocities = np.zeros_like(orbph) + par[7] + velocities
-        q = par[5] * self.K_to_q
-        tirr = (par[6]**4 - par[3]**4)**0.25
 
-        if verbose:
-            print( "#####\n" + str(par[0]) + ", " + str(par[1]) + ", " + str(par[2]) + ", " + str(par[3]) + ", " + str(par[4]) + ", " + str(par[5]) + ", " + str(par[6]) + ", " + str(par[7]) + "\n" + "q: " + str(q) + ", tirr: " + str(tirr)  )
+        phases = self.data['phase']
+        velocities = np.zeros_like(phases) + velocities
 
-        self.star.Make_surface(q=q, omega=par[1], filling=par[2], temp=par[3], tempgrav=par[4], tirr=tirr, porb=self.porb, k1=par[5], incl=par[0])
-        flux = [self.star.Flux_doppler(phs, velocity=velocity, gravscale=gravscale, atmo_grid=atmo_grid) for phs,velocity in zip(orbph,velocities)]
+        flux = [self.star.Flux_doppler(phs, velocity=velocity, gravscale=gravscale, atmo_grid=atmo_grid) for phs,velocity in zip(phases,velocities)]
+
         logger.log(9, "end")
         return flux
 
@@ -185,7 +184,7 @@ class Spectroscopy(object):
         #self.K_to_q = Utils.Binary.Get_K_to_q(self.porb, self.x2sini)
 
         ## Here we pre-calculate the wavelengths, interpolation indices
-        ## and weights for the rebining of the log-spaced atmo_grid data
+        ## and weights for the rebining of the log-spaced atmo data
         ## to linear
         if 0:
             self.wavelength = []

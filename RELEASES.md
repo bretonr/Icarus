@@ -2,6 +2,19 @@
 
 ## Release history
 
+
+### 2.3.2 (2017-01-14)
+
+Features:
+
+- 
+
+
+Bug fixes:
+
+- 
+
+
 ### 2.3.2 (2017-01-14)
 
 Features:

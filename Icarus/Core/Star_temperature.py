@@ -7,6 +7,8 @@ from ..Utils.import_modules import *
 from ..Utils import Spherical_harmonics
 from .Star import Star
 
+logger = logging.getLogger(__name__)
+
 
 ######################## class Star_temperature ########################
 class Star_temperature(Star):
@@ -65,6 +67,7 @@ class Star_temperature(Star):
 
         >>> self._Calc_teff()
         """
+        logger.log(9, "start")
         if temp is not None:
             self.temp = temp
         if tirr is not None:
@@ -80,6 +83,7 @@ class Star_temperature(Star):
             if inds.any():
                 teff[inds] = (teff[inds]**4+self.coschi[inds]*self.tirr**4/self.rx[inds]**2)**0.25
         self.logteff = np.log(teff)
+        logger.log(9, "end")
         return
 
     def Spherical_coefficients(self, lmax, ndigit=None, verbose=True):
